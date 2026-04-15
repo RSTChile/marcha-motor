@@ -45,11 +45,12 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1 * Math.PI / 180) *
-            Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // =============================================
@@ -59,15 +60,14 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 app.post('/api/detect-commune', async (req, res) => {
   try {
     const { lat, lng } = req.body;
-    
+
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       return res.status(400).json({
         ok: false,
         message: 'Coordenadas inválidas'
       });
     }
-    
-    // Cargar lista completa de comunas
+
     const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.status(500).json({
@@ -75,88 +75,66 @@ app.post('/api/detect-commune', async (req, res) => {
         message: 'Lista de comunas no disponible'
       });
     }
-    
+
     const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
     const comunasList = data.comunas || [];
-    
-    // Tu API key de OpenRouteService
-    const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU0ODZkY2U1MzU0MTQ4YzFiMDgwMTg2YTYyYTBiOThiIiwiaCI6Im11cm11cjY0In0=';
-    
-    async function getRealDistance(lat1, lon1, lat2, lon2) {
-      const url = `https://api.openrouteservice.org/v2/directions/driving-car?start=${lon1},${lat1}&end=${lon2},${lat2}`;
-      
+
+    const withDist = comunasList
+      .map(c => ({
+        ...c,
+        straightdist: haversineDistance(lat, lng, c.lat, c.lng)
+      }))
+      .sort((a, b) => a.straightdist - b.straightdist);
+
+    const candidates = withDist.slice(0, 5);
+
+    for (const c of candidates) {
+      c.realdist = c.straightdist;
+      c.isestimated = true;
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const url = `https://api.openrouteservice.org/v2/directions/driving-car?start=${lng},${lat}&end=${c.lng},${c.lat}`;
         const response = await fetch(url, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${ORS_API_KEY}`,
+            Authorization: `Bearer ${process.env.ORS_API_KEY || ''}`,
             'Content-Type': 'application/json'
-          },
-          signal: controller.signal
+          }
         });
-        clearTimeout(timeout);
-        
-        if (!response.ok) {
-          console.error(`[ORS] HTTP ${response.status}: ${response.statusText}`);
-          return null;
+        if (response.ok) {
+          const routeData = await response.json();
+          const distanceKm = routeData?.features?.[0]?.properties?.summary?.distance / 1000;
+          if (distanceKm) {
+            c.realdist = distanceKm;
+            c.isestimated = false;
+          }
         }
-        const routeData = await response.json();
-        if (routeData.features && routeData.features[0] && routeData.features[0].properties.summary) {
-          return routeData.features[0].properties.summary.distance / 1000; // metros a km
-        }
-        return null;
-      } catch (err) {
-        console.error('[ORS] Error:', err.message);
-        return null;
+      } catch (e) {
+        // fallback silencioso
       }
+      await new Promise(r => setTimeout(r, 100));
     }
-    
-    // Calcular distancia en línea recta para todas
-    const withDist = comunasList.map(c => ({
-      ...c,
-      _straight_dist: haversineDistance(lat, lng, c.lat, c.lng)
-    })).sort((a, b) => a._straight_dist - b._straight_dist);
-    
-    // Tomar las 5 más cercanas en línea recta
-    const candidates = withDist.slice(0, 5);
-    
-    // Intentar obtener distancia real para los candidatos
-    for (const c of candidates) {
-      const realDist = await getRealDistance(lat, lng, c.lat, c.lng);
-      c._real_dist = realDist !== null ? realDist : c._straight_dist;
-      c._is_estimated = realDist === null;
-      console.log(`[ORS] ${c.nombre}: real=${c._real_dist?.toFixed(1)} km, straight=${c._straight_dist?.toFixed(1)} km, estimated=${c._is_estimated}`);
-      await new Promise(r => setTimeout(r, 300));
-    }
-    
-    // Ordenar por distancia real
-    candidates.sort((a, b) => a._real_dist - b._real_dist);
-    
-    let closest = candidates[0];
-    
+
+    candidates.sort((a, b) => a.realdist - b.realdist);
+    const closest = candidates[0];
+
     if (!closest) {
       return res.status(404).json({
         ok: false,
         message: 'No se encontró comuna cercana'
       });
     }
-    
-    console.log(`[detect-commune] ✅ Comuna detectada: ${closest.nombre} (distancia real: ${closest._real_dist.toFixed(1)} km)`);
-    
+
     res.json({
       ok: true,
       commune: {
         nombre: closest.nombre,
         region: closest.region,
         lat: closest.lat,
-        lon: closest.lon
+        lon: closest.lng
       },
-      distance_km: closest._real_dist,
-      is_estimated: closest._is_estimated || false
+      distancekm: closest.realdist,
+      isestimated: closest.isestimated || false
     });
-    
   } catch (err) {
     console.error('[detect-commune] Error:', err);
     res.status(500).json({
@@ -174,11 +152,16 @@ app.get('/api/stats', (req, res) => {
   try {
     const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
-      return res.json({ ok: true, total: 0, message: 'Lista no disponible' });
+      return res.json({
+        ok: true,
+        total_comunas: 0,
+        message: 'Lista no disponible'
+      });
     }
+
     const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
-    res.json({ 
-      ok: true, 
+    res.json({
+      ok: true,
       total_comunas: data.comunas?.length || 0,
       generated_at: data.meta?.generated_at || null
     });
