@@ -845,7 +845,6 @@
 <body>
 <div class="wrap">
 
-    <!-- HEADER -->
     <header class="header">
         <div class="logo-wrap">
             <img src="data/logo-rst-redondo-blanco-bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⚙️'">
@@ -856,10 +855,7 @@
         </div>
     </header>
 
-    <!-- FORMULARIO -->
     <form id="marchaForm" autocomplete="off">
-
-        <!-- Ubicación -->
         <div class="section">
             <div class="field-label">Ubicación</div>
             <div class="autocomplete-wrap">
@@ -878,7 +874,6 @@
 
         <div class="divider"></div>
 
-        <!-- Tipo de uso -->
         <div class="section">
             <div class="field-label">Tipo de uso</div>
             <div class="type-pills">
@@ -891,7 +886,6 @@
 
         <div class="divider"></div>
 
-        <!-- Dirección de viaje -->
         <div class="section">
             <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em;">opcional</span></div>
             <select id="direction">
@@ -905,7 +899,6 @@
 
         <div class="divider"></div>
 
-        <!-- Vehículo -->
         <div class="section">
             <div class="field-label">Vehículo</div>
             <div class="grid-2">
@@ -922,7 +915,6 @@
 
         <div class="divider"></div>
 
-        <!-- Combustible y presupuesto -->
         <div class="section">
             <div class="field-label">Carga</div>
             <div class="grid-2">
@@ -944,7 +936,6 @@
 
         <div class="divider"></div>
 
-        <!-- Nivel estanque -->
         <div class="section">
             <div class="field-label">Nivel del estanque</div>
             <div class="gauge-wrap">
@@ -964,11 +955,9 @@
             </div>
         </div>
 
-        <!-- CTA -->
         <button type="submit" class="btn-main" id="submitBtn"><span>Evaluar ahora</span></button>
     </form>
 
-    <!-- RESULTADO -->
     <div class="result-wrap" id="resultWrap">
         <div class="result-placeholder">
             <span class="big">◌</span>
@@ -1182,7 +1171,7 @@ $('marchaForm').addEventListener('submit', async e => {
     };
 
     try {
-        const res = await fetch('/api/decide', {
+        const res = await fetch('/api/decide-v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1202,9 +1191,6 @@ $('marchaForm').addEventListener('submit', async e => {
     }
 });
 
-// ──────────────────────────────────────────────
-// RENDER
-// ──────────────────────────────────────────────
 function render(data) {
     const mode = data.mode ?? 0;
     const modeMap = {
