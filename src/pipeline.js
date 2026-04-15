@@ -1,7 +1,7 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
- * Los precios se redondean a enteros (sin decimales)
+ * CORREGIDO: selección correcta de combustible
  */
 
 const engine = require('./engine');
@@ -72,18 +72,26 @@ async function fetchStationById(id) {
     
     if (!d?.latitud || !d?.longitud) return null;
     
-    // Extraer precios (redondeados a entero, sin decimales)
-    const precios = {};
+    // Extraer precios (redondeados a entero)
+    const precios = {
+      diesel: null,
+      gas93: null,
+      gas95: null,
+      gas97: null,
+      kerosene: null
+    };
     const preciosDetalle = [];
     
     for (const c of d.combustibles || []) {
       if (!c.precio) continue;
-      // Redondear a entero (Math.floor para precios, el usuario no espera decimales)
       const precioNum = Math.floor(parseFloat(c.precio));
-      if (c.nombre_corto === 'DI') precios.diesel = precioNum;
-      if (c.nombre_corto === '93') precios.gas93 = precioNum;
-      if (c.nombre_corto === '95') precios.gas95 = precioNum;
-      if (c.nombre_corto === '97') precios.gas97 = precioNum;
+      const tipo = c.nombre_corto;
+      
+      if (tipo === 'DI') precios.diesel = precioNum;
+      if (tipo === '93') precios.gas93 = precioNum;
+      if (tipo === '95') precios.gas95 = precioNum;
+      if (tipo === '97') precios.gas97 = precioNum;
+      if (tipo === 'KE') precios.kerosene = precioNum;
       
       preciosDetalle.push({
         tipo: c.nombre_largo || c.nombre_corto,
@@ -93,12 +101,18 @@ async function fetchStationById(id) {
       });
     }
     
-    if (Object.keys(precios).length === 0) return null;
+    // Verificar si tiene al menos un combustible útil
+    if (!precios.diesel && !precios.gas93 && !precios.gas95 && !precios.gas97) {
+      return null;
+    }
+    
+    // Obtener nombre comercial de la marca
+    const marcaNombre = getMarcaNombre(d.marca);
     
     const station = {
       id: d.id,
-      nombre: d.razon_social?.razon_social || d.razon_social || 'Estación',
-      nombre_comercial: getMarcaNombre(d.marca),
+      nombre: marcaNombre,
+      nombre_legal: d.razon_social?.razon_social || d.razon_social || 'Estación',
       marca: d.marca || 'NA',
       region: d.region || '',
       comuna: d.comuna || '',
@@ -186,15 +200,28 @@ function inferZoneType(region) {
 // =============================================
 
 function prepareStation(station, fuelType) {
-  const price = station.precios[fuelType];
-  if (!price || price <= 0) return null;
+  // Seleccionar el precio correcto según el tipo de combustible
+  let price = null;
+  if (fuelType === 'diesel') price = station.precios.diesel;
+  else if (fuelType === 'gas93') price = station.precios.gas93;
+  else if (fuelType === 'gas95') price = station.precios.gas95;
+  else if (fuelType === 'gas97') price = station.precios.gas97;
+  
+  // Si no tiene el combustible exacto, buscar alternativas
+  if (!price || price <= 0) {
+    if (station.precios.diesel) price = station.precios.diesel;
+    else if (station.precios.gas95) price = station.precios.gas95;
+    else if (station.precios.gas93) price = station.precios.gas93;
+    else if (station.precios.gas97) price = station.precios.gas97;
+    else return null;
+  }
   
   const ageMinutes = Math.min(Math.round((Date.now() - station.fetched_at) / 60000), 60);
   
   return {
     id: station.id,
-    nombre: station.nombre_comercial || station.nombre,
-    nombre_legal: station.nombre,
+    nombre: station.nombre,
+    nombre_legal: station.nombre_legal,
     direccion: station.direccion,
     comuna: station.comuna,
     marca: station.marca,
@@ -213,7 +240,7 @@ function prepareStation(station, fuelType) {
 }
 
 // =============================================
-// CALCULAR PRECIO DE REFERENCIA
+// CALCULAR PRECIO DE REFERENCIA (mediana de precios)
 // =============================================
 
 function calculateReferencePrice(stations) {
@@ -310,7 +337,7 @@ async function runPipeline({ userProfile, context }) {
       }
     );
     
-    // Redondear ahorros hacia abajo (para no generar expectativas falsas)
+    // Redondear ahorros hacia abajo
     if (result.recommendation && result.recommendation.net_saving) {
       result.recommendation.net_saving = Math.floor(result.recommendation.net_saving);
     }
@@ -318,7 +345,7 @@ async function runPipeline({ userProfile, context }) {
       result.alternative.net_saving = Math.floor(result.alternative.net_saving);
     }
     
-    // Enriquecer el resultado con datos completos de la estación
+    // Enriquecer el resultado con datos completos
     if (result.recommendation && result.recommendation.station) {
       const stationData = stationsWithDist.find(s => s.id === result.recommendation.station.id);
       if (stationData) {
