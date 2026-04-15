@@ -1,13 +1,13 @@
 /**
- * Marcha — Pipeline CORREGIDO
- * Asegura que engineStations sea un array válido
+ * Marcha — Pipeline RUTA ABSOLUTA
  */
 
 const fs = require('fs');
 const path = require('path');
 const engine = require('./engine');
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'stations.json');
+// Ruta absoluta al archivo stations.json en Render
+const DATA_FILE = '/opt/render/project/data/stations.json';
 
 // Distancia (Haversine)
 function distanceMeters(lat1, lon1, lat2, lon2) {
@@ -25,8 +25,9 @@ function distanceMeters(lat1, lon1, lat2, lon2) {
 // Cargar estaciones desde el archivo
 function loadStations() {
   try {
+    console.log(`[pipeline] Buscando archivo en: ${DATA_FILE}`);
     if (!fs.existsSync(DATA_FILE)) {
-      console.log('[pipeline] stations.json no existe');
+      console.log('[pipeline] stations.json no existe en esa ruta');
       return [];
     }
     const raw = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -46,7 +47,6 @@ async function runPipeline({ userProfile, context }) {
     
     const { user_lat, user_lon, fuel_type = 'diesel', reference_price = 1500, is_urban_peak = false, toll_estimate = 0 } = context;
     
-    // Validar coordenadas
     if (typeof user_lat !== 'number' || typeof user_lon !== 'number') {
       console.log('[pipeline] Coordenadas inválidas:', user_lat, user_lon);
       return { mode: 3, recommendation: null, alternative: null, message: 'Ubicación inválida' };
@@ -54,16 +54,13 @@ async function runPipeline({ userProfile, context }) {
 
     console.log(`[pipeline] Buscando cerca de (${user_lat}, ${user_lon})`);
 
-    // Cargar estaciones
     const allStations = loadStations();
     if (!allStations.length) {
       return { mode: 3, recommendation: null, alternative: null, message: 'No hay datos de estaciones' };
     }
 
-    // Radio de búsqueda (50 km)
     const radiusMeters = 50000;
     
-    // Filtrar estaciones cercanas
     const nearby = allStations
       .filter(s => {
         if (typeof s.lat !== 'number' || typeof s.lon !== 'number') return false;
@@ -80,7 +77,6 @@ async function runPipeline({ userProfile, context }) {
       return { mode: 3, recommendation: null, alternative: null, message: 'No hay estaciones en un radio de 50 km' };
     }
 
-    // Preparar estaciones para el motor (ARRAY EXPLÍCITO)
     const engineStations = [];
     
     for (const s of nearby) {
@@ -104,19 +100,12 @@ async function runPipeline({ userProfile, context }) {
       });
     }
 
-    console.log(`[pipeline] Preparadas ${engineStations.length} estaciones para el motor (combustible: ${fuel_type})`);
+    console.log(`[pipeline] Preparadas ${engineStations.length} estaciones para el motor`);
 
     if (!engineStations.length) {
-      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con combustible ${fuel_type} cerca` };
+      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} cerca` };
     }
 
-    // Verificar que engineStations es un array
-    if (!Array.isArray(engineStations)) {
-      console.error('[pipeline] engineStations NO es un array:', typeof engineStations);
-      return { mode: 3, recommendation: null, alternative: null, message: 'Error interno: datos de estaciones inválidos' };
-    }
-
-    // Contexto para el motor
     const engineContext = {
       user_lat,
       user_lon,
@@ -126,17 +115,14 @@ async function runPipeline({ userProfile, context }) {
     };
 
     console.log('[pipeline] Llamando a engine.decide...');
-    
-    // Ejecutar el motor
     const result = engine.decide(engineStations, userProfile, engineContext);
-    
     console.log('[pipeline] Motor respondió con mode:', result.mode);
     
     return result;
 
   } catch (err) {
     console.error('[pipeline] Error fatal:', err);
-    return { mode: 3, recommendation: null, alternative: null, message: `Error interno: ${err.message}` };
+    return { mode: 3, recommendation: null, alternative: null, message: `Error: ${err.message}` };
   }
 }
 
