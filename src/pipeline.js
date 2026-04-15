@@ -463,5 +463,6 @@ async function runPipeline({ userProfile, context }) {
     return { mode: 3, recommendation: null, alternative: null, message: `Error interno: ${err.message}` };
   }
 }
-
+function getNearbyStations(comunaData) {
+  const mainIds = comunaData.stations?.map(s
 module.exports = { runPipeline };
