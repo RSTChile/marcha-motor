@@ -80,7 +80,7 @@
     { "nombre": "Santo Domingo", "region": "Valparaíso", "lat": -33.7078, "lng": -71.6300, "stations": [439,440] },
     { "nombre": "San Felipe", "region": "Valparaíso", "lat": -32.7500, "lng": -70.7128, "stations": [441,442,443,444,445,446,447,448,449,450,451,452,453] },
     { "nombre": "Catemu", "region": "Valparaíso", "lat": -32.7808, "lng": -70.9689, "stations": [454] },
-    { "nombre": "Llaillay", "region": "Valparaíso", "lat": -32.8439, "lng": -70.9569, "stations": [455,456,457,458] },
+    { "nombre": "Llaillay", "region": "Valparaíso", "lat": -32.840588, "lng": -70.959100, "stations": [455,456,457,458] },
     { "nombre": "Panquehue", "region": "Valparaíso", "lat": -32.7839, "lng": -70.8369, "stations": [459] },
     { "nombre": "Putaendo", "region": "Valparaíso", "lat": -32.6278, "lng": -70.7158, "stations": [460,461] },
     { "nombre": "Santa María", "region": "Valparaíso", "lat": -32.7503, "lng": -70.6669, "stations": [462] },
