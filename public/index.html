@@ -2,1312 +2,478 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marcha · RST Chile</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Marcha · Motor de decisión · RST Chile</title>
     <style>
-        :root {
-            --bg:       #07111f;
-            --bg2:      #0d1e30;
-            --bg3:      #122033;
-            --surface:  #162840;
-            --line:     rgba(255,255,255,0.07);
-            --line2:    rgba(255,255,255,0.12);
-            --text:     #e8edf2;
-            --muted:    #6b8099;
-            --accent:   #e8a030;
-            --accent2:  #f0c060;
-            --green:    #2ecc8a;
-            --red:      #e05050;
-            --blue:     #4a9eff;
-            --mono:     'DM Mono', monospace;
-            --sans:     'Syne', sans-serif;
-        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: var(--sans);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 0;
-            overflow-x: hidden;
+        :root {
+            --bg:      #080c18;
+            --surf:    #0e1525;
+            --surf2:   #141e30;
+            --brd:     rgba(255,255,255,0.07);
+            --brd2:    rgba(255,255,255,0.12);
+            --acc:     #3b82f6;
+            --acc-b:   #60a5fa;
+            --text:    #e8f0fe;
+            --muted:   #6b7fa8;
+            --danger:  #ff6b6b;
+            --success: #34d399;
+            --warn:    #fbbf24;
         }
+        body { font-family: system-ui,-apple-system,'Segoe UI',sans-serif; background: var(--bg); color: var(--text); padding: 1rem; min-height: 100vh; }
+        .container { max-width: 520px; margin: 0 auto; }
 
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-            background-size: 48px 48px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .wrap {
-            position: relative;
-            z-index: 1;
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 1.5rem 1rem 4rem;
-        }
-
+        /* HEADER */
         .header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.5rem 0 2rem;
-            border-bottom: 1px solid var(--line2);
-            margin-bottom: 2rem;
+            background: linear-gradient(135deg,#0a0f1e 0%,#0d1b3e 55%,#080c18 100%);
+            border: 1px solid rgba(59,130,246,0.22);
+            border-radius: 22px; padding: 1.75rem 1.5rem 1.25rem;
+            margin-bottom: 1rem; position: relative; overflow: hidden;
         }
-
-        .logo-wrap {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 1px solid var(--line2);
+        .header::before {
+            content:''; position:absolute; top:-60px; right:-60px;
+            width:220px; height:220px;
+            background:radial-gradient(circle,rgba(59,130,246,0.14) 0%,transparent 70%);
+            border-radius:50%; pointer-events:none;
         }
+        .logo-row { display:flex; align-items:center; gap:14px; margin-bottom:0.75rem; position:relative; z-index:1; }
+        .logo-img { width:54px; height:54px; border-radius:14px; object-fit:contain; background:rgba(255,255,255,0.05); border:1px solid rgba(59,130,246,0.25); padding:4px; flex-shrink:0; }
+        .logo-fallback { width:54px; height:54px; border-radius:14px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); display:none; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+        .brand-name { font-size:1.4rem; font-weight:800; color:#fff; letter-spacing:-0.5px; line-height:1.1; }
+        .brand-sub  { font-size:0.68rem; color:var(--acc-b); font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-top:3px; }
+        .tagline    { font-size:0.78rem; color:var(--muted); position:relative; z-index:1; line-height:1.5; }
 
-        .logo-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        /* SECCIONES */
+        .section { margin-bottom:0.875rem; }
+        .sec-label { font-size:0.65rem; font-weight:700; letter-spacing:0.12em; color:var(--acc-b); text-transform:uppercase; margin-bottom:0.45rem; padding-left:2px; }
 
-        .logo-wrap-fallback {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--line2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
-
-        .header-text h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            color: var(--text);
-            line-height: 1;
-        }
-
-        .header-text h1 span {
-            color: var(--accent);
-        }
-
-        .header-text p {
-            font-family: var(--mono);
-            font-size: 0.65rem;
-            color: var(--muted);
-            margin-top: 0.3rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--green);
-            display: inline-block;
-            margin-right: 0.4rem;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .section { margin-bottom: 0.5rem; }
-
-        .field-label {
-            font-family: var(--mono);
-            font-size: 0.62rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .field-label::before {
-            content: '';
-            width: 1px;
-            height: 10px;
-            background: var(--accent);
-            opacity: 0.6;
-        }
-
+        /* INPUTS */
         input[type="text"], input[type="number"], select {
-            width: 100%;
-            background: var(--bg2);
-            border: 1px solid var(--line2);
-            border-radius: 6px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 0.95rem;
-            padding: 0.75rem 1rem;
-            outline: none;
-            transition: border-color 0.2s, background 0.2s;
-            -webkit-appearance: none;
-        }
-
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: var(--accent);
-            background: var(--bg3);
-        }
-
-        input::placeholder {
-            color: var(--muted);
-            font-size: 0.85rem;
-        }
-
-        select option {
-            background: var(--bg2);
-        }
-
-        .location-row {
-            display: flex;
-            gap: 0.5rem;
-            align-items: stretch;
-        }
-
-        .location-row input { flex: 1; }
-
-        .btn-icon {
-            background: var(--surface);
-            border: 1px solid var(--line2);
-            border-radius: 6px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            padding: 0.75rem 0.875rem;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s;
-            letter-spacing: 0.04em;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .btn-icon:hover {
-            background: var(--bg3);
-            border-color: var(--line);
-            color: var(--accent);
-        }
-
-        .btn-icon.primary {
-            background: var(--accent);
-            color: var(--bg);
-            border-color: var(--accent);
-            font-weight: 500;
-        }
-
-        .btn-icon.primary:hover {
-            background: var(--accent2);
-            border-color: var(--accent2);
-        }
-
-        .location-status {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--green);
-            margin-top: 0.4rem;
-            padding-left: 0.25rem;
-            min-height: 1rem;
-        }
-
-        .location-status.warn { color: var(--accent); }
-        .location-status.err { color: var(--red); }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-        }
-
-        .grid-2 > div {
-            background: var(--bg2);
-            border: 1px solid var(--line2);
-            border-radius: 10px;
-            padding: 0.9rem 1rem;
-        }
-
-        .grid-2 > div > div:first-child {
-            font-family: var(--mono);
-            font-size: 0.62rem;
-            color: var(--muted);
-            margin-bottom: 0.35rem;
-            letter-spacing: 0.04em;
-        }
-
-        .grid-2 > div input,
-        .grid-2 > div select {
-            padding: 0.55rem 0.8rem;
-            font-size: 0.92rem;
-        }
-
-        .divider {
-            height: 1px;
-            background: var(--line);
-            margin: 1.25rem 0;
-        }
-
-        .type-pills {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-        }
-
-        .type-pill {
-            flex: 1;
-            min-width: 100px;
-            background: var(--bg2);
-            border: 1px solid var(--line2);
-            border-radius: 6px;
-            color: var(--muted);
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            padding: 0.65rem 0.75rem;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-            letter-spacing: 0.02em;
-        }
-
-        .type-pill:hover {
-            border-color: var(--accent);
-            color: var(--text);
-        }
-
-        .type-pill.selected {
-            background: var(--surface);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .gauge-wrap {
-            background: var(--bg2);
-            border: 1px solid var(--line2);
-            border-radius: 6px;
-            padding: 1rem 1.25rem 0.875rem;
-        }
-
-        .gauge-track {
-            height: 3px;
-            background: var(--line2);
-            border-radius: 2px;
-            margin-bottom: 0.875rem;
-            position: relative;
-            overflow: visible;
-        }
-
-        .gauge-fill {
-            height: 100%;
-            border-radius: 2px;
-            background: linear-gradient(90deg, var(--red), var(--accent), var(--green));
-            transition: width 0.4s cubic-bezier(.4,0,.2,1);
-            width: 0;
-        }
-
-        .gauge-marks {
-            display: flex;
-            justify-content: space-between;
-            gap: 0.25rem;
-        }
-
-        .gauge-mark {
-            flex: 1;
-            text-align: center;
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--muted);
-            padding: 0.35rem 0.1rem;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.15s;
-            letter-spacing: 0.02em;
-        }
-
-        .gauge-mark:hover { color: var(--text); }
-
-        .gauge-mark.selected {
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        .gauge-label {
-            font-family: var(--mono);
-            font-size: 0.65rem;
-            color: var(--muted);
-            text-align: center;
-            margin-top: 0.5rem;
-        }
-
-        .autocomplete-wrap { position: relative; }
-
-        .communes-drop {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: var(--bg3);
-            border: 1px solid var(--line2);
-            border-radius: 6px;
-            max-height: 220px;
-            overflow-y: auto;
-            z-index: 100;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
-        }
-
-        .communes-drop::-webkit-scrollbar { width: 4px; }
-        .communes-drop::-webkit-scrollbar-track { background: transparent; }
-        .communes-drop::-webkit-scrollbar-thumb {
-            background: var(--line2);
-            border-radius: 2px;
-        }
-
-        .commune-item {
-            padding: 0.65rem 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid var(--line);
-            transition: background 0.1s;
-        }
-
-        .commune-item:last-child { border-bottom: none; }
-        .commune-item:hover { background: var(--surface); }
-
-        .commune-name {
-            font-family: var(--mono);
-            font-size: 0.85rem;
-            color: var(--text);
-        }
-
-        .commune-region {
-            font-family: var(--mono);
-            font-size: 0.65rem;
-            color: var(--muted);
-            margin-top: 1px;
-        }
-
-        .hidden { display: none; }
-
-        .btn-main {
-            width: 100%;
-            background: transparent;
-            border: 1px solid var(--accent);
-            border-radius: 6px;
-            color: var(--accent);
-            font-family: var(--mono);
-            font-size: 0.8rem;
-            font-weight: 500;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-main::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: var(--accent);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.25s ease;
-            z-index: 0;
-        }
-
-        .btn-main:hover::before { transform: scaleX(1); }
-        .btn-main:hover { color: var(--bg); }
-        .btn-main span { position: relative; z-index: 1; }
-        .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-main:disabled::before { display: none; }
-
-        .result-wrap { margin-top: 2rem; }
-
-        .result-placeholder {
-            background: var(--bg2);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            font-family: var(--mono);
-            font-size: 0.72rem;
-            color: var(--muted);
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .result-placeholder .big {
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 0.75rem;
-            opacity: 0.3;
-        }
-
-        .result-card {
-            background: var(--bg2);
-            border-radius: 8px;
-            overflow: hidden;
-            animation: fadeUp 0.4s ease;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .result-header {
-            padding: 1.25rem 1.5rem 1rem;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .mode-tag {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            padding: 0.25rem 0.625rem;
-            border-radius: 3px;
-            font-weight: 500;
-        }
-
-        .mode-tag.m0 {
-            background: rgba(46,204,138,0.15);
-            color: var(--green);
-            border: 1px solid rgba(46,204,138,0.25);
-        }
-
-        .mode-tag.m1 {
-            background: rgba(232,160,48,0.15);
-            color: var(--accent);
-            border: 1px solid rgba(232,160,48,0.25);
-        }
-
-        .mode-tag.m2 {
-            background: rgba(224,80,80,0.12);
-            color: var(--red);
-            border: 1px solid rgba(224,80,80,0.2);
-        }
-
-        .mode-tag.m3 {
-            background: rgba(255,255,255,0.05);
-            color: var(--muted);
-            border: 1px solid var(--line2);
-        }
-
-        .result-ts {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--muted);
-            letter-spacing: 0.06em;
-        }
-
-        .result-body { padding: 1.25rem 1.5rem; }
-
-        .station-head {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            gap: 1rem;
-        }
-
-        .station-brand {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.25rem;
-        }
-
-        .station-name {
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1.1;
-            color: var(--text);
-        }
-
-        .station-addr {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--muted);
-            margin-top: 0.3rem;
-        }
-
-        .price-display {
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        .price-label {
-            font-family: var(--mono);
-            font-size: 0.55rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .price-value {
-            font-family: var(--mono);
-            font-size: 1.6rem;
-            font-weight: 500;
-            color: var(--accent);
-            letter-spacing: -0.02em;
-            line-height: 1.1;
-        }
-
-        .price-unit {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--muted);
-        }
-
-        .saving-banner {
-            background: rgba(46,204,138,0.08);
-            border: 1px solid rgba(46,204,138,0.2);
-            border-radius: 6px;
-            padding: 0.875rem 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: baseline;
-            gap: 0.5rem;
-        }
-
-        .saving-amount {
-            font-family: var(--mono);
-            font-size: 1.75rem;
-            font-weight: 500;
-            color: var(--green);
-            letter-spacing: -0.03em;
-        }
-
-        .saving-desc {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: rgba(46,204,138,0.7);
-        }
-
-        .neutral-banner {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            padding: 0.625rem 1rem;
-            margin-bottom: 1rem;
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--muted);
-        }
-
-        .warn-banner {
-            background: rgba(232,160,48,0.08);
-            border: 1px solid rgba(232,160,48,0.2);
-            border-radius: 6px;
-            padding: 0.625rem 1rem;
-            margin-bottom: 1rem;
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--accent);
-        }
-
-        .data-table { margin-bottom: 1rem; }
-
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.55rem 0;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .data-row:last-child { border-bottom: none; }
-
-        .data-key {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--muted);
-            letter-spacing: 0.02em;
-        }
-
-        .data-val {
-            font-family: var(--mono);
-            font-size: 0.82rem;
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .data-val.hi { color: var(--green); }
-        .data-val.lo { color: var(--red); }
-
-        .prices-grid {
-            background: var(--bg3);
-            border-radius: 6px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .prices-grid-label {
-            font-family: var(--mono);
-            font-size: 0.58rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
-        }
-
-        .prices-grid-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .price-chip {
-            background: var(--surface);
-            border: 1px solid var(--line2);
-            border-radius: 4px;
-            padding: 0.3rem 0.6rem;
-            font-family: var(--mono);
-            font-size: 0.65rem;
-            color: var(--text);
-        }
-
-        .price-chip .chip-type {
-            color: var(--muted);
-            margin-right: 0.3rem;
-        }
-
-        .alt-section {
-            border-top: 1px solid var(--line);
-            margin-top: 0.5rem;
-            padding-top: 1rem;
-        }
-
-        .alt-section-label {
-            font-family: var(--mono);
-            font-size: 0.58rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.75rem;
-        }
-
-        .alt-card {
-            background: var(--bg3);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            padding: 0.875rem 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .alt-card:last-child { margin-bottom: 0; }
-
-        .alt-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 0.5rem;
-        }
-
-        .alt-name {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.01em;
-        }
-
-        .alt-addr {
-            font-family: var(--mono);
-            font-size: 0.63rem;
-            color: var(--muted);
-            margin-top: 0.15rem;
-        }
+            width:100%; background:var(--surf); color:var(--text);
+            border:1px solid var(--brd); border-radius:10px;
+            padding:0.75rem 1rem; font-size:0.95rem; outline:none;
+            transition:border-color 0.2s; -webkit-appearance:none; appearance:none;
+        }
+        input:focus, select:focus { border-color:rgba(59,130,246,0.5); }
+        select { cursor:pointer; }
+        select option { background:#0e1525; }
+        small { font-size:0.72rem; color:var(--muted); display:block; margin-top:4px; padding-left:2px; }
+        .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+        /* LOCATION */
+        .loc-row { display:flex; gap:8px; flex-wrap:wrap; }
+        .loc-row input { flex:1; min-width:140px; }
+        .btn-sm { background:var(--surf2); color:var(--acc-b); border:1px solid rgba(59,130,246,0.25); padding:0.75rem 1rem; border-radius:10px; font-size:0.82rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:0.2s; flex-shrink:0; }
+        .btn-sm:hover { background:rgba(59,130,246,0.15); }
+        .btn-detect { background:rgba(59,130,246,0.13); border-color:rgba(59,130,246,0.4); }
+        .loc-status { font-size:0.72rem; color:var(--muted); margin-top:5px; padding-left:2px; }
+        .loc-status.ok  { color:var(--success); }
+        .loc-status.err { color:var(--danger); }
+
+        .comunas-list { max-height:220px; overflow-y:auto; background:var(--surf2); border:1px solid rgba(59,130,246,0.2); border-radius:10px; margin-top:4px; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:10; position:relative; }
+        .com-item { padding:0.6rem 1rem; cursor:pointer; border-bottom:1px solid var(--brd); transition:background 0.15s; }
+        .com-item:last-child { border:none; }
+        .com-item:hover { background:rgba(59,130,246,0.1); }
+        .com-nombre { font-size:0.88rem; font-weight:500; color:var(--text); }
+        .com-region { font-size:0.7rem; color:var(--muted); }
+        .hidden { display:none; }
+
+        /* GAUGE */
+        .gauge-card { background:var(--surf); border:1px solid var(--brd); border-radius:10px; padding:1rem; }
+        .gauge-track { height:5px; background:rgba(255,255,255,0.07); border-radius:3px; margin-bottom:0.875rem; overflow:hidden; }
+        .gauge-fill  { height:100%; width:25%; background:linear-gradient(90deg,#ff6b6b 0%,#f5a623 40%,#3b82f6 100%); border-radius:3px; transition:width 0.35s ease; }
+        .fuel-pills  { display:flex; gap:5px; }
+        .fuel-mark   { flex:1; padding:6px 3px; text-align:center; border-radius:7px; font-size:0.66rem; font-weight:600; background:rgba(255,255,255,0.04); border:1px solid var(--brd); color:var(--muted); cursor:pointer; transition:0.2s; }
+        .fuel-mark.reserva  { background:rgba(255,107,107,0.1); border-color:rgba(255,107,107,0.3); color:#ff9090; }
+        .fuel-mark.selected { background:rgba(59,130,246,0.2); border-color:rgba(59,130,246,0.55); color:var(--acc-b); }
+        .gauge-lbl { text-align:center; font-size:0.72rem; color:var(--muted); margin-top:0.6rem; }
+
+        /* BOTÓN */
+        .eval-btn { width:100%; padding:1rem; background:linear-gradient(135deg,#2563eb,#3b82f6); border:none; border-radius:13px; color:#fff; font-size:1rem; font-weight:700; cursor:pointer; letter-spacing:0.03em; margin-top:0.5rem; margin-bottom:1.25rem; box-shadow:0 0 28px rgba(59,130,246,0.28); transition:0.2s; }
+        .eval-btn:hover:not(:disabled) { box-shadow:0 0 36px rgba(59,130,246,0.42); transform:translateY(-1px); }
+        .eval-btn:disabled { background:#1e2a45; color:var(--muted); box-shadow:none; cursor:not-allowed; }
+
+        /* LOADING */
+        .loading { background:var(--surf); border:1px solid var(--brd); border-radius:18px; padding:2.5rem 1.5rem; text-align:center; color:var(--acc-b); }
+        .ld { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--acc); margin:0 3px; animation:bnc 1.2s infinite; }
+        .ld:nth-child(2){animation-delay:0.2s} .ld:nth-child(3){animation-delay:0.4s}
+        @keyframes bnc{0%,80%,100%{transform:scale(0.7);opacity:0.5}40%{transform:scale(1);opacity:1}}
+
+        /* RESULTADO */
+        .res-card  { background:var(--surf); border:1px solid rgba(59,130,246,0.3); border-radius:20px; overflow:hidden; }
+        .res-head  { background:linear-gradient(135deg,rgba(37,99,235,0.22),rgba(59,130,246,0.08)); padding:1.1rem 1.25rem 1rem; border-bottom:1px solid var(--brd); }
+        .res-badge { display:inline-flex; align-items:center; gap:7px; border-radius:99px; font-size:0.67rem; font-weight:700; padding:3px 11px; margin-bottom:0.75rem; letter-spacing:0.07em; text-transform:uppercase; }
+        .rb-ok   { background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.4); color:var(--acc-b); }
+        .rb-warn { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:var(--warn); }
+        .rb-stop { background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.4); color:var(--danger); }
+        .rb-off  { background:rgba(107,127,168,0.15); border:1px solid rgba(107,127,168,0.3); color:var(--muted); }
+        .bdot { width:6px; height:6px; border-radius:50%; }
+        .bdot.pulse { animation:pls 2s infinite; }
+        @keyframes pls{0%,100%{opacity:1}50%{opacity:0.3}}
+        .st-name { font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:3px; }
+        .st-addr { font-size:0.74rem; color:var(--muted); }
+
+        /* SAVING */
+        .sav-row { display:flex; align-items:center; justify-content:space-between; padding:0.875rem 1.25rem; border-bottom:1px solid var(--brd); background:rgba(59,130,246,0.06); }
+        .sav-lbl  { font-size:0.7rem; color:var(--muted); margin-bottom:2px; }
+        .sav-num  { font-size:1.65rem; font-weight:800; color:var(--acc-b); line-height:1; }
+        .sav-num.pos { color:var(--success); }
+        .sav-note { font-size:0.67rem; color:var(--muted); margin-top:3px; }
+        .pr-num  { font-size:1.65rem; font-weight:800; color:#fff; line-height:1; text-align:right; }
+        .pr-unit { font-size:0.7rem; color:var(--muted); text-align:right; margin-top:3px; }
+
+        /* DATA ROWS */
+        .drows { padding:0.625rem 1.25rem 0.75rem; }
+        .dr { display:flex; justify-content:space-between; align-items:center; padding:0.45rem 0; border-bottom:1px solid var(--brd); font-size:0.84rem; }
+        .dr:last-child { border:none; }
+        .dr-l { color:var(--muted); } .dr-v { color:var(--text); font-weight:600; }
+
+        /* PRECIOS DETALLE */
+        .px-box   { background:var(--surf2); border-top:1px solid var(--brd); padding:0.75rem 1.25rem; }
+        .px-title { font-size:0.67rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; font-weight:700; }
+        .px-chips { display:flex; flex-wrap:wrap; gap:6px; }
+        .px-chip  { background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:7px; padding:4px 9px; font-size:0.75rem; color:var(--text); }
+        .px-chip span { color:var(--acc-b); font-weight:700; }
+
+        /* ALTERNATIVAS */
+        .alts { padding:0 1.25rem 1.125rem; display:flex; flex-direction:column; gap:6px; }
+        .alt-card { background:var(--surf2); border:1px solid var(--brd); border-radius:10px; padding:0.625rem 0.875rem; display:flex; justify-content:space-between; align-items:center; }
+        .alt-ord  { font-size:0.62rem; color:var(--acc-b); font-weight:700; letter-spacing:0.09em; text-transform:uppercase; margin-bottom:2px; }
+        .alt-name { font-size:0.82rem; color:var(--text); font-weight:500; }
+        .alt-addr { font-size:0.7rem; color:var(--muted); margin-top:1px; }
+        .alt-meta { text-align:right; }
+        .alt-pr   { font-size:0.88rem; font-weight:700; color:#fff; }
+        .alt-dist { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+
+        /* MENSAJES */
+        .msg { margin:0.75rem 1.25rem; padding:0.75rem 1rem; border-radius:10px; font-size:0.82rem; line-height:1.5; border-left:3px solid; }
+        .msg-i { background:rgba(59,130,246,0.08); border-color:rgba(59,130,246,0.4); color:#93c5fd; }
+        .msg-w { background:rgba(251,191,36,0.08); border-color:rgba(251,191,36,0.4); color:#fcd34d; }
+        .msg-s { background:rgba(255,107,107,0.08); border-color:rgba(255,107,107,0.4); color:#fca5a5; }
+        .msg-q { background:rgba(107,127,168,0.08); border-color:rgba(107,127,168,0.3); color:var(--muted); }
 
-        .alt-price {
-            font-family: var(--mono);
-            font-size: 1.1rem;
-            color: var(--text);
-            font-weight: 500;
-            text-align: right;
-        }
-
-        .alt-price small {
-            font-size: 0.6rem;
-            color: var(--muted);
-            display: block;
-        }
-
-        .alt-meta {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .alt-chip {
-            font-family: var(--mono);
-            font-size: 0.63rem;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 0.2rem;
-        }
-
-        .alt-chip.pos { color: var(--green); }
-        .alt-chip.neg { color: var(--red); }
-
-        .status-msg {
-            background: rgba(255,255,255,0.03);
-            border-left: 2px solid var(--accent);
-            border-radius: 0 4px 4px 0;
-            padding: 0.75rem 1rem;
-            margin-top: 0.75rem;
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .status-msg.green { border-left-color: var(--green); }
-        .status-msg.red { border-left-color: var(--red); }
+        /* IDLE */
+        .idle { background:var(--surf); border:1px solid var(--brd); border-radius:18px; padding:2rem 1.5rem; text-align:center; color:var(--muted); font-size:0.85rem; line-height:1.6; }
+        .idle-ico { font-size:2rem; margin-bottom:0.75rem; display:block; }
 
-        .loading-state {
-            padding: 3rem 1.5rem;
-            text-align: center;
-        }
-
-        .loading-ring {
-            width: 32px;
-            height: 32px;
-            border: 2px solid var(--line2);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loading-text {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: var(--muted);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .footer {
-            text-align: center;
-            font-family: var(--mono);
-            font-size: 0.58rem;
-            color: rgba(255,255,255,0.15);
-            margin-top: 3rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb {
-            background: var(--line2);
-            border-radius: 2px;
-        }
-
-        @media (max-width: 420px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .station-name { font-size: 1.15rem; }
-            .price-value { font-size: 1.3rem; }
-            .saving-amount { font-size: 1.4rem; }
-        }
+        .footer { text-align:center; font-size:0.64rem; color:var(--muted); margin-top:1.25rem; letter-spacing:0.04em; }
     </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
 
-    <header class="header">
-        <div class="logo-wrap">
-            <img src="data/logo-rst-redondo-blanco-bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⚙️'">
-        </div>
-        <div class="header-text">
-            <h1>En <span>Marcha</span></h1>
-            <p><span class="status-dot"></span>Motor activo RST Chile 2026</p>
-        </div>
-    </header>
-
-    <form id="marchaForm" autocomplete="off">
-        <div class="section">
-            <div class="field-label">Ubicación</div>
-            <div class="autocomplete-wrap">
-                <div class="location-row">
-                    <input type="text" id="locationInput" placeholder="Comuna, ej: Huechuraba, Temuco...">
-                    <button type="button" id="searchBtn" class="btn-icon">Buscar</button>
-                    <button type="button" id="gpsBtn" class="btn-icon primary">GPS</button>
-                </div>
-                <div id="communesDrop" class="communes-drop hidden"></div>
+    <div class="header">
+        <div class="logo-row">
+            <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" class="logo-img" alt="RST Chile"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="logo-fallback">⛽</div>
+            <div>
+                <div class="brand-name">En Marcha</div>
+                <div class="brand-sub">RST Chile · motor de decisión</div>
             </div>
-            <div id="locStatus" class="location-status"></div>
+        </div>
+        <div class="tagline">Calcula dónde conviene cargar · no adivina, evalúa cada opción para ti</div>
+    </div>
+
+    <form id="marchaForm">
+
+        <div class="section">
+            <div class="sec-label">📍 Ubicación</div>
+            <div class="loc-row">
+                <input type="text" id="locationInput" placeholder="Escribe tu comuna..." autocomplete="off">
+                <button type="button" id="searchBtn" class="btn-sm">🔍 Buscar</button>
+                <button type="button" id="gpsBtn" class="btn-sm btn-detect">📍 Detectar</button>
+            </div>
+            <div id="searchResults" class="comunas-list hidden"></div>
+            <div id="locStatus" class="loc-status"></div>
             <input type="hidden" id="lat">
             <input type="hidden" id="lng">
             <input type="hidden" id="comuna">
         </div>
 
-        <div class="divider"></div>
-
         <div class="section">
-            <div class="field-label">Tipo de uso</div>
-            <div class="type-pills">
-                <div class="type-pill selected" data-val="domestic">Doméstico</div>
-                <div class="type-pill" data-val="labor">Laboral</div>
-                <div class="type-pill" data-val="cargo">Carga</div>
-            </div>
-            <input type="hidden" id="contextType" value="domestic">
+            <div class="sec-label">🧭 Dirección de viaje (opcional)</div>
+            <select id="direction">
+                <option value="">📌 No especificar / Estoy en la ciudad</option>
+                <option value="north_to_south">⬇️ Norte → Sur (bajando hacia Santiago)</option>
+                <option value="south_to_north">⬆️ Sur → Norte (subiendo desde Santiago)</option>
+                <option value="east_to_west">⬅️ Este → Oeste</option>
+                <option value="west_to_east">➡️ Oeste → Este</option>
+            </select>
+            <small>Si estás en ruta, indícalo para optimizar la recomendación</small>
         </div>
 
-        <div class="divider"></div>
-
         <div class="section">
-            <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em;">opcional</span></div>
-            <select id="direction">
-                <option value="">Sin especificar</option>
-                <option value="northtosouth">Norte → Sur</option>
-                <option value="southtonorth">Sur → Norte</option>
-                <option value="easttowest">Este → Oeste</option>
-                <option value="westtoeast">Oeste → Este</option>
+            <div class="sec-label">🚗 Tipo de uso</div>
+            <select id="contextType">
+                <option value="domestic">🚘 Doméstico / particular</option>
+                <option value="labor">📱 Laboral (conductor)</option>
+                <option value="cargo">🚛 Transporte de carga (empresa)</option>
             </select>
         </div>
 
-        <div class="divider"></div>
-
         <div class="section">
-            <div class="field-label">Vehículo</div>
-            <div class="grid-2">
-                <div>
-                    <div>Rendimiento km/L</div>
-                    <input type="number" id="kmPerLiter" value="13" min="1" max="40" step="0.5">
-                </div>
-                <div>
-                    <div>Estanque L</div>
-                    <input type="number" id="tankCapacity" value="56" min="10" max="1000" step="1">
-                </div>
+            <div class="sec-label">⛽ Vehículo</div>
+            <div style="margin-bottom:8px;">
+                <input type="number" id="kmPerLiter" value="13" step="0.5" min="1" max="40">
+                <small>Rendimiento — cuántos kilómetros recorres con 1 litro</small>
             </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="section">
-            <div class="field-label">Carga</div>
-            <div class="grid-2">
+            <div class="row-2">
                 <div>
-                    <div>Combustible</div>
-                    <select id="fuelType">
-                        <option value="diesel">Diesel</option>
-                        <option value="gas93">Gasolina 93</option>
-                        <option value="gas95">Gasolina 95</option>
-                        <option value="gas97">Gasolina 97</option>
-                    </select>
+                    <input type="number" id="tankCapacity" value="56" step="1" min="10" max="1000">
+                    <small>Capacidad estanque (L)</small>
                 </div>
                 <div>
-                    <div>Presupuesto hoy</div>
                     <input type="number" id="budget" value="50000" min="1">
+                    <small>Presupuesto hoy ($)</small>
                 </div>
             </div>
         </div>
-
-        <div class="divider"></div>
 
         <div class="section">
-            <div class="field-label">Nivel del estanque</div>
-            <div class="gauge-wrap">
-                <div class="gauge-track">
-                    <div class="gauge-fill" id="gaugeFill"></div>
+            <div class="sec-label">🛢️ Nivel del estanque</div>
+            <div class="gauge-card">
+                <div class="gauge-track"><div class="gauge-fill" id="gFill"></div></div>
+                <div class="fuel-pills">
+                    <div class="fuel-mark reserva" data-pct="5">🔴</div>
+                    <div class="fuel-mark" data-pct="12.5">Mín</div>
+                    <div class="fuel-mark" data-pct="25">1/4</div>
+                    <div class="fuel-mark" data-pct="50">1/2</div>
+                    <div class="fuel-mark" data-pct="75">3/4</div>
+                    <div class="fuel-mark" data-pct="100">Lleno</div>
                 </div>
-                <div class="gauge-marks">
-                    <div class="gauge-mark" data-pct="5">Reserva</div>
-                    <div class="gauge-mark" data-pct="12.5">Min.</div>
-                    <div class="gauge-mark selected" data-pct="25">1/4</div>
-                    <div class="gauge-mark" data-pct="50">1/2</div>
-                    <div class="gauge-mark" data-pct="75">3/4</div>
-                    <div class="gauge-mark" data-pct="100">Lleno</div>
-                </div>
-                <div class="gauge-label" id="gaugeLabel">25%</div>
-                <input type="hidden" id="fuelLevel" value="25">
+                <div class="gauge-lbl" id="gLbl">Nivel: 1/4 (25%)</div>
             </div>
+            <input type="hidden" id="fuelLevel" value="25">
         </div>
 
-        <button type="submit" class="btn-main" id="submitBtn"><span>Evaluar ahora</span></button>
+        <div class="section">
+            <div class="sec-label">⛽ Combustible</div>
+            <select id="fuelType">
+                <option value="diesel">Diesel</option>
+                <option value="gas93">Gasolina 93</option>
+                <option value="gas95">Gasolina 95</option>
+                <option value="gas97">Gasolina 97</option>
+            </select>
+        </div>
+
+        <button type="submit" class="eval-btn" id="submitBtn">Evaluar ahora →</button>
     </form>
 
-    <div class="result-wrap" id="resultWrap">
-        <div class="result-placeholder">
-            <span class="big">◌</span>
-            Ingresa tu ubicación y presiona evaluar
+    <div id="resultArea">
+        <div class="idle">
+            <span class="idle-ico">⛽</span>
+            Ingresa tu comuna o presiona <strong style="color:var(--acc-b)">Detectar</strong><br>
+            <span style="font-size:0.78rem;">La app analizará estaciones reales en tu zona</span>
         </div>
     </div>
 
-    <div class="footer">Marcha motor de decisión RST Chile 2026 · datos API real</div>
+    <div class="footer">Marcha · motor de decisión · RST Chile 2026</div>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
+// ── COMUNAS
+let clist = [];
+fetch('/data/comunas-completo.json').then(r=>r.json()).then(d=>{ clist = d.comunas||[]; }).catch(()=>{});
 
-function fmt(n) {
-    return Math.floor(Number(n || 0)).toLocaleString('es-CL');
+// ── DOM
+const locInput  = document.getElementById('locationInput');
+const srResults = document.getElementById('searchResults');
+const latI      = document.getElementById('lat');
+const lngI      = document.getElementById('lng');
+const comI      = document.getElementById('comuna');
+const locSt     = document.getElementById('locStatus');
+const gFill     = document.getElementById('gFill');
+const fuelLvlI  = document.getElementById('fuelLevel');
+const gLbl      = document.getElementById('gLbl');
+const submitBtn = document.getElementById('submitBtn');
+const resultArea= document.getElementById('resultArea');
+
+// ── GAUGE
+function setLevel(pct) {
+    fuelLvlI.value = pct;
+    gFill.style.width = pct+'%';
+    const labels=[[5,'Reserva'],[12.5,'Mínimo'],[25,'1/4'],[50,'1/2'],[75,'3/4'],[101,'Lleno']];
+    gLbl.textContent = 'Nivel: '+(labels.find(([p])=>pct<=p)||[0,'Lleno'])[1]+' ('+pct+'%)';
+    document.querySelectorAll('.fuel-mark').forEach(m=>
+        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct)-pct)<0.1));
+}
+document.querySelectorAll('.fuel-mark').forEach(m=>m.addEventListener('click',()=>setLevel(parseFloat(m.dataset.pct))));
+setLevel(25);
+
+// ── BUSQUEDA
+function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function buscar(q) {
+    if(!q||q.length<2||!clist.length){ srResults.classList.add('hidden'); return; }
+    const nq=norm(q);
+    const m=clist.filter(c=>norm(c.nombre).includes(nq)||norm(c.region).includes(nq))
+        .sort((a,b)=>{ const as=norm(a.nombre).startsWith(nq),bs=norm(b.nombre).startsWith(nq); return as===bs?0:as?-1:1; })
+        .slice(0,10);
+    if(!m.length){ srResults.classList.add('hidden'); return; }
+    srResults.innerHTML=m.map(c=>`<div class="com-item" data-n="${c.nombre}" data-r="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}"><div class="com-nombre">${c.nombre}</div><div class="com-region">${c.region}</div></div>`).join('');
+    srResults.classList.remove('hidden');
+    srResults.querySelectorAll('.com-item').forEach(el=>el.addEventListener('click',()=>elegir(el.dataset)));
 }
 
-function norm(s) {
-    return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function elegir(d){
+    latI.value=d.lat; lngI.value=d.lng; comI.value=d.n;
+    locInput.value=d.n+', '+d.r;
+    locSt.textContent='✓ '+d.n+', '+d.r; locSt.className='loc-status ok';
+    srResults.classList.add('hidden');
 }
 
-function setLocStatus(msg, type='') {
-    const el = $('locStatus');
-    el.textContent = msg;
-    el.className = `location-status ${type || ''}`;
-}
+locInput.addEventListener('input',e=>buscar(e.target.value));
+document.getElementById('searchBtn').addEventListener('click',()=>buscar(locInput.value));
+document.addEventListener('click',e=>{ if(!locInput.contains(e.target)&&!srResults.contains(e.target)) srResults.classList.add('hidden'); });
 
-function now() {
-    return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-}
-
-let comunasList = [];
-fetch('/api/comunas-list')
-    .then(r => r.json())
-    .then(d => comunasList = d.comunas || [])
-    .catch(() => {});
-
-function searchComunas(q) {
-    if (!q || q.length < 2) return [];
-    const qn = norm(q);
-    return comunasList
-        .filter(c => norm(c.nombre).includes(qn) || norm(c.region).includes(qn))
-        .sort((a,b) => {
-            const as = norm(a.nombre).startsWith(qn);
-            const bs = norm(b.nombre).startsWith(qn);
-            if (as && !bs) return -1;
-            if (!as && bs) return 1;
-            return norm(a.nombre).localeCompare(norm(b.nombre));
-        })
-        .slice(0, 8);
-}
-
-function showDrop(results) {
-    const drop = $('communesDrop');
-    if (!results.length) {
-        drop.classList.add('hidden');
-        return;
-    }
-    drop.innerHTML = results.map(c => `
-        <div class="commune-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
-            <div class="commune-name">${c.nombre}</div>
-            <div class="commune-region">${c.region}</div>
-        </div>
-    `).join('');
-    drop.classList.remove('hidden');
-    drop.querySelectorAll('.commune-item').forEach(el => {
-        el.addEventListener('click', () => selectComune({
-            nombre: el.dataset.nombre,
-            region: el.dataset.region,
-            lat: el.dataset.lat,
-            lng: el.dataset.lng
-        }));
-    });
-}
-
-function selectComune(c) {
-    $('lat').value = c.lat;
-    $('lng').value = c.lng;
-    $('comuna').value = c.nombre;
-    $('locationInput').value = c.nombre;
-    setLocStatus(`${c.nombre}, ${c.region}`);
-    $('communesDrop').classList.add('hidden');
-    $('submitBtn').disabled = false;
-}
-
-$('locationInput').addEventListener('input', e => showDrop(searchComunas(e.target.value)));
-
-$('searchBtn').addEventListener('click', () => {
-    const r = searchComunas($('locationInput').value);
-    showDrop(r);
-    if (!r.length && $('locationInput').value.length >= 2) {
-        setLocStatus('No encontrada. Revisa el nombre.', 'warn');
-    }
-});
-
-document.addEventListener('click', e => {
-    if (!$('locationInput').contains(e.target) && !$('communesDrop').contains(e.target)) {
-        $('communesDrop').classList.add('hidden');
-    }
-});
-
-$('gpsBtn').addEventListener('click', () => {
-    setLocStatus('Obteniendo ubicación...');
-    if (!navigator.geolocation) {
-        setLocStatus('GPS no disponible. Busca manualmente.', 'err');
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(async pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        $('lat').value = lat;
-        $('lng').value = lng;
-        setLocStatus('Detectando comuna...');
-
+// ── GPS
+document.getElementById('gpsBtn').addEventListener('click',()=>{
+    locSt.textContent='Obteniendo ubicación...'; locSt.className='loc-status';
+    if(!navigator.geolocation){ locSt.textContent='❌ Sin soporte GPS'; locSt.className='loc-status err'; return; }
+    navigator.geolocation.getCurrentPosition(async pos=>{
+        const {latitude:lat,longitude:lng}=pos.coords;
+        latI.value=lat; lngI.value=lng;
+        locSt.textContent='Detectando comuna...';
         try {
-            const res = await fetch('/api/detect-commune', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lat, lng })
-            });
-            const d = await res.json();
-            if (d.ok && d.commune) {
-                selectComune({
-                    nombre: d.commune.nombre,
-                    region: d.commune.region,
-                    lat,
-                    lng
-                });
-                setLocStatus(`${d.commune.nombre}, ${d.commune.region} · ${d.distancekm?.toFixed(1)} km`);
-            } else {
-                throw new Error(d.message || 'No detectado');
-            }
-        } catch (e) {
-            setLocStatus(`GPS: ${e.message}. Busca manualmente.`, 'warn');
-        }
-        $('submitBtn').disabled = false;
-    }, err => {
-        const msgs = {
-            1: 'Acceso denegado.',
-            2: 'No disponible.',
-            3: 'Tiempo agotado.'
-        };
-        setLocStatus(`${msgs[err.code] || 'Error GPS'}. Busca manualmente.`, 'err');
-    }, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-    });
+            const r=await fetch('/api/detect-commune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng})});
+            const d=await r.json();
+            if(d.ok&&d.commune){
+                elegir({n:d.commune.nombre,r:d.commune.region,lat,lng});
+                locSt.textContent='✓ '+d.commune.nombre+', '+d.commune.region+' (a '+(d.distance_km||0).toFixed(1)+'km)';
+                locSt.className='loc-status ok';
+            } else throw new Error(d.message||'Sin datos');
+        } catch(e){ locSt.textContent='⚠ '+e.message+' — Busca manualmente'; locSt.className='loc-status err'; }
+    }, err=>{
+        const m=['','Permite el acceso.','Servicio no disponible.','Tiempo agotado.'];
+        locSt.textContent='❌ '+(m[err.code]||'Error')+' Busca manualmente.'; locSt.className='loc-status err';
+    },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 });
 
-document.querySelectorAll('.type-pill').forEach(p => p.addEventListener('click', () => {
-    document.querySelectorAll('.type-pill').forEach(x => x.classList.remove('selected'));
-    p.classList.add('selected');
-    $('contextType').value = p.dataset.val;
-}));
-
-function setGauge(pct) {
-    $('fuelLevel').value = pct;
-    $('gaugeFill').style.width = pct + '%';
-    $('gaugeLabel').textContent = pct + '%';
-    document.querySelectorAll('.gauge-mark').forEach(m => {
-        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct) - pct) < 0.1);
-    });
-}
-
-document.querySelectorAll('.gauge-mark').forEach(m => {
-    m.addEventListener('click', () => setGauge(parseFloat(m.dataset.pct)));
-});
-setGauge(25);
-
-$('marchaForm').addEventListener('submit', async e => {
+// ── SUBMIT
+document.getElementById('marchaForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    const lat = parseFloat($('lat').value);
-    const lng = parseFloat($('lng').value);
-    const comuna = $('comuna').value;
-    if (isNaN(lat) || isNaN(lng) || !comuna) {
-        setLocStatus('Selecciona una comuna válida.', 'err');
-        return;
-    }
-
-    $('resultWrap').innerHTML = `
-        <div class="result-card">
-            <div class="loading-state">
-                <div class="loading-ring"></div>
-                <div class="loading-text">Evaluando estaciones · calculando decisión</div>
-            </div>
-        </div>`;
-
-    $('submitBtn').disabled = true;
-
-    const kmL = parseFloat($('kmPerLiter').value);
-    const payload = {
-        userProfile: {
-            context_type: $('contextType').value,
-            fuel_consumption: 100 / kmL,
-            tank_capacity: parseFloat($('tankCapacity').value),
-            current_level_pct: parseFloat($('fuelLevel').value),
-            budget_today: parseFloat($('budget').value),
-            convenio_discount: 0
+    const lat=parseFloat(latI.value), lng=parseFloat(lngI.value), com=comI.value;
+    if(isNaN(lat)||isNaN(lng)||!com){ resultArea.innerHTML='<div class="idle" style="color:#fca5a5;">❌ Selecciona una comuna válida o usa Detectar</div>'; return; }
+    resultArea.innerHTML='<div class="loading"><div style="margin-bottom:1rem;font-size:0.9rem;">Analizando estaciones en tu zona</div><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
+    submitBtn.disabled=true; submitBtn.textContent='Evaluando...';
+    const kmL=parseFloat(document.getElementById('kmPerLiter').value);
+    const payload={
+        userProfile:{
+            context_type:document.getElementById('contextType').value,
+            fuel_consumption:100/kmL,
+            tank_capacity:parseFloat(document.getElementById('tankCapacity').value),
+            current_level_pct:parseFloat(document.getElementById('fuelLevel').value),
+            budget_today:parseFloat(document.getElementById('budget').value),
         },
-        context: {
-            user_lat: lat,
-            user_lon: lng,
-            fuel_type: $('fuelType').value,
-            comuna: comuna.replace(/Llay\\-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay'),
-            direction: $('direction').value,
-            is_urban_peak: false,
-            toll_estimate: 0
+        context:{
+            user_lat:lat,user_lon:lng,
+            fuel_type:document.getElementById('fuelType').value,
+            comuna:com.replace(/Llay-Llay/i,'Llaillay').replace(/Llay Llay/i,'Llaillay'),
+            direction:document.getElementById('direction').value,
+            is_urban_peak:false,toll_estimate:0,
         }
     };
-
     try {
-        const res = await fetch('/api/decide-v2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        render(data.result || data);
-    } catch(err) {
-        $('resultWrap').innerHTML = `
-            <div class="result-card">
-                <div class="result-body">
-                    <div class="status-msg red">Error de conexión: ${err.message}</div>
-                </div>
-            </div>`;
-    } finally {
-        $('submitBtn').disabled = false;
-    }
+        const r=await fetch('/api/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!r.ok) throw new Error('Error '+r.status);
+        const d=await r.json();
+        render(d.result||d);
+    } catch(err){ resultArea.innerHTML='<div class="idle" style="color:#fca5a5;">⚠ No se pudo conectar. Intenta de nuevo.</div>'; }
+    finally { submitBtn.disabled=false; submitBtn.textContent='Evaluar ahora →'; }
 });
 
-function render(data) {
-    const mode = data.mode ?? 0;
-    const modeMap = {
-        0: ['Recomendación activa', 'm0'],
-        1: ['Datos inciertos',      'm1'],
-        2: ['Sin ahorro disponible','m2'],
-        3: ['Sin datos',            'm3'],
+// ── RENDER
+function fmt(n){ return Math.floor(n).toLocaleString('es-CL'); }
+
+function render(data){
+    const mode=data.mode;
+    const bCfg={
+        0:['rb-ok','bdot pulse','Recomendación activa'],
+        1:['rb-warn','bdot','Datos inciertos'],
+        2:['rb-stop','bdot','Mejor no cargar ahora'],
+        3:['rb-off','bdot','Sin datos suficientes'],
     };
-    const [modeLabel, modeClass] = modeMap[mode] || modeMap[3];
-    const meta = data.meta || {};
+    const [bc,dc,bt]=bCfg[mode]||bCfg[3];
+    let h=`<div class="res-card"><div class="res-head"><div class="res-badge ${bc}"><div class="${dc}"></div>${bt}</div>`;
 
-    const pickStation = (x) => x?.station || {};
-    const fmtKm = (n) => Number(n || 0).toFixed(1);
+    if(data.recommendation){
+        const rec=data.recommendation, st=rec.station||{};
+        const price=rec.display_price||0, liters=rec.display_liters||0;
+        const dist=rec.display_distance_km||0, total=rec.display_total_cost||Math.floor(price*liters);
+        const netSave=Math.floor(rec.net_saving||rec._net_saving||0);
+        const refPrice=rec.display_reference_price||price, savPL=refPrice-price;
 
-    let html = `<div class="result-card">
-        <div class="result-header">
-            <span class="mode-tag ${modeClass}">${modeLabel}</span>
-            <span class="result-ts">${now()}</span>
-        </div>
-        <div class="result-body">`;
+        h+=`<div class="st-name">⛽ ${st.nombre||rec.station_name||'Estación'}</div>`;
+        if(st.direccion) h+=`<div class="st-addr">📍 ${st.direccion}${st.comuna?', '+st.comuna:''}</div>`;
+        h+=`</div>`;
 
-    if (mode === 0 && data.recommendation) {
-        const rec = data.recommendation;
-        const st = pickStation(rec);
-        const price = rec.display_price || 0;
-        const liters = rec.display_liters || 0;
-        const dist = rec.display_distance_km || 0;
-        const total = rec.display_total_cost || Math.floor(price * liters);
-        const netSave = Math.floor(rec.net_saving || 0);
-        const refPr = rec.display_reference_price || price;
-        const savPL = refPr - price;
-
-        html += `<div class="station-head">
+        h+=`<div class="sav-row">
             <div>
-                <div class="station-brand">${st.marca || '—'}</div>
-                <div class="station-name">${st.nombre || 'Estación'}</div>
-                ${st.direccion ? `<div class="station-addr">${st.direccion}${st.comuna ? ', ' + st.comuna : ''}</div>` : ''}
+                <div class="sav-lbl">Ahorro estimado en esta carga</div>
+                <div class="sav-num${savPL>0?' pos':''}">$${fmt(netSave>0?netSave:0)}</div>
+                <div class="sav-note">${savPL>0?'$'+fmt(savPL)+'/L menos que el promedio ($'+fmt(refPrice)+'/L)':savPL<0?'$'+fmt(Math.abs(savPL))+'/L sobre el promedio':'sin diferencial en la zona hoy'}</div>
             </div>
-            <div class="price-display">
-                <div class="price-label">Precio</div>
-                <div class="price-value">$${fmt(price)}</div>
-                <div class="price-unit">por litro</div>
-            </div>
+            <div><div class="pr-num">$${fmt(price)}</div><div class="pr-unit">por litro</div></div>
         </div>`;
 
-        if (savPL > 0) {
-            html += `<div class="saving-banner">
-                <div class="saving-amount">$${fmt(savPL)}/L</div>
-                <div class="saving-desc">bajo el promedio de la zona ($${fmt(refPr)}/L)</div>
-            </div>`;
-        } else if (savPL < 0) {
-            html += `<div class="warn-banner">$${fmt(Math.abs(savPL))}/L sobre el promedio · no es la más barata</div>`;
-        } else {
-            html += `<div class="neutral-banner">Precio igual al promedio · no hay diferencial entre estaciones cercanas hoy</div>`;
-        }
-
-        html += `<div class="data-table">
-            <div class="data-row"><span class="data-key">Carga recomendada</span><span class="data-val">${liters.toFixed(1)} L</span></div>
-            <div class="data-row"><span class="data-key">Costo total</span><span class="data-val">$${fmt(total)}</span></div>
-            <div class="data-row"><span class="data-key">Ahorro estimado</span><span class="data-val ${netSave >= 0 ? 'hi' : 'lo'}">${netSave >= 0 ? '$' + fmt(netSave) : 'sin diferencial disponible'}</span></div>
-            <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${fmtKm(dist)} km</span></div>
-            <div class="data-row"><span class="data-key">Precio ref. zona</span><span class="data-val">$${fmt(refPr)}</span></div>
+        h+=`<div class="drows">
+            <div class="dr"><span class="dr-l">Carga recomendada</span><span class="dr-v">${liters.toFixed(1)} L</span></div>
+            <div class="dr"><span class="dr-l">Costo total</span><span class="dr-v">$${fmt(total)}</span></div>
+            <div class="dr"><span class="dr-l">Distancia</span><span class="dr-v">${dist>0?dist.toFixed(1)+' km':'En tu ruta'}</span></div>
         </div>`;
 
-        if (st.precios_detalle && st.precios_detalle.length > 0) {
-            const deduped = {};
-            for (const p of st.precios_detalle) {
-                const k = String(p.tipo || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (!deduped[k] || p.precio < deduped[k].precio) deduped[k] = p;
-            }
-            const unique = Object.values(deduped).sort((a,b) => a.precio - b.precio);
-            html += `<div class="prices-grid"><div class="prices-grid-label">Todos los precios en esta estación</div><div class="prices-grid-items">`;
-            for (const p of unique) {
-                html += `<div class="price-chip"><span class="chip-type">${p.tipo}</span>$${fmt(p.precio)}</div>`;
-            }
-            html += `</div></div>`;
+        if(st.precios_detalle&&st.precios_detalle.length){
+            const dd={};
+            for(const p of st.precios_detalle){ const k=p.tipo.toLowerCase().replace(/[^a-z0-9]/g,''); if(!dd[k]||p.precio<dd[k].precio) dd[k]=p; }
+            const up=Object.values(dd).sort((a,b)=>a.precio-b.precio);
+            h+=`<div class="px-box"><div class="px-title">Todos los precios en esta estación</div><div class="px-chips">`;
+            for(const p of up) h+=`<div class="px-chip">${p.tipo} <span>$${fmt(p.precio)}</span></div>`;
+            h+=`</div></div>`;
         }
 
-        const allAlternatives = Array.isArray(data.alternatives) ? data.alternatives.filter(Boolean) : [];
-        if (allAlternatives.length > 0) {
-            html += `<div class="alt-section"><div class="alt-section-label">Otras opciones evaluadas</div>`;
-            const labels = ['SEGUNDA OPCIÓN', 'TERCERA OPCIÓN'];
-            allAlternatives.slice(0, 2).forEach((alt, i) => {
-                const ast = pickStation(alt);
-                const ap = alt.display_price || 0;
-                const ad = alt.display_distance_km || 0;
-                const asave = Math.floor(alt.net_saving || 0);
-                const asavPL = refPr - ap;
-                html += `<div class="alt-card">
-                    <div class="alt-header">
-                        <div>
-                            <div class="alt-name">${labels[i] || 'OPCIÓN'}</div>
-                            <div class="alt-addr">${ast.nombre || 'Estación'}${ast.direccion ? ' · ' + ast.direccion : ''}</div>
-                        </div>
-                        <div class="alt-price">$${fmt(ap)}<small>/L · ${fmtKm(ad)} km</small></div>
+        const alts=data.alternatives||(data.alternative?[data.alternative]:[]);
+        if(alts.length){
+            h+=`<div class="alts">`;
+            alts.slice(0,2).forEach((alt,i)=>{
+                const as=alt.station||{}, ap=alt.display_price||0, ad=alt.display_distance_km||0;
+                const aspl=refPrice-ap;
+                h+=`<div class="alt-card">
+                    <div>
+                        <div class="alt-ord">${i===0?'Segunda':'Tercera'} opción</div>
+                        <div class="alt-name">⛽ ${as.nombre||alt.station_name||'Estación'}</div>
+                        ${as.direccion?`<div class="alt-addr">📍 ${as.direccion}</div>`:''}
                     </div>
                     <div class="alt-meta">
-                        <span class="alt-chip">${ast.comuna || ''}</span>
-                        <span class="alt-chip ${asavPL >= 0 ? 'pos' : 'neg'}">${asavPL >= 0 ? '$' + fmt(asavPL) + '/L' : '$' + fmt(Math.abs(asavPL)) + '/L'}</span>
-                        <span class="alt-chip ${asave >= 0 ? 'pos' : 'neg'}">Ahorro ${asave >= 0 ? '$' + fmt(asave) : '$' + fmt(Math.abs(asave))}</span>
+                        <div class="alt-pr">$${fmt(ap)} /L</div>
+                        <div class="alt-dist">${ad>0?ad.toFixed(1)+' km':'cerca'}${aspl>0?' · -$'+fmt(aspl)+'/L':aspl<0?' · +$'+fmt(Math.abs(aspl))+'/L':''}</div>
                     </div>
                 </div>`;
             });
-            html += `</div>`;
+            h+=`</div>`;
         }
-
-        if (meta.reference_price) {
-            html += `<div class="status-msg green">Referencia usada: $${fmt(meta.reference_price)} · Litros necesarios: ${Number(meta.liters_needed || liters).toFixed(1)} L</div>`;
-        }
-    } else if (data.message) {
-        html += `<div class="status-msg red">${data.message}</div>`;
     } else {
-        html += `<div class="status-msg red">No se pudo calcular una recomendación.</div>`;
+        h+=`</div>`;
     }
 
-    html += `</div></div>`;
-    $('resultWrap').innerHTML = html;
+    if(data.message) h+=`<div class="msg msg-i">💬 ${data.message}</div>`;
+    if(mode===1) h+=`<div class="msg msg-w">🔍 Precios no verificados hoy. El motor declara incertidumbre antes de darte datos incorrectos.</div>`;
+    if(mode===2){
+        h+=`<div class="msg msg-s">📉 El ahorro no justifica desviarte ahora. Sigue tu ruta.</div>`;
+        const al2=data.alternatives||(data.alternative?[data.alternative]:[]);
+        if(al2.length){
+            h+=`<div class="alts" style="padding-top:0;">`;
+            al2.slice(0,2).forEach((alt,i)=>{
+                const as=alt.station||{}, ap=alt.display_price||0, ad=alt.display_distance_km||0;
+                h+=`<div class="alt-card"><div><div class="alt-ord">${i===0?'Segunda':'Tercera'} opción</div><div class="alt-name">⛽ ${as.nombre||alt.station_name||'Estación'}</div></div><div class="alt-meta"><div class="alt-pr">$${fmt(ap)} /L</div><div class="alt-dist">${ad>0?ad.toFixed(1)+' km':'cerca'}</div></div></div>`;
+            });
+            h+=`</div>`;
+        }
+    }
+    if(mode===3) h+=`<div class="msg msg-q">🧭 No hay estaciones en esta zona. Intenta con una comuna cercana.</div>`;
+
+    h+=`</div>`;
+    resultArea.innerHTML=h;
 }
 </script>
 </body>
