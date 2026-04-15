@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated_at": "2026-04-15T22:54:18.216Z",
-    "total_comunas": 310,
-    "total_stations": 1785,
+    "generated_at": "2026-04-15T23:05:15.122Z",
+    "total_comunas": 312,
+    "total_stations": 1784,
     "id_range": "1-6000",
     "ids_checked": 6000,
     "source": "API BencinaEnLinea - Real-time"
@@ -3676,6 +3676,11 @@
           "marca": 54
         },
         {
+          "id": 707,
+          "nombre": "Marca-54",
+          "marca": 54
+        },
+        {
           "id": 2200,
           "nombre": "Marca-54",
           "marca": 54
@@ -3691,6 +3696,69 @@
           "id": 709,
           "nombre": "Shell",
           "marca": 10
+        }
+      ]
+    },
+    "Maule": {
+      "region": "Del Maule",
+      "lat": -35.53159759278616,
+      "lon": -71.68772220611572,
+      "stations": [
+        {
+          "id": 710,
+          "nombre": "Copec",
+          "marca": 5
+        }
+      ]
+    },
+    "Pencahue": {
+      "region": "Del Maule",
+      "lat": -35.39336190577475,
+      "lon": -71.80319666862488,
+      "stations": [
+        {
+          "id": 714,
+          "nombre": "Shell",
+          "marca": 10
+        }
+      ]
+    },
+    "Río Claro": {
+      "region": "Del Maule",
+      "lat": -35.282179,
+      "lon": -71.259902,
+      "stations": [
+        {
+          "id": 716,
+          "nombre": "Marca-54",
+          "marca": 54
+        }
+      ]
+    },
+    "San Clemente": {
+      "region": "Del Maule",
+      "lat": -35.6380962,
+      "lon": -71.26304970000001,
+      "stations": [
+        {
+          "id": 717,
+          "nombre": "Copec",
+          "marca": 5
+        },
+        {
+          "id": 719,
+          "nombre": "Marca-25",
+          "marca": 25
+        },
+        {
+          "id": 720,
+          "nombre": "Marca-46",
+          "marca": 46
+        },
+        {
+          "id": 2235,
+          "nombre": "Copec",
+          "marca": 5
         }
       ]
     },
@@ -4374,73 +4442,11 @@
         }
       ]
     },
-    "Yerbas Buenas": {
-      "region": "Del Maule",
-      "lat": -35.74458785136485,
-      "lon": -71.58520817756653,
-      "stations": [
-        {
-          "id": 853,
-          "nombre": "Marca-78",
-          "marca": 78
-        }
-      ]
-    },
     "Concepción": {
       "region": "Del Biobío",
-      "lat": -36.8050637,
-      "lon": -73.0492407,
+      "lat": -36.80916444372844,
+      "lon": -73.03368419408798,
       "stations": [
-        {
-          "id": 854,
-          "nombre": "Abastible",
-          "marca": 23
-        },
-        {
-          "id": 857,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 858,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 861,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 862,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 863,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 864,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 865,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 866,
-          "nombre": "Copec",
-          "marca": 5
-        },
-        {
-          "id": 868,
-          "nombre": "Copec",
-          "marca": 5
-        },
         {
           "id": 873,
           "nombre": "Esmax",
@@ -6559,6 +6565,21 @@
           "id": 1256,
           "nombre": "Esmax",
           "marca": 151
+        },
+        {
+          "id": 1257,
+          "nombre": "Esmax",
+          "marca": 151
+        },
+        {
+          "id": 1258,
+          "nombre": "Marca-69",
+          "marca": 69
+        },
+        {
+          "id": 1260,
+          "nombre": "ENEX",
+          "marca": 4
         },
         {
           "id": 1261,
@@ -11088,18 +11109,6 @@
           "id": 2226,
           "nombre": "Marca-175",
           "marca": 175
-        }
-      ]
-    },
-    "San Clemente": {
-      "region": "Del Maule",
-      "lat": -35.5233965402205,
-      "lon": -71.50881921917775,
-      "stations": [
-        {
-          "id": 2235,
-          "nombre": "Copec",
-          "marca": 5
         }
       ]
     }
