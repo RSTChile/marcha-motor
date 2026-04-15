@@ -1,16 +1,12 @@
 {
   "name": "marcha-motor",
-  "version": "0.4.0",
-  "description": "Motor de decisión para optimización de recarga de combustible",
-  "main": "src/engine.js",
+  "version": "1.0.0",
+  "description": "Motor Marcha",
+  "main": "server.js",
   "scripts": {
-    "test": "node tests/engine.test.js",
-    "crawl": "node src/crawler.js",
-    "crawl:test": "node src/crawler.js --test 10",
-    "crawl:update": "node src/crawler.js --update"
+    "start": "node server.js"
   },
-  "keywords": ["fuel", "optimization", "decision-engine"],
-  "author": "RMD 2.0",
-  "license": "UNLICENSED",
-  "private": true
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
