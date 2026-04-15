@@ -41,6 +41,9 @@ const THRESHOLDS = {
   
   // Estanque lleno (no recomendar carga)
   tank_full_threshold: 80,  // porcentaje
+  
+  // Límite máximo de ahorro por litro (para evitar precios irreales)
+  max_saving_per_liter: 150,  // CLP - máximo ahorro realista por litro
 };
 
 // ===============================
@@ -70,35 +73,82 @@ function distanceMeters(lat1, lon1, lat2, lon2) {
 // DATA QUALITY (INR proxy)
 // ===============================
 
-function computeDataQuality(station) {
-  let maxAge = THRESHOLDS.max_age_semi;
-  if (station.zone_type === 'urban') maxAge = THRESHOLDS.max_age_urban;
-  if (station.zone_type === 'rural') maxAge = THRESHOLDS.max_age_rural;
-  
-  const minReports = station.zone_type === 'urban'
+function dataQuality(ageMinutes, reportCount, zoneType = 'urban') {
+  const maxAge = zoneType === 'urban'  ? THRESHOLDS.max_age_urban :
+                 zoneType === 'semi'   ? THRESHOLDS.max_age_semi  :
+                                        THRESHOLDS.max_age_rural;
+  const minReports = zoneType === 'urban'
     ? THRESHOLDS.min_reports_urban
     : THRESHOLDS.min_reports_other;
-  
-  const ageFactor = Math.exp(-station.data_age_minutes / maxAge);
-  const repFactor = Math.min(station.report_count, minReports) / minReports;
-  
-  let score = (ageFactor * 0.7) + (repFactor * 0.3);
-  return Math.max(0, Math.min(1, Math.round(score * 100) / 100));
+
+  const ageFactor  = Math.exp(-ageMinutes / maxAge);
+  const repFactor  = Math.min(reportCount, minReports) / minReports;
+  return Math.round((ageFactor * 0.7 + repFactor * 0.3) * 100) / 100;
 }
 
 // ===============================
-// UMBRAL DINÁMICO DE AHORRO
+// COSTO DEL DESVÍO
 // ===============================
 
-function getDynamicThreshold(user, litersToLoad, referencePrice) {
-  if (user.context_type === 'cargo') {
-    const totalCost = litersToLoad * (referencePrice || 1100);
+function devourCost(deviationMeters, fuelConsumption, fuelPrice, tollEstimate = 0) {
+  const liters = (deviationMeters / 1000) * (fuelConsumption / 100);
+  return Math.round(liters * fuelPrice + tollEstimate);
+}
+
+// ===============================
+// FACTOR DE DESVÍO SEGÚN CONTEXTO
+// ===============================
+
+function deviationFactor(contextType, leavesMainRoute) {
+  if (contextType === 'cargo' && !leavesMainRoute) return 1.0;
+  if (contextType === 'labor') return 1.5;
+  return 2.0;
+}
+
+// ===============================
+// UMBRAL MÍNIMO DE AHORRO
+// ===============================
+
+function getMinNetSaving(contextType, litersNeeded, referencePrice) {
+  if (contextType === 'cargo') {
+    const totalCost = litersNeeded * (referencePrice || 1100);
     return Math.max(
       THRESHOLDS.min_net_saving_cargo_min,
       totalCost * (THRESHOLDS.min_net_saving_cargo_k / 1000)
     );
   }
-  return THRESHOLDS.min_net_saving_base;
+  return THRESHOLDS.min_net_saving;
+}
+
+// ===============================
+// PENALIZACIÓN POR COMPLEJIDAD
+// ===============================
+
+function complexityPenalty(deviationMeters, leavesMainRoute, urbanPeak, contextType = 'domestic') {
+  if (urbanPeak) return contextType === 'cargo' ? 0.40 : THRESHOLDS.complexity_urban;
+  if (leavesMainRoute) return contextType === 'cargo' ? 0.20 : THRESHOLDS.complexity_exit;
+  if (deviationMeters > 2000) return contextType === 'cargo' ? 0.15 : THRESHOLDS.complexity_exit;
+  return 0;
+}
+
+// ===============================
+// PRECIO DE REFERENCIA (mediana de precios cercanos)
+// ===============================
+
+function calculateReferencePrice(stations, fuelType) {
+  const prices = stations
+    .map(s => s.precio_actual)
+    .filter(p => p && p > 0)
+    .sort((a, b) => a - b);
+  
+  if (prices.length === 0) return 1500;
+  
+  const mid = Math.floor(prices.length / 2);
+  const median = prices.length % 2 === 0 
+    ? Math.round((prices[mid - 1] + prices[mid]) / 2) 
+    : prices[mid];
+  
+  return median;
 }
 
 // ===============================
@@ -115,171 +165,115 @@ function detectFuelRisk(user) {
 }
 
 // ===============================
-// PENALIZACIONES POR CONTEXTO
+// SCORE PRINCIPAL
 // ===============================
 
-function applyContextPenalties(score, station, user, context) {
-  let adjusted = score;
-  
-  if (station.zone_type === 'urban' && context.is_urban_peak) {
-    adjusted *= (1 - THRESHOLDS.complexity_urban);
-  }
-  
-  if (station.leaves_main_route) {
-    const penalty = user.context_type === 'cargo'
-      ? THRESHOLDS.complexity_exit * 0.67
-      : THRESHOLDS.complexity_exit;
-    adjusted *= (1 - penalty);
-  }
-  
-  return adjusted;
-}
+function scoreStation(station, user, context) {
+  const {
+    precio_actual,
+    precio_convenio,
+    lat, lon,
+    data_age_minutes,
+    report_count,
+    zone_type = 'urban',
+    leaves_main_route = false,
+  } = station;
 
-// ===============================
-// EVALUACIÓN DE UNA ESTACIÓN
-// ===============================
-
-function evaluateStation(user, station, context) {
   const {
     fuel_consumption,
     tank_capacity,
     current_level_pct,
     budget_today,
-    context_type,
+    context_type = 'domestic',
+    convenio_discount = 0,
   } = user;
-  
+
   const {
-    user_lat,
-    user_lon,
+    user_lat, user_lon,
     reference_price,
     is_urban_peak = false,
     toll_estimate = 0,
   } = context;
+
+  // Precio base
+  const base_price = precio_convenio
+    ? precio_convenio
+    : Math.max(0, precio_actual - convenio_discount);
+
+  // Litros necesarios y asequibles
+  const liters_needed = tank_capacity * (1 - current_level_pct / 100);
+  const liters_affordable = Math.min(liters_needed, budget_today / base_price);
+
+  if (liters_affordable < 1) return null;
+
+  // Ahorro bruto (limitado por ahorro máximo realista por litro)
+  const price_diff = Math.min(reference_price - base_price, THRESHOLDS.max_saving_per_liter);
+  const gross_saving = Math.round(price_diff * liters_affordable);
+
+  // Distancia y costo de desvío
+  const dist_m = distanceMeters(user_lat, user_lon, lat, lon);
+  const dev_factor = deviationFactor(context_type, leaves_main_route);
+  const deviation_cost = devourCost(
+    dist_m * dev_factor,
+    fuel_consumption,
+    base_price,
+    toll_estimate
+  );
+
+  // Penalización por complejidad
+  const penalty = complexityPenalty(dist_m, leaves_main_route, is_urban_peak, context_type);
+
+  // Ahorro neto (nunca negativo para el score, pero puede ser negativo para la decisión)
+  let net_saving = Math.round((gross_saving - deviation_cost) * (1 - penalty));
   
-  const basePrice = station.precio_convenio || station.precio_actual;
-  
-  // Estanque lleno
-  if (current_level_pct >= THRESHOLDS.tank_full_threshold) {
-    return {
-      station,
-      net_saving: 0,
-      score: 0,
-      mode: 2,
-      mode_reason: 'tank_full',
-      data_quality: 1,
-    };
-  }
-  
-  const litersNeeded = tank_capacity * (1 - current_level_pct / 100);
-  const litersAffordable = Math.min(litersNeeded, budget_today / basePrice);
-  
-  if (litersAffordable < 1) {
-    return {
-      station,
-      net_saving: 0,
-      score: 0,
-      mode: 2,
-      mode_reason: 'budget',
-      data_quality: 1,
-    };
-  }
-  
-  const distMeters = distanceMeters(user_lat, user_lon, station.lat, station.lon);
-  const distKm = toKm(distMeters);
-  
-  // AJUSTE 2: detourFactor simplificado
-  let detourFactor = station.leaves_main_route ? 2 : 1;
-  
-  const litersPerKm = fuel_consumption / 100;
-  const fuelCostPerKm = litersPerKm * reference_price;
-  const detourCost = distKm * detourFactor * fuelCostPerKm + (toll_estimate || 0);
-  
-  const priceDiff = reference_price - basePrice;
-  const grossSaving = priceDiff * litersAffordable;
-  const netSaving = Math.round(grossSaving - detourCost);
-  
-  const dataQuality = computeDataQuality(station);
-  const dynamicThreshold = getDynamicThreshold(user, litersAffordable, reference_price);
-  
-  let mode = 0;
-  let modeReason = null;
-  
-  if (dataQuality < 0.35) {
-    mode = 1;
-    modeReason = 'low_confidence';
-  } else if (netSaving < dynamicThreshold) {
-    mode = 2;
-    modeReason = 'saving';
-  }
-  
-  let score = netSaving * dataQuality;
-  
-  const proximityBonus = Math.max(0, 1 - distKm / 5);
-  if (netSaving > dynamicThreshold) {
-    // AJUSTE 3: proximity bonus reducido de 500 a 200
-    score += proximityBonus * 200;
-  }
-  
-  score = applyContextPenalties(score, station, user, context);
-  
+  // El ahorro neto no puede ser mayor que el costo total (sentido común)
+  const total_cost = Math.round(base_price * liters_affordable);
+  net_saving = Math.min(net_saving, total_cost * 0.5); // máximo 50% de ahorro sobre el costo
+
+  // Confianza del dato
+  const dq = dataQuality(data_age_minutes, report_count, zone_type);
+
+  // Score final
+  const proximity_bonus = Math.max(0, 1 - dist_m / 5000);
+  const min_saving_ctx = getMinNetSaving(context_type, liters_needed, reference_price);
+  const prox_weight = net_saving > min_saving_ctx ? 500 : 0;
+  const raw_score = (net_saving * dq) + (proximity_bonus * prox_weight);
+
   return {
-    station,
-    net_saving: netSaving,
-    score: Math.max(0, score),
-    mode,
-    mode_reason: modeReason,
-    data_quality: dataQuality,
-    display_price: basePrice,
-    display_liters: Math.round(litersAffordable * 10) / 10,
-    display_distance_km: Math.round(distKm * 10) / 10,
-    is_convenio: !!station.precio_convenio,
+    station_id: station.id,
+    station_name: station.nombre,
+    station_brand: station.marca,
+    lat, lon,
+    display_price: base_price,
+    display_saving: net_saving,
+    display_distance_km: Math.round(dist_m / 100) / 10,
+    display_liters: Math.round(liters_affordable * 10) / 10,
+    display_total_cost: total_cost,
+    display_reference_price: reference_price,
+    display_saving_per_liter: Math.min(price_diff, THRESHOLDS.max_saving_per_liter),
+    is_convenio: !!precio_convenio || convenio_discount > 0,
+    is_outside_convenio: !precio_convenio && convenio_discount === 0 && gross_saving > 0,
+    data_quality: dq,
+    ...(() => { const r = resolveMode(net_saving, dq, budget_today, liters_affordable, current_level_pct, context_type, liters_needed, reference_price); return { mode: r.mode, _override_reason: r.reason }; })(),
+    _score: raw_score,
+    _net_saving: net_saving,
+    _dq: dq,
+    _gross_saving: gross_saving,
+    _deviation_cost: deviation_cost,
   };
 }
 
 // ===============================
-// CONSTRUCCIÓN DE MENSAJES
+// RESOLVER MODO
 // ===============================
 
-function buildRecommendationMessage(best, fuelRisk) {
-  const saving = Math.round(best.net_saving);
-  const liters = best.display_liters;
-  const stationName = best.station.nombre;
-  
-  let message = `Carga en ${stationName}. ${liters} L por $${Math.round(best.display_price * liters)}. Ahorro estimado: $${saving}.`;
-  
-  if (fuelRisk === 'critical') {
-    return message + " Te queda muy poco combustible. Carga ahora.";
-  }
-  if (fuelRisk === 'low') {
-    return message + " Nivel bajo de combustible. Buena decisión cargar ahora.";
-  }
-  return message;
-}
-
-function buildUncertainMessage(fuelRisk) {
-  if (fuelRisk === 'critical') {
-    return "Datos de precio no están verificados. Pero te queda muy poco combustible: carga en la próxima estación disponible.";
-  }
-  if (fuelRisk === 'low') {
-    return "Datos de precio inciertos en esta zona. Si vas justo de combustible, carga en una estación confiable.";
-  }
-  return "Los precios en esta zona no están verificados hoy. Carga donde siempre cargas.";
-}
-
-function buildNoGoMessage(fuelRisk, modeReason) {
-  if (fuelRisk === 'critical') {
-    return "No hay ahorro relevante, pero te queda muy poco combustible. Carga en la próxima estación.";
-  }
-  if (fuelRisk === 'low') {
-    return "No hay ahorro real disponible ahora. Si quieres mayor margen, puedes cargar en la próxima estación.";
-  }
-  if (modeReason === 'tank_full') {
-    return "Tu estanque está suficientemente lleno. Te avisamos cuando convenga cargar.";
-  }
-  if (modeReason === 'budget') {
-    return "Con tu presupuesto de hoy no alcanza para una carga útil. Intenta más tarde.";
-  }
-  return "No hay ahorro real disponible ahora. Sigue tu ruta.";
+function resolveMode(netSaving, dq, budget, litersAffordable, tankPct, contextType, litersNeeded, referencePrice) {
+  if (dq < 0.35)                                             return { mode: 1, reason: 'low_confidence' };
+  if (tankPct >= THRESHOLDS.tank_full_threshold)             return { mode: 2, reason: 'tank_full' };
+  if (litersAffordable < 1)                                  return { mode: 2, reason: 'budget' };
+  const minSaving = getMinNetSaving(contextType, litersNeeded, referencePrice);
+  if (netSaving < minSaving)                                 return { mode: 2, reason: 'saving' };
+  return { mode: 0, reason: null };
 }
 
 // ===============================
@@ -287,46 +281,73 @@ function buildNoGoMessage(fuelRisk, modeReason) {
 // ===============================
 
 function decide(user, stations, context) {
-  const evaluations = stations.map(st => evaluateStation(user, st, context));
-  const fuelRisk = detectFuelRisk(user);
-  
-  const bestNormal = evaluations
-    .filter(e => e.mode === 0)
-    .sort((a, b) => b.score - a.score)[0] || null;
-  
-  const alternative = bestNormal
-    ? evaluations
-        .filter(e => e.mode === 0 && e.station.id !== bestNormal.station.id)
-        .sort((a, b) => b.score - a.score)[0] || null
-    : null;
-  
-  const bestOverall = evaluations
-    .sort((a, b) => b.score - a.score)[0] || null;
-  
-  if (bestNormal) {
+  if (!stations || stations.length === 0) {
     return {
-      mode: 0,
-      recommendation: bestNormal,
-      alternative: alternative,
-      message: buildRecommendationMessage(bestNormal, fuelRisk),
-    };
-  }
-  
-  if (bestOverall && bestOverall.mode === 1) {
-    return {
-      mode: 1,
+      mode: 3,
       recommendation: null,
       alternative: null,
-      message: buildUncertainMessage(fuelRisk),
+      message: 'Sin datos disponibles para tu zona. Intenta más tarde.',
     };
   }
+
+  // Calcular precio de referencia basado en estaciones cercanas
+  const reference_price = calculateReferencePrice(stations, user.fuel_type || 'diesel');
   
-  const modeReason = bestOverall?.mode_reason || 'saving';
+  // Actualizar contexto con el precio de referencia calculado
+  const enrichedContext = {
+    ...context,
+    reference_price: reference_price
+  };
+
+  // Calcular score de todas las estaciones
+  const scored = stations
+    .map(s => scoreStation(s, user, enrichedContext))
+    .filter(Boolean)
+    .sort((a, b) => b._score - a._score);
+
+  if (scored.length === 0) {
+    return {
+      mode: 3,
+      recommendation: null,
+      alternative: null,
+      message: 'Sin datos disponibles para tu zona. Intenta más tarde.',
+    };
+  }
+
+  const best = scored[0];
+  const second = scored[1] || null;
+
+  const override_messages = {
+    tank_full: 'Tu estanque está suficientemente lleno. Te avisamos cuando convenga cargar.',
+    budget:    'Con tu presupuesto de hoy no alcanza para una carga útil. Intenta más tarde.',
+    saving:    'No hay ahorro real disponible ahora. Sigue tu ruta.',
+  };
+
+  if (best.mode === 1) {
+    return {
+      mode: 1,
+      recommendation: best,
+      alternative: second,
+      message: 'Los precios en esta zona no están verificados hoy. Carga donde siempre cargas.',
+    };
+  }
+
+  if (best.mode === 2) {
+    const reason = best._override_reason || 'saving';
+    return {
+      mode: 2,
+      recommendation: best,
+      alternative: null,
+      message: override_messages[reason] || override_messages.saving,
+    };
+  }
+
+  // Modo normal
   return {
-    mode: 2,
-    recommendation: null,
-    alternative: null,
-    message: buildNoGoMessage(fuelRisk, modeReason),
+    mode: 0,
+    recommendation: best,
+    alternative: second && second._net_saving > 0 ? second : null,
+    message: null,
   };
 }
 
@@ -336,9 +357,12 @@ function decide(user, stations, context) {
 
 module.exports = {
   decide,
-  evaluateStation,
-  computeDataQuality,
-  detectFuelRisk,
+  scoreStation,
+  dataQuality,
   distanceMeters,
-  getDynamicThreshold,
+  devourCost,
+  deviationFactor,
+  getMinNetSaving,
+  calculateReferencePrice,
+  detectFuelRisk,
 };
