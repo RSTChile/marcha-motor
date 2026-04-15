@@ -25,21 +25,12 @@ app.get('/health', (req, res) => {
 
 app.get('/api/comunas-list', (req, res) => {
   try {
-    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.json({ comunas: [] });
     }
-    const mapData = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
-    const comunasMap = mapData.comunas || {};
-    
-    const comunasList = Object.entries(comunasMap).map(([nombre, info]) => ({
-      nombre: nombre,
-      region: info.region,
-      lat: info.lat,
-      lng: info.lon
-    }));
-    
-    res.json({ comunas: comunasList });
+    const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    res.json({ comunas: data.comunas || [] });
   } catch (err) {
     console.error('[comunas-list] Error:', err);
     res.json({ comunas: [] });
@@ -48,6 +39,7 @@ app.get('/api/comunas-list', (req, res) => {
 
 // =============================================
 // DETECTAR COMUNA POR COORDENADAS (GPS)
+// Usa la lista completa de 346 comunas
 // =============================================
 
 app.post('/api/detect-commune', async (req, res) => {
@@ -61,16 +53,17 @@ app.post('/api/detect-commune', async (req, res) => {
       });
     }
     
-    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    // Cargar lista completa de comunas
+    const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.status(500).json({
         ok: false,
-        message: 'Mapeo de comunas no disponible'
+        message: 'Lista de comunas no disponible'
       });
     }
     
-    const mapData = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
-    const comunasMap = mapData.comunas || {};
+    const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    const comunasList = data.comunas || [];
     
     function distanceMeters(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -84,11 +77,11 @@ app.post('/api/detect-commune', async (req, res) => {
     let closestComuna = null;
     let minDist = Infinity;
     
-    for (const [nombre, info] of Object.entries(comunasMap)) {
-      const dist = distanceMeters(lat, lng, info.lat, info.lon);
+    for (const c of comunasList) {
+      const dist = distanceMeters(lat, lng, c.lat, c.lng);
       if (dist < minDist) {
         minDist = dist;
-        closestComuna = { nombre, ...info };
+        closestComuna = c;
       }
     }
     
@@ -105,7 +98,7 @@ app.post('/api/detect-commune', async (req, res) => {
         nombre: closestComuna.nombre,
         region: closestComuna.region,
         lat: closestComuna.lat,
-        lon: closestComuna.lon
+        lon: closestComuna.lng
       },
       distance_km: minDist / 1000
     });
@@ -125,16 +118,15 @@ app.post('/api/detect-commune', async (req, res) => {
 
 app.get('/api/stats', (req, res) => {
   try {
-    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
-      return res.json({ ok: true, total: 0, message: 'Mapeo no disponible' });
+      return res.json({ ok: true, total: 0, message: 'Lista no disponible' });
     }
-    const raw = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
     res.json({ 
       ok: true, 
-      total_comunas: raw.meta?.total_comunas || 0,
-      total_stations: raw.meta?.total_stations || 0,
-      generated_at: raw.meta?.generated_at || null
+      total_comunas: data.comunas?.length || 0,
+      generated_at: data.meta?.generated_at || null
     });
   } catch (err) {
     res.json({ ok: false, error: err.message });
@@ -190,7 +182,7 @@ app.get('/caso-cero', async (req, res) => {
       user_lat: -32.8396,
       user_lon: -70.9530,
       fuel_type: 'diesel',
-      comuna: 'Llaillay',
+      comuna: 'Llay-Llay',
       reference_price: null,
       is_urban_peak: false,
       toll_estimate: 0,
