@@ -38,8 +38,23 @@ app.get('/api/comunas-list', (req, res) => {
 });
 
 // =============================================
+// FUNCIÓN HAVERSINE (distancia en línea recta)
+// =============================================
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI / 180) *
+            Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// =============================================
 // DETECTAR COMUNA POR COORDENADAS (GPS)
-// Usa comunas-completo.json
+// Usa distancia REAL por carretera (OpenRouteService)
 // =============================================
 
 app.post('/api/detect-commune', async (req, res) => {
@@ -53,6 +68,7 @@ app.post('/api/detect-commune', async (req, res) => {
       });
     }
     
+    // Cargar lista completa de comunas
     const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.status(500).json({
@@ -64,42 +80,76 @@ app.post('/api/detect-commune', async (req, res) => {
     const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
     const comunasList = data.comunas || [];
     
-    function distanceMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = deg => deg * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
+    // Tu API key de OpenRouteService
+    const ORS_API_KEY = '5b3ce3597851110001cf6248c9d8c8c5c8a84f2d8c8c8c8c8c8c8c8';
     
-    let closestComuna = null;
-    let minDist = Infinity;
-    
-    for (const c of comunasList) {
-      const dist = distanceMeters(lat, lng, c.lat, c.lng);
-      if (dist < minDist) {
-        minDist = dist;
-        closestComuna = c;
+    // Función para obtener distancia real desde OpenRouteService
+    async function getRealDistance(lat1, lon1, lat2, lon2) {
+      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`;
+      
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        
+        if (!response.ok) return null;
+        const routeData = await response.json();
+        if (routeData.features && routeData.features[0] && routeData.features[0].properties.summary) {
+          return routeData.features[0].properties.summary.distance / 1000; // metros a km
+        }
+        return null;
+      } catch (err) {
+        console.error('[ORS] Error:', err.message);
+        return null;
       }
     }
     
-    if (!closestComuna) {
+    // Primero, filtrar comunas por distancia en línea recta (para no sobrecargar ORS)
+    const MAX_CANDIDATES = 5;
+    const withStraightDist = comunasList.map(c => ({
+      ...c,
+      _straight_dist: haversineDistance(lat, lng, c.lat, c.lng)
+    })).sort((a, b) => a._straight_dist - b._straight_dist)
+      .slice(0, MAX_CANDIDATES);
+    
+    // Luego, calcular distancia REAL para las 5 más cercanas en línea recta
+    const withRealDist = [];
+    for (const c of withStraightDist) {
+      const realDist = await getRealDistance(lat, lng, c.lat, c.lng);
+      withRealDist.push({
+        ...c,
+        _real_dist: realDist !== null ? realDist : c._straight_dist,
+        _is_estimated: realDist === null
+      });
+      // Pequeña pausa para no saturar la API
+      await new Promise(r => setTimeout(r, 200));
+    }
+    
+    // Ordenar por distancia real
+    withRealDist.sort((a, b) => a._real_dist - b._real_dist);
+    
+    const closest = withRealDist[0];
+    
+    if (!closest) {
       return res.status(404).json({
         ok: false,
         message: 'No se encontró comuna cercana'
       });
     }
     
+    console.log(`[detect-commune] Comuna detectada: ${closest.nombre} (distancia real: ${closest._real_dist.toFixed(1)} km, línea recta: ${closest._straight_dist.toFixed(1)} km)`);
+    
     res.json({
       ok: true,
       commune: {
-        nombre: closestComuna.nombre,
-        region: closestComuna.region,
-        lat: closestComuna.lat,
-        lon: closestComuna.lng
+        nombre: closest.nombre,
+        region: closest.region,
+        lat: closest.lat,
+        lon: closest.lng
       },
-      distance_km: minDist / 1000
+      distance_km: closest._real_dist,
+      is_estimated: closest._is_estimated || false
     });
     
   } catch (err) {
@@ -178,8 +228,8 @@ app.get('/caso-cero', async (req, res) => {
     };
 
     const context = {
-      user_lat: -32.8396,
-      user_lon: -70.9530,
+      user_lat: -32.840588,
+      user_lon: -70.959100,
       fuel_type: 'diesel',
       comuna: 'Llaillay',
       reference_price: null,
