@@ -298,67 +298,50 @@ function calculateReferencePrice(engineStations) {
 // =============================================
 // ENRIQUECER RESULTADO DEL MOTOR
 // Usa station_id (no station.id) — corrección crítica
+// v4.1: enriquece también alternatives[]
 // =============================================
 
+function buildStationObj(original) {
+  return {
+    id:              original.id,
+    nombre:          original.nombre,
+    nombre_legal:    original.nombre_legal,
+    direccion:       original.direccion,
+    comuna:          original.comuna,
+    marca:           original.marca,
+    precios_detalle: original.precios_detalle,
+    servicios:       original.servicios,
+    metodos_pago:    original.metodos_pago,
+  };
+}
+
+function enrichOne(scored, stationsWithRealDist, fuelType) {
+  if (!scored) return scored;
+  const original = stationsWithRealDist.find(s => s.id === scored.station_id);
+  if (original) {
+    const correctPrice = original.precios[fuelType];
+    if (correctPrice && correctPrice > 0) {
+      scored.display_price      = correctPrice;
+      const liters = scored.display_liters || 0;
+      scored.display_total_cost = Math.floor(correctPrice * liters);
+    }
+    scored.display_distance_km = original._real_distance_km;
+    scored.station = buildStationObj(original);
+  }
+  if (scored.net_saving) scored.net_saving = Math.floor(scored.net_saving);
+  return scored;
+}
+
 function enrichResult(result, stationsWithRealDist, fuelType) {
-  // Enriquecer recomendación principal
-  if (result.recommendation) {
-    // El motor devuelve station_id en el objeto raíz, no dentro de .station
-    const stationId = result.recommendation.station_id;
-    const original  = stationsWithRealDist.find(s => s.id === stationId);
+  result.recommendation = enrichOne(result.recommendation, stationsWithRealDist, fuelType);
 
-    if (original) {
-      const correctPrice = original.precios[fuelType];
-      if (correctPrice && correctPrice > 0) {
-        result.recommendation.display_price      = correctPrice;
-        const liters = result.recommendation.display_liters || 0;
-        result.recommendation.display_total_cost = Math.floor(correctPrice * liters);
-      }
-
-      result.recommendation.display_distance_km = original._real_distance_km;
-
-      // Construir objeto .station para el frontend
-      result.recommendation.station = {
-        id:              original.id,
-        nombre:          original.nombre,
-        nombre_legal:    original.nombre_legal,
-        direccion:       original.direccion,
-        comuna:          original.comuna,
-        marca:           original.marca,
-        precios_detalle: original.precios_detalle,
-        servicios:       original.servicios,
-        metodos_pago:    original.metodos_pago,
-      };
-    }
-
-    if (result.recommendation.net_saving) {
-      result.recommendation.net_saving = Math.floor(result.recommendation.net_saving);
-    }
+  // Enriquecer alternatives[] (v0.5 engine)
+  if (Array.isArray(result.alternatives)) {
+    result.alternatives = result.alternatives.map(a => enrichOne(a, stationsWithRealDist, fuelType));
   }
 
-  // Enriquecer alternativa
-  if (result.alternative) {
-    const altStationId = result.alternative.station_id;
-    const altOriginal  = stationsWithRealDist.find(s => s.id === altStationId);
-
-    if (altOriginal) {
-      result.alternative.display_distance_km = altOriginal._real_distance_km;
-
-      result.alternative.station = {
-        id:              altOriginal.id,
-        nombre:          altOriginal.nombre,
-        nombre_legal:    altOriginal.nombre_legal,
-        direccion:       altOriginal.direccion,
-        comuna:          altOriginal.comuna,
-        marca:           altOriginal.marca,
-        precios_detalle: altOriginal.precios_detalle,
-      };
-    }
-
-    if (result.alternative.net_saving) {
-      result.alternative.net_saving = Math.floor(result.alternative.net_saving);
-    }
-  }
+  // Compatibilidad: mantener result.alternative apuntando a alternatives[0]
+  result.alternative = result.alternatives?.[0] || null;
 
   return result;
 }
