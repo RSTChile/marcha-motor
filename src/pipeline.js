@@ -1,7 +1,7 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
- * CORREGIDO: asegura que solo se usen estaciones con el combustible seleccionado
+ * CORREGIDO: asegura que el precio del combustible seleccionado sea el correcto
  */
 
 const engine = require('./engine');
@@ -191,7 +191,7 @@ function inferZoneType(region) {
 }
 
 // =============================================
-// PREPARAR ESTACIÓN PARA EL MOTOR (SOLO COMBUSTIBLE SOLICITADO)
+// PREPARAR ESTACIÓN PARA EL MOTOR
 // =============================================
 
 function prepareStation(station, fuelType) {
@@ -220,8 +220,7 @@ function prepareStation(station, fuelType) {
   
   const ageMinutes = Math.min(Math.round((Date.now() - station.fetched_at) / 60000), 60);
   
-  // Log para depuración
-  console.log(`[pipeline] 📊 Estación ${station.nombre}: ${selectedFuel} = $${price}`);
+  console.log(`[pipeline] 📊 ${station.nombre} (${station.comuna}): ${selectedFuel} = $${price}`);
   
   return {
     id: station.id,
@@ -349,29 +348,40 @@ async function runPipeline({ userProfile, context }) {
       }
     );
     
-    // Asegurar que el display_price de la recomendación sea correcto
-    if (result.recommendation && result.recommendation.station) {
-      const stationData = stationsWithDist.find(s => s.id === result.recommendation.station.id);
-      if (stationData) {
+    // CORRECCIÓN FORZADA: Reconstruir la recomendación con los datos correctos
+    if (result.recommendation && result.recommendation.station && result.recommendation.station.id) {
+      const stationId = result.recommendation.station.id;
+      const originalStation = stationsWithDist.find(s => s.id === stationId);
+      
+      if (originalStation) {
         // Obtener el precio correcto del combustible
         let correctPrice = null;
-        if (fuel_type === 'diesel') correctPrice = stationData.precios.diesel;
-        else if (fuel_type === 'gas93') correctPrice = stationData.precios.gas93;
-        else if (fuel_type === 'gas95') correctPrice = stationData.precios.gas95;
-        else if (fuel_type === 'gas97') correctPrice = stationData.precios.gas97;
+        if (fuel_type === 'diesel') correctPrice = originalStation.precios.diesel;
+        else if (fuel_type === 'gas93') correctPrice = originalStation.precios.gas93;
+        else if (fuel_type === 'gas95') correctPrice = originalStation.precios.gas95;
+        else if (fuel_type === 'gas97') correctPrice = originalStation.precios.gas97;
         
         if (correctPrice && correctPrice > 0) {
+          // Forzar el precio correcto en la recomendación
           result.recommendation.display_price = correctPrice;
-          console.log(`[pipeline] 🔧 Corregido display_price: $${correctPrice}`);
+          result.recommendation.station.precio_actual = correctPrice;
+          
+          // Recalcular costo total
+          const liters = result.recommendation.display_liters || 0;
+          result.recommendation.display_total_cost = correctPrice * liters;
+          
+          console.log(`[pipeline] 🔧 CORRECCIÓN: display_price cambiado de ${result.recommendation.display_price} a $${correctPrice} para ${originalStation.nombre}`);
         }
         
+        // Actualizar datos de la estación
         result.recommendation.station = {
           ...result.recommendation.station,
-          direccion: stationData.direccion,
-          comuna: stationData.comuna,
-          precios_detalle: stationData.precios_detalle,
-          servicios: stationData.servicios,
-          metodos_pago: stationData.metodos_pago
+          nombre: originalStation.nombre,
+          direccion: originalStation.direccion,
+          comuna: originalStation.comuna,
+          precios_detalle: originalStation.precios_detalle,
+          servicios: originalStation.servicios,
+          metodos_pago: originalStation.metodos_pago
         };
       }
     }
