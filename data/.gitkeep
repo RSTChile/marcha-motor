@@ -1,0 +1,2 @@
+# Esta carpeta contendrá stations.json generado por crawler.js
+# El archivo está en .gitignore para no subir datos sensibles
