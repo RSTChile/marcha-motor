@@ -39,7 +39,7 @@ app.get('/api/comunas-list', (req, res) => {
 
 // =============================================
 // DETECTAR COMUNA POR COORDENADAS (GPS)
-// Usa la lista completa de 346 comunas
+// Usa comunas-completo.json
 // =============================================
 
 app.post('/api/detect-commune', async (req, res) => {
@@ -53,7 +53,6 @@ app.post('/api/detect-commune', async (req, res) => {
       });
     }
     
-    // Cargar lista completa de comunas
     const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.status(500).json({
@@ -182,7 +181,7 @@ app.get('/caso-cero', async (req, res) => {
       user_lat: -32.8396,
       user_lon: -70.9530,
       fuel_type: 'diesel',
-      comuna: 'Llay-Llay',
+      comuna: 'Llaillay',
       reference_price: null,
       is_urban_peak: false,
       toll_estimate: 0,
