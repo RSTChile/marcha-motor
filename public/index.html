@@ -10,8 +10,10 @@
         .container { max-width: 680px; margin: 0 auto; }
         .card { background: white; border-radius: 2rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1.5rem; }
         .card-header { background: #0b3b3f; color: white; padding: 1.5rem; text-align: center; }
-        .card-header h1 { font-size: 2rem; font-weight: 600; }
-        .card-header p { opacity: 0.8; margin-top: 0.25rem; font-size: 0.9rem; }
+        .logo-container { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .logo { width: 50px; height: 50px; object-fit: contain; border-radius: 50%; background: white; padding: 5px; }
+        .card-header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.5px; }
+        .card-header p { opacity: 0.8; margin-top: 0.25rem; font-size: 0.85rem; }
         .card-body { padding: 1.5rem; }
         .form-group { margin-bottom: 1.25rem; }
         label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; color: #2c5f6b; }
@@ -19,16 +21,20 @@
         .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .location-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
         .location-row input { flex: 1; }
-        .btn-secondary { background: #e2e8f0; color: #1e2a3e; border: none; padding: 0.8rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .btn-secondary { background: #e2e8f0; color: #1e2a3e; border: none; padding: 0.8rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .btn-secondary:hover { background: #cbd5e1; }
         .btn-location { background: #0b3b3f; color: white; }
-        button { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; }
+        .btn-location:hover { background: #0f5257; }
+        button { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; transition: 0.2s; }
+        button:hover:not(:disabled) { background: #0f5257; transform: scale(0.98); }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
         .fuel-gauge { background: #1a2a32; border-radius: 2rem; padding: 1rem; margin-bottom: 0.5rem; }
         .gauge-bar { background: #2d3e48; border-radius: 1rem; height: 0.5rem; width: 100%; margin-bottom: 1rem; }
         .gauge-fill { background: linear-gradient(90deg, #dc2626, #eab308, #22c55e); border-radius: 1rem; height: 100%; width: 0%; transition: width 0.3s ease; }
         .fuel-marks { display: flex; justify-content: space-between; margin-bottom: 1.5rem; gap: 0.25rem; flex-wrap: wrap; }
-        .fuel-mark { flex: 1; text-align: center; padding: 0.5rem 0.25rem; background: #e2e8f0; border-radius: 2rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; }
+        .fuel-mark { flex: 1; text-align: center; padding: 0.5rem 0.25rem; background: #e2e8f0; border-radius: 2rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .fuel-mark.reserva { background: #fee2e2; color: #991b1b; }
-        .fuel-mark.selected { background: #0b3b3f; color: white; border-color: #f5a623; }
+        .fuel-mark.selected { background: #0b3b3f; color: white; border-color: #f5a623; transform: scale(0.98); }
         .fuel-value-display { text-align: center; font-size: 0.8rem; color: #5b6e8c; margin-top: 0.5rem; }
         .result-card { background: #fef9e3; border-left: 6px solid #f5a623; padding: 1.25rem; border-radius: 1.5rem; margin-top: 1.5rem; }
         .mode-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.7rem; font-weight: bold; margin-bottom: 0.75rem; }
@@ -48,13 +54,17 @@
         .comuna-nombre { font-weight: 500; }
         .comuna-region { font-size: 0.7rem; color: #5b6e8c; }
         .hidden { display: none; }
+        .location-status { font-size: 0.75rem; margin-top: 0.5rem; color: #5b6e8c; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
         <div class="card-header">
-            <h1>⛽ Marcha</h1>
+            <div class="logo-container">
+                <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" class="logo" onerror="this.style.display='none'">
+                <h1>⛽ En Marcha de RST Chile</h1>
+            </div>
             <p>decide si vale la pena cargar · no adivina, calcula</p>
         </div>
         <div class="card-body">
@@ -62,14 +72,15 @@
                 <div class="form-group">
                     <label>📍 Tu ubicación</label>
                     <div class="location-row">
-                        <input type="text" id="locationInput" placeholder="Ej: Santiago, Llay-Llay, Concepción" autocomplete="off">
+                        <input type="text" id="locationInput" placeholder="Escribe una comuna o presiona 'Detectar'" autocomplete="off">
                         <button type="button" id="searchLocationBtn" class="btn-secondary">🔍 Buscar</button>
-                        <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Usar mi ubicación</button>
+                        <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Detectar</button>
                     </div>
                     <div id="searchResults" class="comunas-list hidden"></div>
                     <div id="locationStatus" class="location-status"></div>
-                    <input type="hidden" id="lat" value="-33.4489">
-                    <input type="hidden" id="lng" value="-70.6693">
+                    <input type="hidden" id="lat" value="">
+                    <input type="hidden" id="lng" value="">
+                    <input type="hidden" id="comuna" value="">
                 </div>
 
                 <div class="form-group">
@@ -127,13 +138,13 @@
                     </select>
                 </div>
 
-                <button type="submit">🔍 Evaluar ahora</button>
+                <button type="submit" id="submitBtn">🔍 Evaluar ahora</button>
             </form>
 
             <div id="resultArea">
                 <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e;">
-                    ⚡ Completa tus datos y presiona "Evaluar ahora"<br>
-                    <span style="font-size:0.8rem;">El motor analiza estaciones reales en tu zona</span>
+                    📍 Ingresa tu ubicación o presiona "Detectar"<br>
+                    <span style="font-size:0.8rem;">La app analizará estaciones reales en tu zona</span>
                 </div>
             </div>
         </div>
@@ -142,339 +153,42 @@
 </div>
 
 <script>
-    // LISTA COMPLETA DE COMUNAS DE CHILE (extraídas del CSV oficial)
-    // Incluye todas las regiones: Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana, O'Higgins, Maule, Biobío, Araucanía, Los Lagos, Aysén, Magallanes
-    const comunas = [
-        // Tarapacá
-        { nombre: "Iquique", region: "Tarapacá", lat: -20.2439, lng: -70.1389 },
-        { nombre: "Alto Hospicio", region: "Tarapacá", lat: -20.2569, lng: -70.0219 },
-        { nombre: "Pozo Almonte", region: "Tarapacá", lat: -20.2908, lng: -69.6958 },
-        { nombre: "Camiña", region: "Tarapacá", lat: -20.4828, lng: -69.3669 },
-        { nombre: "Colchane", region: "Tarapacá", lat: -19.2839, lng: -68.6750 },
-        { nombre: "Huara", region: "Tarapacá", lat: -19.8089, lng: -69.9719 },
-        { nombre: "Pica", region: "Tarapacá", lat: -20.4828, lng: -69.3778 },
-        // Antofagasta
-        { nombre: "Antofagasta", region: "Antofagasta", lat: -23.6508, lng: -70.3950 },
-        { nombre: "Mejillones", region: "Antofagasta", lat: -23.1100, lng: -70.4558 },
-        { nombre: "Sierra Gorda", region: "Antofagasta", lat: -22.8978, lng: -69.3228 },
-        { nombre: "Taltal", region: "Antofagasta", lat: -25.4100, lng: -70.4889 },
-        { nombre: "Calama", region: "Antofagasta", lat: -22.4739, lng: -68.9239 },
-        { nombre: "Ollagüe", region: "Antofagasta", lat: -21.2328, lng: -68.2669 },
-        { nombre: "San Pedro de Atacama", region: "Antofagasta", lat: -22.9200, lng: -68.2100 },
-        { nombre: "Tocopilla", region: "Antofagasta", lat: -22.0819, lng: -70.1889 },
-        { nombre: "María Elena", region: "Antofagasta", lat: -22.3169, lng: -69.6769 },
-        // Atacama
-        { nombre: "Copiapó", region: "Atacama", lat: -27.3750, lng: -70.3289 },
-        { nombre: "Caldera", region: "Atacama", lat: -27.0658, lng: -70.8258 },
-        { nombre: "Tierra Amarilla", region: "Atacama", lat: -27.4728, lng: -70.2828 },
-        { nombre: "Chañaral", region: "Atacama", lat: -26.3458, lng: -70.6239 },
-        { nombre: "Diego de Almagro", region: "Atacama", lat: -26.3900, lng: -70.0519 },
-        { nombre: "Vallenar", region: "Atacama", lat: -28.5769, lng: -70.7700 },
-        { nombre: "Alto del Carmen", region: "Atacama", lat: -28.7489, lng: -70.4908 },
-        { nombre: "Freirina", region: "Atacama", lat: -28.5058, lng: -71.0758 },
-        { nombre: "Huasco", region: "Atacama", lat: -28.4558, lng: -71.1858 },
-        // Coquimbo
-        { nombre: "La Serena", region: "Coquimbo", lat: -29.9069, lng: -71.2469 },
-        { nombre: "Coquimbo", region: "Coquimbo", lat: -29.9708, lng: -71.3069 },
-        { nombre: "Andacollo", region: "Coquimbo", lat: -30.2300, lng: -71.0858 },
-        { nombre: "La Higuera", region: "Coquimbo", lat: -29.5000, lng: -71.2828 },
-        { nombre: "Paihuano", region: "Coquimbo", lat: -30.0378, lng: -70.5069 },
-        { nombre: "Vicuña", region: "Coquimbo", lat: -30.0189, lng: -70.7150 },
-        { nombre: "Illapel", region: "Coquimbo", lat: -31.6389, lng: -71.1789 },
-        { nombre: "Canela", region: "Coquimbo", lat: -31.3958, lng: -71.4189 },
-        { nombre: "Los Vilos", region: "Coquimbo", lat: -31.9150, lng: -71.5058 },
-        { nombre: "Salamanca", region: "Coquimbo", lat: -31.7800, lng: -70.9669 },
-        { nombre: "Ovalle", region: "Coquimbo", lat: -30.5989, lng: -71.1889 },
-        { nombre: "Combarbalá", region: "Coquimbo", lat: -31.1800, lng: -71.0039 },
-        { nombre: "Monte Patria", region: "Coquimbo", lat: -30.7750, lng: -70.9428 },
-        { nombre: "Punitaqui", region: "Coquimbo", lat: -30.8328, lng: -71.2600 },
-        { nombre: "Río Hurtado", region: "Coquimbo", lat: -30.2728, lng: -70.6669 },
-        // Valparaíso
-        { nombre: "Valparaíso", region: "Valparaíso", lat: -33.0333, lng: -71.6667 },
-        { nombre: "Casablanca", region: "Valparaíso", lat: -33.3250, lng: -71.4100 },
-        { nombre: "Concón", region: "Valparaíso", lat: -32.9600, lng: -71.4689 },
-        { nombre: "Juan Fernández", region: "Valparaíso", lat: -33.6328, lng: -78.8669 },
-        { nombre: "Puchuncaví", region: "Valparaíso", lat: -32.7478, lng: -71.3978 },
-        { nombre: "Quintero", region: "Valparaíso", lat: -32.8450, lng: -71.4669 },
-        { nombre: "Viña del Mar", region: "Valparaíso", lat: -33.0250, lng: -71.5150 },
-        { nombre: "Isla de Pascua", region: "Valparaíso", lat: -27.1286, lng: -109.3597 },
-        { nombre: "Los Andes", region: "Valparaíso", lat: -32.8369, lng: -70.5969 },
-        { nombre: "Calle Larga", region: "Valparaíso", lat: -32.8831, lng: -70.4819 },
-        { nombre: "Rinconada", region: "Valparaíso", lat: -32.8331, lng: -70.6883 },
-        { nombre: "San Esteban", region: "Valparaíso", lat: -32.8050, lng: -70.5808 },
-        { nombre: "La Ligua", region: "Valparaíso", lat: -32.3536, lng: -71.2719 },
-        { nombre: "Cabildo", region: "Valparaíso", lat: -32.4089, lng: -71.0800 },
-        { nombre: "Papudo", region: "Valparaíso", lat: -32.4700, lng: -71.3808 },
-        { nombre: "Petorca", region: "Valparaíso", lat: -32.2900, lng: -70.9500 },
-        { nombre: "Zapallar", region: "Valparaíso", lat: -32.5678, lng: -71.4378 },
-        { nombre: "Quillota", region: "Valparaíso", lat: -32.9150, lng: -71.2639 },
-        { nombre: "La Calera", region: "Valparaíso", lat: -32.7839, lng: -71.2039 },
-        { nombre: "Hijuelas", region: "Valparaíso", lat: -32.8550, lng: -71.0939 },
-        { nombre: "La Cruz", region: "Valparaíso", lat: -32.8239, lng: -71.2439 },
-        { nombre: "Nogales", region: "Valparaíso", lat: -32.7358, lng: -71.2078 },
-        { nombre: "San Antonio", region: "Valparaíso", lat: -33.5947, lng: -71.6072 },
-        { nombre: "Algarrobo", region: "Valparaíso", lat: -33.3692, lng: -71.6681 },
-        { nombre: "Cartagena", region: "Valparaíso", lat: -33.5536, lng: -71.6075 },
-        { nombre: "El Quisco", region: "Valparaíso", lat: -33.3914, lng: -71.6928 },
-        { nombre: "El Tabo", region: "Valparaíso", lat: -33.4800, lng: -71.6208 },
-        { nombre: "Santo Domingo", region: "Valparaíso", lat: -33.7078, lng: -71.6300 },
-        { nombre: "San Felipe", region: "Valparaíso", lat: -32.7500, lng: -70.7128 },
-        { nombre: "Catemu", region: "Valparaíso", lat: -32.7808, lng: -70.9689 },
-        { nombre: "Llay-Llay", region: "Valparaíso", lat: -32.8439, lng: -70.9569 },
-        { nombre: "Panquehue", region: "Valparaíso", lat: -32.7839, lng: -70.8369 },
-        { nombre: "Putaendo", region: "Valparaíso", lat: -32.6278, lng: -70.7158 },
-        { nombre: "Santa María", region: "Valparaíso", lat: -32.7503, lng: -70.6669 },
-        { nombre: "Quilpué", region: "Valparaíso", lat: -33.0475, lng: -71.4422 },
-        { nombre: "Limache", region: "Valparaíso", lat: -33.0028, lng: -71.2608 },
-        { nombre: "Olmué", region: "Valparaíso", lat: -33.0089, lng: -71.1700 },
-        { nombre: "Villa Alemana", region: "Valparaíso", lat: -33.0658, lng: -71.3289 },
-        // Metropolitana
-        { nombre: "Santiago", region: "Metropolitana", lat: -33.4489, lng: -70.6693 },
-        { nombre: "Cerrillos", region: "Metropolitana", lat: -33.5000, lng: -70.7167 },
-        { nombre: "Cerro Navia", region: "Metropolitana", lat: -33.4167, lng: -70.7333 },
-        { nombre: "Conchalí", region: "Metropolitana", lat: -33.3833, lng: -70.6833 },
-        { nombre: "El Bosque", region: "Metropolitana", lat: -33.5667, lng: -70.6667 },
-        { nombre: "Estación Central", region: "Metropolitana", lat: -33.4500, lng: -70.7000 },
-        { nombre: "Huechuraba", region: "Metropolitana", lat: -33.3667, lng: -70.6833 },
-        { nombre: "Independencia", region: "Metropolitana", lat: -33.4167, lng: -70.6667 },
-        { nombre: "La Cisterna", region: "Metropolitana", lat: -33.5333, lng: -70.6667 },
-        { nombre: "La Florida", region: "Metropolitana", lat: -33.5333, lng: -70.5833 },
-        { nombre: "La Granja", region: "Metropolitana", lat: -33.5333, lng: -70.6167 },
-        { nombre: "La Pintana", region: "Metropolitana", lat: -33.5833, lng: -70.6333 },
-        { nombre: "La Reina", region: "Metropolitana", lat: -33.4500, lng: -70.5333 },
-        { nombre: "Las Condes", region: "Metropolitana", lat: -33.4030, lng: -70.5770 },
-        { nombre: "Lo Barnechea", region: "Metropolitana", lat: -33.3500, lng: -70.5167 },
-        { nombre: "Lo Espejo", region: "Metropolitana", lat: -33.5167, lng: -70.6833 },
-        { nombre: "Lo Prado", region: "Metropolitana", lat: -33.4500, lng: -70.7333 },
-        { nombre: "Macul", region: "Metropolitana", lat: -33.4833, lng: -70.6000 },
-        { nombre: "Maipú", region: "Metropolitana", lat: -33.5167, lng: -70.7667 },
-        { nombre: "Ñuñoa", region: "Metropolitana", lat: -33.4667, lng: -70.6000 },
-        { nombre: "Pedro Aguirre Cerda", region: "Metropolitana", lat: -33.5000, lng: -70.6833 },
-        { nombre: "Peñalolén", region: "Metropolitana", lat: -33.4833, lng: -70.5333 },
-        { nombre: "Providencia", region: "Metropolitana", lat: -33.4319, lng: -70.6100 },
-        { nombre: "Pudahuel", region: "Metropolitana", lat: -33.3667, lng: -70.8000 },
-        { nombre: "Quilicura", region: "Metropolitana", lat: -33.3550, lng: -70.7350 },
-        { nombre: "Quinta Normal", region: "Metropolitana", lat: -33.4333, lng: -70.7000 },
-        { nombre: "Recoleta", region: "Metropolitana", lat: -33.4167, lng: -70.6333 },
-        { nombre: "Renca", region: "Metropolitana", lat: -33.4000, lng: -70.7333 },
-        { nombre: "San Joaquín", region: "Metropolitana", lat: -33.4833, lng: -70.6333 },
-        { nombre: "San Miguel", region: "Metropolitana", lat: -33.4833, lng: -70.6500 },
-        { nombre: "San Ramón", region: "Metropolitana", lat: -33.5333, lng: -70.6500 },
-        { nombre: "Vitacura", region: "Metropolitana", lat: -33.3830, lng: -70.5660 },
-        { nombre: "Puente Alto", region: "Metropolitana", lat: -33.6167, lng: -70.5667 },
-        { nombre: "Pirque", region: "Metropolitana", lat: -33.6667, lng: -70.5833 },
-        { nombre: "San José de Maipo", region: "Metropolitana", lat: -33.6333, lng: -70.3500 },
-        { nombre: "Colina", region: "Metropolitana", lat: -33.2010, lng: -70.6810 },
-        { nombre: "Lampa", region: "Metropolitana", lat: -33.2800, lng: -70.7100 },
-        { nombre: "Til Til", region: "Metropolitana", lat: -33.0833, lng: -70.9167 },
-        { nombre: "San Bernardo", region: "Metropolitana", lat: -33.5900, lng: -70.6900 },
-        { nombre: "Buin", region: "Metropolitana", lat: -33.7333, lng: -70.7333 },
-        { nombre: "Calera de Tango", region: "Metropolitana", lat: -33.6333, lng: -70.7667 },
-        { nombre: "Paine", region: "Metropolitana", lat: -33.8167, lng: -70.7500 },
-        { nombre: "Melipilla", region: "Metropolitana", lat: -33.6833, lng: -71.2167 },
-        { nombre: "Alhué", region: "Metropolitana", lat: -34.0333, lng: -71.1667 },
-        { nombre: "Curacaví", region: "Metropolitana", lat: -33.4000, lng: -71.1500 },
-        { nombre: "María Pinto", region: "Metropolitana", lat: -33.5333, lng: -71.1167 },
-        { nombre: "San Pedro", region: "Metropolitana", lat: -33.9000, lng: -71.4667 },
-        { nombre: "Talagante", region: "Metropolitana", lat: -33.6667, lng: -70.9333 },
-        { nombre: "El Monte", region: "Metropolitana", lat: -33.6833, lng: -70.9833 },
-        { nombre: "Isla de Maipo", region: "Metropolitana", lat: -33.7500, lng: -70.9000 },
-        { nombre: "Peñaflor", region: "Metropolitana", lat: -33.6167, lng: -70.9000 },
-        // O'Higgins
-        { nombre: "Rancagua", region: "O'Higgins", lat: -34.1619, lng: -70.7408 },
-        { nombre: "Codegua", region: "O'Higgins", lat: -34.0328, lng: -70.6669 },
-        { nombre: "Coinco", region: "O'Higgins", lat: -34.2728, lng: -70.9528 },
-        { nombre: "Coltauco", region: "O'Higgins", lat: -34.2969, lng: -71.0919 },
-        { nombre: "Doñihue", region: "O'Higgins", lat: -34.1850, lng: -70.8839 },
-        { nombre: "Graneros", region: "O'Higgins", lat: -34.0628, lng: -70.7208 },
-        { nombre: "Las Cabras", region: "O'Higgins", lat: -34.2850, lng: -71.3100 },
-        { nombre: "Machalí", region: "O'Higgins", lat: -34.1850, lng: -70.6619 },
-        { nombre: "Malloa", region: "O'Higgins", lat: -34.4450, lng: -70.9450 },
-        { nombre: "Mostazal", region: "O'Higgins", lat: -33.9769, lng: -70.7089 },
-        { nombre: "Olivar", region: "O'Higgins", lat: -34.2139, lng: -70.8189 },
-        { nombre: "Peumo", region: "O'Higgins", lat: -34.3889, lng: -71.1708 },
-        { nombre: "Pichidegua", region: "O'Higgins", lat: -34.3569, lng: -71.2869 },
-        { nombre: "Quinta de Tilcoco", region: "O'Higgins", lat: -34.3569, lng: -70.9689 },
-        { nombre: "Rengo", region: "O'Higgins", lat: -34.4019, lng: -70.8558 },
-        { nombre: "Requínoa", region: "O'Higgins", lat: -34.2828, lng: -70.8058 },
-        { nombre: "San Vicente", region: "O'Higgins", lat: -34.0828, lng: -71.7500 },
-        { nombre: "Pichilemu", region: "O'Higgins", lat: -34.4019, lng: -72.0089 },
-        { nombre: "La Estrella", region: "O'Higgins", lat: -34.2000, lng: -71.6669 },
-        { nombre: "Litueche", region: "O'Higgins", lat: -34.1189, lng: -71.7278 },
-        { nombre: "Marchihue", region: "O'Higgins", lat: -34.4000, lng: -71.6333 },
-        { nombre: "Navidad", region: "O'Higgins", lat: -33.9500, lng: -71.8328 },
-        { nombre: "Paredones", region: "O'Higgins", lat: -34.6608, lng: -71.8939 },
-        { nombre: "San Fernando", region: "O'Higgins", lat: -34.5839, lng: -70.9869 },
-        { nombre: "Chépica", region: "O'Higgins", lat: -34.7328, lng: -71.2828 },
-        { nombre: "Chimbarongo", region: "O'Higgins", lat: -34.7078, lng: -71.0419 },
-        { nombre: "Lolol", region: "O'Higgins", lat: -34.7308, lng: -71.6358 },
-        { nombre: "Nancagua", region: "O'Higgins", lat: -34.6489, lng: -71.2028 },
-        { nombre: "Palmilla", region: "O'Higgins", lat: -34.6039, lng: -71.3578 },
-        { nombre: "Peralillo", region: "O'Higgins", lat: -34.4828, lng: -71.4828 },
-        { nombre: "Placilla", region: "O'Higgins", lat: -34.6328, lng: -71.1169 },
-        { nombre: "Pumanque", region: "O'Higgins", lat: -34.6050, lng: -71.6439 },
-        { nombre: "Santa Cruz", region: "O'Higgins", lat: -34.6308, lng: -71.3589 },
-        // Maule
-        { nombre: "Talca", region: "Maule", lat: -35.4228, lng: -71.6569 },
-        { nombre: "Constitución", region: "Maule", lat: -35.3389, lng: -72.4139 },
-        { nombre: "Curepto", region: "Maule", lat: -35.0828, lng: -72.0169 },
-        { nombre: "Empedrado", region: "Maule", lat: -35.5908, lng: -72.2728 },
-        { nombre: "Maule", region: "Maule", lat: -35.5158, lng: -71.5719 },
-        { nombre: "Pelarco", region: "Maule", lat: -35.3778, lng: -71.4450 },
-        { nombre: "Pencahue", region: "Maule", lat: -35.4000, lng: -71.8167 },
-        { nombre: "Río Claro", region: "Maule", lat: -35.2169, lng: -71.2500 },
-        { nombre: "San Clemente", region: "Maule", lat: -35.5339, lng: -71.4858 },
-        { nombre: "San Rafael", region: "Maule", lat: -35.3169, lng: -71.5328 },
-        { nombre: "Cauquenes", region: "Maule", lat: -35.9639, lng: -72.3169 },
-        { nombre: "Chanco", region: "Maule", lat: -35.7289, lng: -72.5300 },
-        { nombre: "Pelluhue", region: "Maule", lat: -35.8139, lng: -72.5739 },
-        { nombre: "Curicó", region: "Maule", lat: -34.9758, lng: -71.2239 },
-        { nombre: "Hualañé", region: "Maule", lat: -34.9828, lng: -71.8169 },
-        { nombre: "Licantén", region: "Maule", lat: -34.9828, lng: -72.0000 },
-        { nombre: "Molina", region: "Maule", lat: -35.0900, lng: -71.2789 },
-        { nombre: "Rauco", region: "Maule", lat: -34.9289, lng: -71.3108 },
-        { nombre: "Romeral", region: "Maule", lat: -34.9669, lng: -71.1328 },
-        { nombre: "Sagrada Familia", region: "Maule", lat: -35.0000, lng: -71.3828 },
-        { nombre: "Teno", region: "Maule", lat: -34.8728, lng: -71.1619 },
-        { nombre: "Vichuquén", region: "Maule", lat: -34.8228, lng: -72.0350 },
-        { nombre: "Linares", region: "Maule", lat: -35.8500, lng: -71.5850 },
-        { nombre: "Colbún", region: "Maule", lat: -35.7000, lng: -71.4169 },
-        { nombre: "Longaví", region: "Maule", lat: -35.9658, lng: -71.6819 },
-        { nombre: "Parral", region: "Maule", lat: -36.1469, lng: -71.8219 },
-        { nombre: "Retiro", region: "Maule", lat: -36.0458, lng: -71.7589 },
-        { nombre: "San Javier", region: "Maule", lat: -35.6000, lng: -71.7500 },
-        { nombre: "Villa Alegre", region: "Maule", lat: -35.6650, lng: -71.7419 },
-        { nombre: "Yerbas Buenas", region: "Maule", lat: -35.7500, lng: -71.5828 },
-        // Biobío
-        { nombre: "Concepción", region: "Biobío", lat: -36.8150, lng: -73.0289 },
-        { nombre: "Coronel", region: "Biobío", lat: -36.9819, lng: -73.1569 },
-        { nombre: "Chiguayante", region: "Biobío", lat: -36.9089, lng: -73.0278 },
-        { nombre: "Florida", region: "Biobío", lat: -36.8208, lng: -72.6619 },
-        { nombre: "Hualqui", region: "Biobío", lat: -36.9669, lng: -72.9328 },
-        { nombre: "Lota", region: "Biobío", lat: -37.0889, lng: -73.1550 },
-        { nombre: "Penco", region: "Biobío", lat: -36.7419, lng: -72.9978 },
-        { nombre: "San Pedro de La Paz", region: "Biobío", lat: -36.8639, lng: -73.1078 },
-        { nombre: "Santa Juana", region: "Biobío", lat: -37.1792, lng: -72.9353 },
-        { nombre: "Talcahuano", region: "Biobío", lat: -36.7358, lng: -73.1050 },
-        { nombre: "Tomé", region: "Biobío", lat: -36.6239, lng: -72.9500 },
-        { nombre: "Hualpén", region: "Biobío", lat: -36.7889, lng: -73.1100 },
-        { nombre: "Lebu", region: "Biobío", lat: -37.6058, lng: -73.6428 },
-        { nombre: "Arauco", region: "Biobío", lat: -37.2569, lng: -73.2839 },
-        { nombre: "Cañete", region: "Biobío", lat: -35.2828, lng: -72.2328 },
-        { nombre: "Contulmo", region: "Biobío", lat: -38.0050, lng: -73.2250 },
-        { nombre: "Curanilahue", region: "Biobío", lat: -37.4719, lng: -73.3478 },
-        { nombre: "Los Álamos", region: "Biobío", lat: -37.6208, lng: -73.4558 },
-        { nombre: "Tirúa", region: "Biobío", lat: -38.3389, lng: -73.4839 },
-        { nombre: "Los Ángeles", region: "Biobío", lat: -36.9439, lng: -72.3508 },
-        { nombre: "Antuco", region: "Biobío", lat: -37.3269, lng: -71.6778 },
-        { nombre: "Cabrero", region: "Biobío", lat: -37.0389, lng: -72.3989 },
-        { nombre: "Laja", region: "Biobío", lat: -37.2669, lng: -72.7000 },
-        { nombre: "Mulchén", region: "Biobío", lat: -37.7150, lng: -72.2389 },
-        { nombre: "Nacimiento", region: "Biobío", lat: -37.5008, lng: -72.6758 },
-        { nombre: "Negrete", region: "Biobío", lat: -37.5828, lng: -72.5169 },
-        { nombre: "Quilaco", region: "Biobío", lat: -37.6800, lng: -72.0069 },
-        { nombre: "Quilleco", region: "Biobío", lat: -37.4669, lng: -71.9669 },
-        { nombre: "San Rosendo", region: "Biobío", lat: -37.2578, lng: -72.7158 },
-        { nombre: "Santa Bárbara", region: "Biobío", lat: -37.6628, lng: -72.0178 },
-        { nombre: "Tucapel", region: "Biobío", lat: -37.6328, lng: -73.3328 },
-        { nombre: "Yumbel", region: "Biobío", lat: -37.0958, lng: -72.5558 },
-        { nombre: "Alto Biobío", region: "Biobío", lat: -38.6189, lng: -71.3242 },
-        // Araucanía
-        { nombre: "Temuco", region: "Araucanía", lat: -38.7269, lng: -72.5989 },
-        { nombre: "Carahue", region: "Araucanía", lat: -38.7069, lng: -73.1600 },
-        { nombre: "Cunco", region: "Araucanía", lat: -38.9300, lng: -72.0269 },
-        { nombre: "Curarrehue", region: "Araucanía", lat: -39.3589, lng: -71.5878 },
-        { nombre: "Freire", region: "Araucanía", lat: -38.9539, lng: -72.6219 },
-        { nombre: "Galvarino", region: "Araucanía", lat: -38.4000, lng: -72.7833 },
-        { nombre: "Gorbea", region: "Araucanía", lat: -39.0950, lng: -72.6719 },
-        { nombre: "Lautaro", region: "Araucanía", lat: -38.5289, lng: -72.4269 },
-        { nombre: "Loncoche", region: "Araucanía", lat: -39.3539, lng: -72.6278 },
-        { nombre: "Melipeuco", region: "Araucanía", lat: -38.8428, lng: -71.6869 },
-        { nombre: "Nueva Imperial", region: "Araucanía", lat: -38.7450, lng: -72.9500 },
-        { nombre: "Padre Las Casas", region: "Araucanía", lat: -38.7658, lng: -72.5928 },
-        { nombre: "Perquenco", region: "Araucanía", lat: -38.4169, lng: -72.3828 },
-        { nombre: "Pitrufquén", region: "Araucanía", lat: -38.9828, lng: -72.6428 },
-        { nombre: "Pucón", region: "Araucanía", lat: -39.2819, lng: -71.9539 },
-        { nombre: "Saavedra", region: "Araucanía", lat: -38.7828, lng: -73.4000 },
-        { nombre: "Teodoro Schmidt", region: "Araucanía", lat: -38.9667, lng: -73.0500 },
-        { nombre: "Toltén", region: "Araucanía", lat: -39.2169, lng: -73.2169 },
-        { nombre: "Vilcún", region: "Araucanía", lat: -39.1167, lng: -72.3794 },
-        { nombre: "Villarrica", region: "Araucanía", lat: -39.2800, lng: -72.2178 },
-        { nombre: "Cholchol", region: "Araucanía", lat: -38.6000, lng: -72.8500 },
-        { nombre: "Angol", region: "Araucanía", lat: -37.8028, lng: -72.7019 },
-        { nombre: "Collipulli", region: "Araucanía", lat: -37.9528, lng: -72.4319 },
-        { nombre: "Curacautín", region: "Araucanía", lat: -38.4319, lng: -71.8900 },
-        { nombre: "Ercilla", region: "Araucanía", lat: -38.0500, lng: -72.3833 },
-        { nombre: "Lonquimay", region: "Araucanía", lat: -38.4328, lng: -71.2328 },
-        { nombre: "Los Sauces", region: "Araucanía", lat: -37.9669, lng: -72.8328 },
-        { nombre: "Lumaco", region: "Araucanía", lat: -38.1628, lng: -72.9039 },
-        { nombre: "Purén", region: "Araucanía", lat: -38.0219, lng: -73.0700 },
-        { nombre: "Renaico", region: "Araucanía", lat: -37.6669, lng: -72.5828 },
-        { nombre: "Traiguén", region: "Araucanía", lat: -38.2478, lng: -72.6750 },
-        { nombre: "Victoria", region: "Araucanía", lat: -38.2300, lng: -72.3428 },
-        // Los Lagos
-        { nombre: "Puerto Montt", region: "Los Lagos", lat: -41.4539, lng: -72.9928 },
-        { nombre: "Calbuco", region: "Los Lagos", lat: -41.7578, lng: -73.1508 },
-        { nombre: "Cochamó", region: "Los Lagos", lat: -41.5000, lng: -72.3169 },
-        { nombre: "Fresia", region: "Los Lagos", lat: -41.1528, lng: -73.4200 },
-        { nombre: "Frutillar", region: "Los Lagos", lat: -41.1167, lng: -73.1000 },
-        { nombre: "Los Muermos", region: "Los Lagos", lat: -41.3908, lng: -73.4650 },
-        { nombre: "Llanquihue", region: "Los Lagos", lat: -41.2658, lng: -73.0119 },
-        { nombre: "Maullín", region: "Los Lagos", lat: -41.6178, lng: -73.5978 },
-        { nombre: "Puerto Varas", region: "Los Lagos", lat: -41.3228, lng: -72.9700 },
-        { nombre: "Castro", region: "Los Lagos", lat: -42.4778, lng: -73.7789 },
-        { nombre: "Ancud", region: "Los Lagos", lat: -41.8769, lng: -73.8139 },
-        { nombre: "Chonchi", region: "Los Lagos", lat: -42.6258, lng: -73.7808 },
-        { nombre: "Curaco de Vélez", region: "Los Lagos", lat: -42.4339, lng: -73.5819 },
-        { nombre: "Dalcahue", region: "Los Lagos", lat: -42.3739, lng: -73.6508 },
-        { nombre: "Puqueldón", region: "Los Lagos", lat: -42.6039, lng: -73.6839 },
-        { nombre: "Queilén", region: "Los Lagos", lat: -42.8739, lng: -73.4700 },
-        { nombre: "Quellón", region: "Los Lagos", lat: -43.1208, lng: -73.6078 },
-        { nombre: "Quemchi", region: "Los Lagos", lat: -42.1419, lng: -73.4778 },
-        { nombre: "Quinchao", region: "Los Lagos", lat: -42.4789, lng: -73.4969 },
-        { nombre: "Osorno", region: "Los Lagos", lat: -40.5739, lng: -73.1258 },
-        { nombre: "Puerto Octay", region: "Los Lagos", lat: -40.9669, lng: -72.9000 },
-        { nombre: "Purranque", region: "Los Lagos", lat: -40.9089, lng: -73.1750 },
-        { nombre: "Puyehue", region: "Los Lagos", lat: -40.7169, lng: -72.3208 },
-        { nombre: "Río Negro", region: "Los Lagos", lat: -41.9669, lng: -72.4500 },
-        { nombre: "San Juan de la Costa", region: "Los Lagos", lat: -40.5008, lng: -73.3919 },
-        { nombre: "San Pablo", region: "Los Lagos", lat: -40.4000, lng: -73.0167 },
-        { nombre: "Chaitén", region: "Los Lagos", lat: -42.8989, lng: -72.6669 },
-        { nombre: "Futaleufú", region: "Los Lagos", lat: -43.1678, lng: -71.8478 },
-        { nombre: "Hualaihué", region: "Los Lagos", lat: -41.9919, lng: -72.6669 },
-        // Aysén
-        { nombre: "Coihaique", region: "Aysén", lat: -45.5714, lng: -72.0667 },
-        { nombre: "Lago Verde", region: "Aysén", lat: -44.2333, lng: -71.8500 },
-        { nombre: "Aysén", region: "Aysén", lat: -45.4000, lng: -72.7000 },
-        { nombre: "Cisnes", region: "Aysén", lat: -44.7500, lng: -72.7000 },
-        { nombre: "Guaitecas", region: "Aysén", lat: -43.8833, lng: -73.7500 },
-        { nombre: "Río Ibáñez", region: "Aysén", lat: -46.3000, lng: -71.9333 },
-        { nombre: "Chile Chico", region: "Aysén", lat: -46.5333, lng: -71.7333 },
-        { nombre: "Cochrane", region: "Aysén", lat: -47.2500, lng: -72.5667 },
-        { nombre: "Tortel", region: "Aysén", lat: -47.8000, lng: -73.5333 },
-        { nombre: "O'Higgins", region: "Aysén", lat: -48.4667, lng: -72.5667 },
-        // Magallanes
-        { nombre: "Punta Arenas", region: "Magallanes", lat: -53.1638, lng: -70.9171 },
-        { nombre: "Río Verde", region: "Magallanes", lat: -52.6500, lng: -71.4833 },
-        { nombre: "Laguna Blanca", region: "Magallanes", lat: -52.4167, lng: -71.1667 },
-        { nombre: "San Gregorio", region: "Magallanes", lat: -52.3167, lng: -70.2167 },
-        { nombre: "Porvenir", region: "Magallanes", lat: -53.3000, lng: -70.3667 },
-        { nombre: "Primavera", region: "Magallanes", lat: -52.7167, lng: -69.2500 },
-        { nombre: "Timaukel", region: "Magallanes", lat: -53.7500, lng: -70.2500 },
-        { nombre: "Natales", region: "Magallanes", lat: -51.7333, lng: -72.5000 },
-        { nombre: "Torres del Paine", region: "Magallanes", lat: -51.2667, lng: -72.3500 },
-        { nombre: "Cabo de Hornos", region: "Magallanes", lat: -55.0833, lng: -67.0000 },
-        { nombre: "Antártica", region: "Magallanes", lat: -62.0000, lng: -58.0000 }
-    ];
+    // =============================================
+    // LISTA COMPLETA DE COMUNAS (desde comunas-stations.json)
+    // =============================================
+    let comunasList = [];
 
-    // Elementos del DOM
+    // Cargar comunas desde el backend
+    async function loadComunasList() {
+        try {
+            const response = await fetch('/api/comunas-list');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.comunas) {
+                    comunasList = data.comunas;
+                    console.log(`✅ Cargadas ${comunasList.length} comunas`);
+                }
+            }
+        } catch (err) {
+            console.error('Error cargando comunas:', err);
+        }
+    }
+    
+    loadComunasList();
+
+    // =============================================
+    // ELEMENTOS DEL DOM
+    // =============================================
+    
     const locationInput = document.getElementById('locationInput');
     const searchResults = document.getElementById('searchResults');
     const latInput = document.getElementById('lat');
     const lngInput = document.getElementById('lng');
+    const comunaInput = document.getElementById('comuna');
     const locationStatus = document.getElementById('locationStatus');
     const searchBtn = document.getElementById('searchLocationBtn');
     const getLocationBtn = document.getElementById('getLocationBtn');
+    const submitBtn = document.getElementById('submitBtn');
     const form = document.getElementById('marchaForm');
     const resultArea = document.getElementById('resultArea');
 
@@ -483,6 +197,10 @@
     const fuelLevelInput = document.getElementById('fuelLevel');
     const gaugeFill = document.getElementById('gaugeFill');
     const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
+
+    // =============================================
+    // FUEL LEVEL UI
+    // =============================================
 
     function updateFuelLevel(levelPct, levelName) {
         fuelLevelInput.value = levelPct;
@@ -512,17 +230,24 @@
     });
     updateFuelLevel(25, '1/4');
 
+    // =============================================
+    // BÚSQUEDA MANUAL DE COMUNAS
+    // =============================================
+
     function normalizeText(str) {
         return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 
     function searchComunas(query) {
-        if (!query || query.length < 2) {
+        if (!query || query.length < 2 || comunasList.length === 0) {
             searchResults.classList.add('hidden');
             return [];
         }
         const q = normalizeText(query);
-        const matches = comunas.filter(c => normalizeText(c.nombre).includes(q) || normalizeText(c.region).includes(q));
+        const matches = comunasList.filter(c => 
+            normalizeText(c.nombre).includes(q) || 
+            normalizeText(c.region).includes(q)
+        );
         matches.sort((a, b) => {
             const aStarts = normalizeText(a.nombre).startsWith(q);
             const bStarts = normalizeText(b.nombre).startsWith(q);
@@ -545,13 +270,17 @@
             </div>
         `).join('');
         searchResults.classList.remove('hidden');
+        
         document.querySelectorAll('.comuna-item').forEach(el => {
             el.addEventListener('click', () => {
                 latInput.value = parseFloat(el.dataset.lat);
                 lngInput.value = parseFloat(el.dataset.lng);
-                locationInput.value = el.dataset.nombre;
-                locationStatus.innerHTML = `📍 ${el.dataset.nombre}, ${el.dataset.region}`;
+                comunaInput.value = el.dataset.nombre;
+                locationInput.value = `${el.dataset.nombre}, ${el.dataset.region}`;
+                locationStatus.innerHTML = `📍 Comuna seleccionada: ${el.dataset.nombre}, ${el.dataset.region}`;
                 searchResults.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔍 Evaluar ahora';
             });
         });
     }
@@ -575,58 +304,98 @@
         }
     });
 
+    // =============================================
+    // GEOLOCATION + BACKEND COMMUNE DETECTION
+    // =============================================
+
     getLocationBtn.addEventListener('click', () => {
         locationStatus.innerHTML = '📍 Obteniendo tu ubicación...';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '🔍 Detectando...';
+        
         if (!navigator.geolocation) {
             locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔍 Evaluar ahora';
             return;
         }
+        
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
+                
                 latInput.value = lat;
                 lngInput.value = lng;
-                let closestComuna = null;
-                let minDist = Infinity;
-                for (const c of comunas) {
-                    const dist = Math.hypot(lat - c.lat, lng - c.lng);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closestComuna = c;
+                
+                console.log(`[Geolocation] Detectado: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                
+                try {
+                    locationStatus.innerHTML = '🔍 Detectando tu comuna...';
+                    
+                    const response = await fetch('/api/detect-commune', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat, lng })
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    
+                    if (data.ok && data.commune) {
+                        const comunaName = data.commune.nombre;
+                        const comunaRegion = data.commune.region;
+                        const distance = data.distance_km?.toFixed(1) || '?';
+                        
+                        comunaInput.value = comunaName;
+                        locationInput.value = `${comunaName}, ${comunaRegion}`;
+                        locationStatus.innerHTML = `✅ Ubicación confirmada: ${comunaName}, ${comunaRegion} (a ${distance}km)`;
+                        
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '🔍 Evaluar ahora';
+                        
+                        console.log(`[Backend] Comuna detectada: ${comunaName}`);
+                    } else {
+                        throw new Error(data.message || 'No se detectó comuna');
                     }
+                } catch (err) {
+                    console.error('[Backend Error]:', err);
+                    locationStatus.innerHTML = `⚠️ Error detectando comuna: ${err.message}. Prueba buscando manualmente.`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '🔍 Evaluar ahora';
                 }
-                if (closestComuna && minDist < 0.5) {
-                    locationInput.value = closestComuna.nombre;
-                    locationStatus.innerHTML = `📍 Ubicación detectada: ${closestComuna.nombre}, ${closestComuna.region}`;
-                } else {
-                    locationInput.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                    locationStatus.innerHTML = `📍 Ubicación detectada (coordenadas)`;
-                }
-                searchResults.classList.add('hidden');
             },
             (error) => {
                 let msg = '❌ No se pudo obtener tu ubicación. ';
-                if (error.code === 1) msg += 'Permite el acceso.';
+                if (error.code === 1) msg += 'Permite el acceso en configuración.';
+                else if (error.code === 2) msg += 'Servicio de ubicación no disponible.';
                 else msg += 'Intenta de nuevo.';
-                locationStatus.innerHTML = msg;
+                locationStatus.innerHTML = msg + ' Prueba buscando manualmente.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔍 Evaluar ahora';
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     });
+
+    // =============================================
+    // FORM SUBMISSION
+    // =============================================
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const lat = parseFloat(latInput.value);
         const lng = parseFloat(lngInput.value);
+        const comuna = comunaInput.value;
         
-        if (isNaN(lat) || isNaN(lng)) {
-            resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una ubicación válida.</div>`;
+        if (isNaN(lat) || isNaN(lng) || !comuna) {
+            resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una comuna válida o usa "Detectar".</div>`;
             return;
         }
 
-        resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><span style="font-size:0.8rem;">buscando mejor decisión para ti</span></div>`;
+        resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><span style="font-size:0.8rem;">analizando mejor decisión para ti</span></div>`;
 
         const contextType = document.getElementById('contextType').value;
         const kmPerLiter = parseFloat(document.getElementById('kmPerLiter').value);
@@ -653,7 +422,7 @@
                 user_lat: lat,
                 user_lon: lng,
                 fuel_type: fuelType,
-                reference_price: null,
+                comuna: comuna,
                 is_urban_peak: false,
                 toll_estimate: 0
             }
@@ -679,6 +448,10 @@
             resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Error</strong><br>No se pudo conectar con el motor.</div>`;
         }
     });
+
+    // =============================================
+    // RENDER DECISION
+    // =============================================
 
     function renderDecision(data) {
         const mode = data.mode;
