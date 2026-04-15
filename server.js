@@ -4,10 +4,10 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== IMPORTS (ajustados a tu repo real) =====
-let runPipeline;
+// ===== IMPORTS (corregido: usa getDecision, no runPipeline) =====
+let getDecision;
 try {
-  ({ runPipeline } = require("./src/pipeline"));
+  ({ getDecision } = require("./src/pipeline"));
 } catch (e) {
   console.error("Error cargando pipeline:", e.message);
 }
@@ -16,7 +16,7 @@ try {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ===== HEALTH CHECK (Render necesita esto vivo) =====
+// ===== HEALTH CHECK =====
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
 // ===== API =====
 app.post("/api/decide", async (req, res) => {
   try {
-    if (!runPipeline) {
+    if (!getDecision) {
       return res.status(500).json({
         error: "Pipeline no disponible",
       });
@@ -38,11 +38,7 @@ app.post("/api/decide", async (req, res) => {
       });
     }
 
-    const result = await runPipeline({
-      userProfile,
-      context,
-    });
-
+    const result = await getDecision(userProfile, context);
     res.json(result);
   } catch (err) {
     console.error("ERROR /api/decide:", err);
