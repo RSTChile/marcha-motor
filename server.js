@@ -2,55 +2,157 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
+const { runPipeline } = require('./src/pipeline');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/data', express.static(path.join(__dirname, 'data')));
 
-// Health check
+// =============================================
+// HEALTH CHECK
+// =============================================
+
 app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'running' });
 });
 
-// Estadísticas del dataset (implementación directa, sin funciones externas)
+// =============================================
+// LISTA DE COMUNAS PARA BÚSQUEDA MANUAL
+// =============================================
+
+app.get('/api/comunas-list', (req, res) => {
+  try {
+    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    if (!fs.existsSync(comunasFile)) {
+      return res.json({ comunas: [] });
+    }
+    const mapData = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    const comunasMap = mapData.comunas || {};
+    
+    const comunasList = Object.entries(comunasMap).map(([nombre, info]) => ({
+      nombre: nombre,
+      region: info.region,
+      lat: info.lat,
+      lng: info.lon
+    }));
+    
+    res.json({ comunas: comunasList });
+  } catch (err) {
+    console.error('[comunas-list] Error:', err);
+    res.json({ comunas: [] });
+  }
+});
+
+// =============================================
+// DETECTAR COMUNA POR COORDENADAS (GPS)
+// =============================================
+
+app.post('/api/detect-commune', async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return res.status(400).json({
+        ok: false,
+        message: 'Coordenadas inválidas'
+      });
+    }
+    
+    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    if (!fs.existsSync(comunasFile)) {
+      return res.status(500).json({
+        ok: false,
+        message: 'Mapeo de comunas no disponible'
+      });
+    }
+    
+    const mapData = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    const comunasMap = mapData.comunas || {};
+    
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+    
+    let closestComuna = null;
+    let minDist = Infinity;
+    
+    for (const [nombre, info] of Object.entries(comunasMap)) {
+      const dist = distanceMeters(lat, lng, info.lat, info.lon);
+      if (dist < minDist) {
+        minDist = dist;
+        closestComuna = { nombre, ...info };
+      }
+    }
+    
+    if (!closestComuna) {
+      return res.status(404).json({
+        ok: false,
+        message: 'No se encontró comuna cercana'
+      });
+    }
+    
+    res.json({
+      ok: true,
+      commune: {
+        nombre: closestComuna.nombre,
+        region: closestComuna.region,
+        lat: closestComuna.lat,
+        lon: closestComuna.lon
+      },
+      distance_km: minDist / 1000
+    });
+    
+  } catch (err) {
+    console.error('[detect-commune] Error:', err);
+    res.status(500).json({
+      ok: false,
+      message: 'Error detectando comuna'
+    });
+  }
+});
+
+// =============================================
+// ESTADÍSTICAS DEL MAPEO
+// =============================================
+
 app.get('/api/stats', (req, res) => {
   try {
-    const dataPath = path.join(__dirname, 'data', 'stations.json');
-    if (!fs.existsSync(dataPath)) {
-      return res.json({ ok: true, total: 0, message: 'Dataset no generado aún' });
+    const comunasFile = path.join(__dirname, 'data', 'comunas-stations.json');
+    if (!fs.existsSync(comunasFile)) {
+      return res.json({ ok: true, total: 0, message: 'Mapeo no disponible' });
     }
-    const raw = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    const total = raw.stations ? raw.stations.length : 0;
-    res.json({ ok: true, total, updated_at: raw.meta?.updated_at || null });
+    const raw = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
+    res.json({ 
+      ok: true, 
+      total_comunas: raw.meta?.total_comunas || 0,
+      total_stations: raw.meta?.total_stations || 0,
+      generated_at: raw.meta?.generated_at || null
+    });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    res.json({ ok: false, error: err.message });
   }
 });
 
-// Fuerza la ejecución manual del crawler
-app.get('/force-crawl', async (req, res) => {
-  try {
-    const { crawlAll } = require('./src/crawler');
-    console.log('[force-crawl] Iniciando crawler manual...');
-    await crawlAll({ testLimit: 500 });
-    res.json({ ok: true, message: 'Crawl completado' });
-  } catch (err) {
-    console.error('[force-crawl] Error:', err);
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
+// =============================================
+// MOTOR PRINCIPAL
+// =============================================
 
-// Motor real
 app.post('/api/decide', async (req, res) => {
   try {
-    const { runPipeline } = require('./src/pipeline');
     const { userProfile, context } = req.body;
 
     if (!userProfile || !context) {
       return res.status(400).json({
         ok: false,
-        error: 'Faltan userProfile o context',
+        error: 'Faltan userProfile o context'
       });
     }
 
@@ -58,22 +160,23 @@ app.post('/api/decide', async (req, res) => {
 
     res.json({
       ok: true,
-      result,
+      result
     });
   } catch (err) {
     console.error('ERROR /api/decide:', err);
     res.status(500).json({
       ok: false,
-      error: 'Error interno del sistema',
+      error: 'Error interno del sistema'
     });
   }
 });
 
-// Caso Cero (Llay-Llay, diesel, 25% estanque)
+// =============================================
+// CASO CERO (prueba directa)
+// =============================================
+
 app.get('/caso-cero', async (req, res) => {
   try {
-    const { runPipeline } = require('./src/pipeline');
-    
     const userProfile = {
       context_type: 'domestic',
       fuel_consumption: 10,
@@ -87,7 +190,8 @@ app.get('/caso-cero', async (req, res) => {
       user_lat: -32.8396,
       user_lon: -70.9530,
       fuel_type: 'diesel',
-      reference_price: 1500,
+      comuna: 'Llaillay',
+      reference_price: null,
       is_urban_peak: false,
       toll_estimate: 0,
     };
@@ -98,12 +202,15 @@ app.get('/caso-cero', async (req, res) => {
     console.error('ERROR /caso-cero:', err);
     res.status(500).json({
       ok: false,
-      error: 'Error ejecutando caso cero',
+      error: 'Error ejecutando caso cero'
     });
   }
 });
 
-// Frontend fallback
+// =============================================
+// FRONTEND FALLBACK
+// =============================================
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
