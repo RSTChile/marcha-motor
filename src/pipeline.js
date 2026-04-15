@@ -1,139 +1,359 @@
-/**
- * Marcha — Pipeline CORREGIDO
- * - Orden de parámetros fijo: decide(user, stations, context)
- * - Ruta dinámica (funciona local y en Render)
- * - Validación de entrada
- */
-
-const fs = require('fs');
-const path = require('path');
 const engine = require('./engine');
 
-// Ruta dinámica (funciona en cualquier entorno)
-const DATA_FILE = path.join(__dirname, '..', 'data', 'stations.json');
+// 🔧 CONFIGURACIÓN
+const ID_START = 1400;
+const ID_END = 1900;
+const MAX_CONCURRENT = 8;
+const FETCH_TIMEOUT_MS = 8000;
+const CACHE_TTL_MS = 300000; // 5 minutos
 
-// Distancia (Haversine)
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const toRad = deg => deg * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) *
-            Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+// 🔒 CACHÉ GLOBAL
+let stationCache = {
+  data: [],
+  timestamp: 0
+};
+
+// =============================================
+// CACHÉ UTILITIES
+// =============================================
+
+function isCacheValid() {
+  const isValid = (Date.now() - stationCache.timestamp) < CACHE_TTL_MS;
+  if (isValid) {
+    console.log(`[pipeline] 📦 Caché válido (${Math.round((CACHE_TTL_MS - (Date.now() - stationCache.timestamp)) / 1000)}s restantes)`);
+  }
+  return isValid;
 }
 
-// Cargar estaciones desde el archivo
-function loadStations() {
+function setCacheData(data) {
+  stationCache = {
+    data,
+    timestamp: Date.now()
+  };
+  console.log(`[pipeline] 💾 Caché actualizado con ${data.length} estaciones`);
+}
+
+// =============================================
+// FETCH ESTACIÓN (TIEMPO REAL)
+// =============================================
+
+async function fetchStation(id) {
   try {
-    console.log(`[pipeline] Buscando archivo en: ${DATA_FILE}`);
-    if (!fs.existsSync(DATA_FILE)) {
-      console.log('[pipeline] stations.json no existe');
-      return [];
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const res = await fetch(
+      `https://api.bencinaenlinea.cl/api/estacion_ciudadano/${id}`,
+      {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Origin': 'https://www.bencinaenlinea.cl',
+          'Referer': 'https://www.bencinaenlinea.cl/',
+        }
+      }
+    );
+
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    const d = json?.data;
+
+    if (!d?.latitud || !d?.longitud) return null;
+
+    const precios = {};
+
+    for (const c of d.combustibles || []) {
+      if (!c.precio) continue;
+
+      if (c.nombre_corto === 'DI') precios.diesel = parseFloat(c.precio);
+      if (c.nombre_corto === '93') precios.gas93 = parseFloat(c.precio);
+      if (c.nombre_corto === '95') precios.gas95 = parseFloat(c.precio);
+      if (c.nombre_corto === '97') precios.gas97 = parseFloat(c.precio);
     }
-    const raw = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    const stations = raw.stations || [];
-    console.log(`[pipeline] Cargadas ${stations.length} estaciones`);
-    return stations;
+
+    if (Object.keys(precios).length === 0) return null;
+
+    return {
+      id: d.id,
+      nombre: d.razon_social?.razon_social || 'Estación',
+      marca: d.marca || 'NA',
+      region: d.region || '',
+      lat: parseFloat(d.latitud),
+      lon: parseFloat(d.longitud),
+      precios,
+      fetched_at: Date.now()
+    };
+
   } catch (err) {
-    console.error('[pipeline] Error cargando stations.json:', err.message);
-    return [];
+    return null;
   }
 }
 
-// Función principal
+// =============================================
+// DISTANCIA
+// =============================================
+
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  return engine.distanceMeters(lat1, lon1, lat2, lon2);
+}
+
+// =============================================
+// FETCH CONCURRENTE CON PROGRESO
+// =============================================
+
+async function fetchStationsBatch() {
+  console.log('[pipeline] 🔄 Iniciando fetch de estaciones...');
+  
+  const ids = [];
+  for (let i = ID_START; i <= ID_END; i++) ids.push(i);
+
+  const results = [];
+  const totalBatches = Math.ceil(ids.length / MAX_CONCURRENT);
+
+  for (let i = 0; i < ids.length; i += MAX_CONCURRENT) {
+    const batchNum = Math.floor(i / MAX_CONCURRENT) + 1;
+    const chunk = ids.slice(i, i + MAX_CONCURRENT);
+
+    const batch = await Promise.all(
+      chunk.map(id => fetchStation(id))
+    );
+
+    const valid = batch.filter(Boolean);
+    results.push(...valid);
+
+    const progress = Math.round((batchNum / totalBatches) * 100);
+    console.log(`[pipeline] Batch ${batchNum}/${totalBatches} (${progress}%) - ${results.length} estaciones`);
+  }
+
+  console.log(`[pipeline] ✅ Fetch completado: ${results.length} estaciones`);
+  return results;
+}
+
+// =============================================
+// INFERIR ZONA DESDE REGIÓN
+// =============================================
+
+function inferZoneType(region) {
+  if (!region) return 'semi';
+  
+  if (region.toLowerCase().includes('metropolitana')) return 'urban';
+  
+  const semiUrban = ['valparaíso', 'coquimbo', 'biobío', 'maule', "o'higgins", 'araucanía', 'los lagos'];
+  if (semiUrban.some(r => region.toLowerCase().includes(r))) return 'semi';
+  
+  return 'rural';
+}
+
+// =============================================
+// CALCULAR PRECIO REFERENCIA
+// =============================================
+
+function calculateReferencePrice(stations) {
+  const allPrices = [];
+  
+  for (const s of stations) {
+    for (const [fuel, price] of Object.entries(s.precios)) {
+      if (price && price > 0) {
+        allPrices.push(price);
+      }
+    }
+  }
+
+  if (allPrices.length === 0) return 1500; // fallback
+
+  allPrices.sort((a, b) => a - b);
+  const mid = Math.floor(allPrices.length / 2);
+  
+  // Retornar mediana
+  return allPrices.length % 2 !== 0 
+    ? allPrices[mid]
+    : Math.round((allPrices[mid - 1] + allPrices[mid]) / 2);
+}
+
+// =============================================
+// FILTRO GEOGRÁFICO
+// =============================================
+
+function getNearby(stations, lat, lon, radiusMeters) {
+  return stations
+    .map(s => ({
+      ...s,
+      dist: distanceMeters(lat, lon, s.lat, s.lon)
+    }))
+    .filter(s => s.dist <= radiusMeters)
+    .sort((a, b) => a.dist - b.dist);
+}
+
+// =============================================
+// PREPARAR PARA ENGINE
+// =============================================
+
+function prepareStation(station, fuelType) {
+  const price = station.precios[fuelType];
+  if (!price || price <= 0) return null;
+
+  const ageMinutes = Math.round((Date.now() - station.fetched_at) / 60000);
+
+  return {
+    id: station.id,
+    nombre: station.nombre,
+    marca: station.marca,
+    lat: station.lat,
+    lon: station.lon,
+    precio_actual: price,
+    precio_convenio: null,
+    data_age_minutes: Math.min(ageMinutes, 60), // max 60 min
+    report_count: 1,
+    zone_type: inferZoneType(station.region),
+    leaves_main_route: false,
+  };
+}
+
+// =============================================
+// PIPELINE PRINCIPAL
+// =============================================
+
 async function runPipeline({ userProfile, context }) {
   try {
-    console.log('[pipeline] Iniciando runPipeline');
-    
-    const { user_lat, user_lon, fuel_type = 'diesel', reference_price = 1500, is_urban_peak = false, toll_estimate = 0 } = context;
-    
-    // Validar coordenadas
+    console.log('[pipeline] 🚀 runPipeline iniciado');
+
+    const {
+      user_lat,
+      user_lon,
+      fuel_type = 'diesel'
+    } = context;
+
+    // Validar entrada
     if (typeof user_lat !== 'number' || typeof user_lon !== 'number') {
-      console.log('[pipeline] Coordenadas inválidas:', user_lat, user_lon);
-      return { mode: 3, recommendation: null, alternative: null, message: 'Ubicación inválida' };
+      console.log('[pipeline] ❌ Coordenadas inválidas');
+      return {
+        mode: 3,
+        recommendation: null,
+        alternative: null,
+        message: 'Ubicación inválida'
+      };
     }
 
-    console.log(`[pipeline] Buscando cerca de (${user_lat}, ${user_lon})`);
-
-    // Cargar estaciones
-    const allStations = loadStations();
-    if (!allStations.length) {
-      return { mode: 3, recommendation: null, alternative: null, message: 'No hay datos de estaciones' };
-    }
-
-    // Radio de búsqueda (50 km)
-    const radiusMeters = 50000;
+    // 🔥 1. Obtener estaciones (con caché)
+    let allStations;
     
-    // Filtrar estaciones cercanas
-    const nearby = allStations
-      .filter(s => {
-        if (typeof s.lat !== 'number' || typeof s.lon !== 'number') return false;
-        const dist = distanceMeters(user_lat, user_lon, s.lat, s.lon);
-        return dist <= radiusMeters;
-      })
-      .map(s => ({ ...s, _dist_m: distanceMeters(user_lat, user_lon, s.lat, s.lon) }))
-      .sort((a, b) => a._dist_m - b._dist_m)
-      .slice(0, 20);
+    if (isCacheValid()) {
+      allStations = stationCache.data;
+    } else {
+      console.log('[pipeline] ⏳ Caché expirado, fetching nueva data...');
+      allStations = await fetchStationsBatch();
+      
+      if (allStations.length === 0) {
+        return {
+          mode: 3,
+          recommendation: null,
+          alternative: null,
+          message: 'No hay datos disponibles en este momento'
+        };
+      }
+      
+      setCacheData(allStations);
+    }
 
-    console.log(`[pipeline] Encontradas ${nearby.length} estaciones cerca`);
+    console.log(`[pipeline] 📍 Buscando estaciones cerca de (${user_lat}, ${user_lon})`);
 
+    // 🔥 2. Filtro cercano (30km)
+    let nearby = getNearby(allStations, user_lat, user_lon, 30000);
+
+    // 🔥 3. Fallback sin cercanas
     if (!nearby.length) {
-      return { mode: 3, recommendation: null, alternative: null, message: 'No hay estaciones en un radio de 50 km' };
+      console.log('[pipeline] ⚠️ Sin estaciones en 30km, usando fallback');
+      nearby = allStations
+        .map(s => ({
+          ...s,
+          dist: distanceMeters(user_lat, user_lon, s.lat, s.lon)
+        }))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 10);
     }
 
-    // Preparar estaciones para el motor
-    const stationsForEngine = [];
-    
-    for (const s of nearby) {
-      const precio = s.precios?.[fuel_type];
-      if (!precio) continue;
-      
-      const ageMinutes = s.updated_at ? (Date.now() - new Date(s.updated_at).getTime()) / 60000 : 999;
-      
-      stationsForEngine.push({
-        id: s.id,
-        nombre: s.nombre,
-        marca: s.marca,
-        lat: s.lat,
-        lon: s.lon,
-        precio_actual: precio,
-        precio_convenio: null,
-        data_age_minutes: Math.round(ageMinutes),
-        report_count: s.report_count || 1,
-        zone_type: s.zone_type || 'semi',
-        leaves_main_route: false
+    console.log(`[pipeline] 📌 ${nearby.length} estaciones cercanas`);
+
+    // 🔥 4. Preparar para engine
+    let engineStations = nearby
+      .map(s => prepareStation(s, fuel_type))
+      .filter(Boolean);
+
+    // 🔥 5. Fallback combustible
+    if (!engineStations.length) {
+      console.log(`[pipeline] ⚠️ Sin ${fuel_type}, usando cualquier combustible`);
+      engineStations = nearby.slice(0, 3).map(s => {
+        const firstFuel = Object.keys(s.precios)[0];
+        return {
+          id: s.id,
+          nombre: s.nombre,
+          marca: s.marca,
+          lat: s.lat,
+          lon: s.lon,
+          precio_actual: s.precios[firstFuel],
+          precio_convenio: null,
+          data_age_minutes: Math.round((Date.now() - s.fetched_at) / 60000),
+          report_count: 1,
+          zone_type: inferZoneType(s.region),
+          leaves_main_route: false,
+        };
       });
     }
 
-    console.log(`[pipeline] Preparadas ${stationsForEngine.length} estaciones para el motor`);
-
-    if (!stationsForEngine.length) {
-      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} cerca` };
+    // 🔒 Garantía
+    if (!engineStations || engineStations.length === 0) {
+      console.log('[pipeline] ❌ Sin estaciones utilizables');
+      return {
+        mode: 3,
+        recommendation: null,
+        alternative: null,
+        message: 'No hay estaciones disponibles'
+      };
     }
 
-    // Contexto para el motor
-    const engineContext = {
-      user_lat,
-      user_lon,
-      reference_price,
-      is_urban_peak,
-      toll_estimate
-    };
+    // Calcular precio referencia dinámicamente
+    const refPrice = calculateReferencePrice(engineStations);
+    console.log(`[pipeline] 💹 Precio referencia calculado: $${refPrice}`);
 
-    console.log('[pipeline] Llamando a engine.decide...');
-    // 🔥 CORRECCIÓN CRÍTICA: orden correcto de parámetros
-    const result = engine.decide(userProfile, stationsForEngine, engineContext);
-    console.log('[pipeline] Motor respondió con mode:', result.mode);
-    
+    // 🔥 6. DECISIÓN (PARÁMETROS CORRECTOS)
+    const result = engine.decide(
+      userProfile,
+      engineStations,
+      {
+        user_lat,
+        user_lon,
+        reference_price: refPrice,
+        is_urban_peak: context.is_urban_peak || false,
+        toll_estimate: context.toll_estimate || 0
+      }
+    );
+
+    console.log(`[pipeline] ✅ Motor respondió con mode: ${result.mode}`);
     return result;
 
   } catch (err) {
-    console.error('[pipeline] Error fatal:', err);
-    return { mode: 3, recommendation: null, alternative: null, message: `Error: ${err.message}` };
+    console.error('[pipeline] 🔥 Error fatal:', err);
+    return {
+      mode: 3,
+      recommendation: null,
+      alternative: null,
+      message: `Error: ${err.message}`
+    };
   }
 }
 
-module.exports = { runPipeline };
+module.exports = {
+  runPipeline,
+  // Para testing/debug
+  fetchStationsBatch,
+  getNearby,
+  prepareStation,
+  calculateReferencePrice,
+  clearCache: () => {
+    stationCache = { data: [], timestamp: 0 };
+    console.log('[pipeline] 🗑️ Caché limpiado');
+  }
+};
