@@ -1,8 +1,9 @@
 /**
- * Script para construir el mapeo comuna → IDs de estaciones
+ * Script para construir el mapeo COMPLETO comuna → IDs de estaciones
  * Ejecutar: node scripts/build-comuna-map.js
  * 
  * Este script consulta la API y genera data/comunas-stations.json
+ * Rango: 1-2260 (todas las estaciones reales)
  */
 
 const fs = require('fs');
@@ -10,7 +11,7 @@ const path = require('path');
 
 const API_BASE = 'https://api.bencinaenlinea.cl/api/estacion_ciudadano';
 const ID_START = 1;
-const ID_END = 3000;
+const ID_END = 2260;  // ✅ RANGO EXACTO CONFIRMADO
 const BATCH_SIZE = 20;
 const DELAY_MS = 100;
 
@@ -40,13 +41,24 @@ async function fetchStation(id) {
     clearTimeout(timeout);
     
     if (!res.ok) return null;
+    
     const json = await res.json();
     const data = json?.data;
     
     if (!data?.latitud || !data?.longitud) return null;
     if (!data?.comuna) return null;
     
-    const result = { id: data.id, comuna: data.comuna, region: data.region };
+    // ✅ Guardar información completa
+    const result = {
+      id: data.id,
+      nombre: data.razon_social?.razon_social || 'Estación',
+      marca: data.marca || 'Desconocida',
+      comuna: data.comuna,
+      region: data.region || '',
+      lat: parseFloat(data.latitud),
+      lon: parseFloat(data.longitud)
+    };
+    
     cache.set(id, result);
     return result;
     
@@ -56,11 +68,15 @@ async function fetchStation(id) {
 }
 
 async function buildComunaMap() {
-  console.log('🔍 Construyendo mapeo comuna → IDs...\n');
+  console.log('🔍 Construyendo mapeo COMPLETO comuna → IDs...\n');
+  console.log(`📌 Rango: ${ID_START}-${ID_END}`);
+  console.log(`⏱️  Estimado: ${Math.ceil((ID_END - ID_START) / BATCH_SIZE) * (DELAY_MS / 1000) / 60} minutos\n`);
   
   const comunaMap = {};
   let totalValid = 0;
   let processed = 0;
+  let nullCount = 0;
+  let startTime = Date.now();
   
   for (let start = ID_START; start <= ID_END; start += BATCH_SIZE) {
     const end = Math.min(start + BATCH_SIZE - 1, ID_END);
@@ -69,31 +85,44 @@ async function buildComunaMap() {
     const results = await Promise.all(ids.map(id => fetchStation(id)));
     
     for (const station of results) {
-      if (!station) continue;
+      if (!station) {
+        nullCount++;
+        continue;
+      }
       
       const comuna = station.comuna;
       if (!comunaMap[comuna]) {
         comunaMap[comuna] = {
           region: station.region,
-          station_ids: []
+          lat: station.lat,
+          lon: station.lon,
+          stations: []
         };
       }
       
-      if (!comunaMap[comuna].station_ids.includes(station.id)) {
-        comunaMap[comuna].station_ids.push(station.id);
+      // ✅ Guardar información completa de la estación
+      if (!comunaMap[comuna].stations.find(s => s.id === station.id)) {
+        comunaMap[comuna].stations.push({
+          id: station.id,
+          nombre: station.nombre,
+          marca: station.marca
+        });
         totalValid++;
       }
     }
     
     processed += ids.length;
-    console.log(`📊 Progreso: ${processed}/${ID_END} (${Math.round(processed/ID_END*100)}%) - ${totalValid} IDs válidos en ${Object.keys(comunaMap).length} comunas`);
+    const progress = Math.round(processed / ID_END * 100);
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    
+    console.log(`📊 ${progress}% | ${processed}/${ID_END} | ✅ ${totalValid} estaciones | ❌ ${nullCount} vacíos | ⏱️ ${elapsed}s`);
     
     await sleep(DELAY_MS);
   }
   
-  // Ordenar IDs dentro de cada comuna
+  // ✅ Ordenar estaciones dentro de cada comuna
   for (const comuna in comunaMap) {
-    comunaMap[comuna].station_ids.sort((a, b) => a - b);
+    comunaMap[comuna].stations.sort((a, b) => a.id - b.id);
   }
   
   // Guardar archivo
@@ -106,15 +135,36 @@ async function buildComunaMap() {
       generated_at: new Date().toISOString(),
       total_comunas: Object.keys(comunaMap).length,
       total_stations: totalValid,
-      source: 'API BencinaEnLinea'
+      id_range: `${ID_START}-${ID_END}`,
+      source: 'API BencinaEnLinea - Real-time',
+      ids_checked: processed,
+      ids_empty: nullCount
     },
     comunas: comunaMap
   };
   
   fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  
+  const totalTime = Math.round((Date.now() - startTime) / 1000);
+  
   console.log(`\n✅ Archivo guardado en: ${outputPath}`);
-  console.log(`📊 Total comunas: ${Object.keys(comunaMap).length}`);
-  console.log(`📍 Total estaciones: ${totalValid}`);
+  console.log(`\n📊 ESTADÍSTICAS FINALES:`);
+  console.log(`  Total comunas: ${Object.keys(comunaMap).length}`);
+  console.log(`  Total estaciones: ${totalValid}`);
+  console.log(`  IDs procesados: ${processed}`);
+  console.log(`  IDs vacíos: ${nullCount}`);
+  console.log(`  Tiempo total: ${totalTime}s`);
+  console.log(`  Rango: ${ID_START}-${ID_END}`);
+  
+  // ✅ Mostrar top 10 comunas por estaciones
+  const top10 = Object.entries(comunaMap)
+    .sort((a, b) => b[1].stations.length - a[1].stations.length)
+    .slice(0, 10);
+  
+  console.log(`\n🏆 TOP 10 COMUNAS MÁS ESTACIONES:`);
+  top10.forEach(([nombre, info], idx) => {
+    console.log(`  ${idx + 1}. ${nombre} (${info.region}): ${info.stations.length} estaciones`);
+  });
 }
 
 buildComunaMap().catch(console.error);
