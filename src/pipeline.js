@@ -389,5 +389,6 @@ async function runPipeline(userProfile, context) {
     return { mode: 3, recommendation: null, alternative: null, message: 'Error interno: ' + err.message };
   }
 }
-
+// NUEVAS FUNCIONES PARA TOP 3 (agregar al final, antes de module.exports)
+function getNearbyStations(comunaData, maxStations = 20)
 module.exports = { runPipeline };
