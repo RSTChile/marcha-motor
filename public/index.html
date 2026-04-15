@@ -488,7 +488,9 @@ function renderDecision(data) {
         html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} L</strong></div>`;
         html += `<div class="detail-row"><span>Costo total</span><strong>$${fmt(total)}</strong></div>`;
         if (netSave > 0) {
-            html += `<div class="detail-row"><span>Ahorro total en esta carga</span><strong>$${fmt(netSave)}</strong></div>`;
+            html += `<div class="detail-row"><span>Ahorro estimado en esta carga</span><strong>${fmt(netSave)}</strong></div>`;
+        } else {
+            html += `<div class="detail-row"><span>Ahorro estimado en esta carga</span><strong>$0 · No hay diferencial disponible hoy</strong></div>`;
         }
         html += `<div class="detail-row"><span>Distancia</span><strong>${dist > 0 ? dist.toFixed(1) + ' km' : 'En tu ruta'}</strong></div>`;
 
