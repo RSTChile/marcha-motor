@@ -11,9 +11,9 @@
         .card { background: white; border-radius: 2rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1.5rem; }
         .card-header { background: #0b3b3f; color: white; padding: 1.5rem; text-align: center; }
         .logo-container { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-        .logo { width: 50px; height: 50px; object-fit: contain; border-radius: 50%; background: white; padding: 5px; }
+        .logo { width: 50px; height: 50px; object-fit: contain; }
         .card-header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.5px; }
-        .card-header p { opacity: 0.8; margin-top: 0.25rem; font-size: 0.85rem; }
+        .card-header p { opacity: 0.9; margin-top: 0.25rem; font-size: 0.85rem; }
         .card-body { padding: 1.5rem; }
         .form-group { margin-bottom: 1.25rem; }
         label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; color: #2c5f6b; }
@@ -65,14 +65,14 @@
                 <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" class="logo" onerror="this.style.display='none'">
                 <h1>⛽ En Marcha de RST Chile</h1>
             </div>
-            <p>decide si vale la pena cargar · no adivina, calcula</p>
+            <p>Decide dónde vale la pena cargar · La App no adivina: calcula la mejor alternativa para ti.</p>
         </div>
         <div class="card-body">
             <form id="marchaForm">
                 <div class="form-group">
                     <label>📍 Tu ubicación</label>
                     <div class="location-row">
-                        <input type="text" id="locationInput" placeholder="Escribe una comuna o presiona 'Detectar'" autocomplete="off">
+                        <input type="text" id="locationInput" placeholder="Escribe tu comuna (ej: Llay-Llay, Santiago, etc.)" autocomplete="off">
                         <button type="button" id="searchLocationBtn" class="btn-secondary">🔍 Buscar</button>
                         <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Detectar</button>
                     </div>
@@ -143,7 +143,7 @@
 
             <div id="resultArea">
                 <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e;">
-                    📍 Ingresa tu ubicación o presiona "Detectar"<br>
+                    📍 Ingresa tu comuna o presiona "Detectar"<br>
                     <span style="font-size:0.8rem;">La app analizará estaciones reales en tu zona</span>
                 </div>
             </div>
@@ -154,27 +154,23 @@
 
 <script>
     // =============================================
-    // LISTA COMPLETA DE COMUNAS (desde comunas-stations.json)
+    // CARGAR LISTA DE COMUNAS DESDE JSON EXTERNO
     // =============================================
     let comunasList = [];
 
-    // Cargar comunas desde el backend
-    async function loadComunasList() {
+    async function loadComunas() {
         try {
-            const response = await fetch('/api/comunas-list');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.comunas) {
-                    comunasList = data.comunas;
-                    console.log(`✅ Cargadas ${comunasList.length} comunas`);
-                }
-            }
+            const response = await fetch('/data/comunas-completo.json');
+            if (!response.ok) throw new Error('No se pudo cargar la lista de comunas');
+            const data = await response.json();
+            comunasList = data.comunas || [];
+            console.log(`✅ ${comunasList.length} comunas cargadas`);
         } catch (err) {
             console.error('Error cargando comunas:', err);
+            comunasList = [];
         }
     }
-    
-    loadComunasList();
+    loadComunas();
 
     // =============================================
     // ELEMENTOS DEL DOM
@@ -197,10 +193,6 @@
     const fuelLevelInput = document.getElementById('fuelLevel');
     const gaugeFill = document.getElementById('gaugeFill');
     const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
-
-    // =============================================
-    // FUEL LEVEL UI
-    // =============================================
 
     function updateFuelLevel(levelPct, levelName) {
         fuelLevelInput.value = levelPct;
@@ -314,7 +306,7 @@
         submitBtn.textContent = '🔍 Detectando...';
         
         if (!navigator.geolocation) {
-            locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización.';
+            locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización. Prueba buscando manualmente.';
             submitBtn.disabled = false;
             submitBtn.textContent = '🔍 Evaluar ahora';
             return;
