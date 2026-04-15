@@ -44,7 +44,8 @@
         .mode-3 { background: #e2e8f0; color: #334155; }
         .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
         .station-address { font-size: 0.8rem; color: #5b6e8c; margin-bottom: 0.5rem; }
-        .saving { font-size: 1.5rem; font-weight: 800; color: #0b3b3f; margin: 0.5rem 0; }
+        .saving { font-size: 1.3rem; font-weight: 700; color: #0b3b3f; margin: 0.5rem 0; }
+        .saving-amount { font-size: 1.8rem; font-weight: 800; color: #0b3b3f; }
         .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
         .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-style: italic; }
         .footer { text-align: center; font-size: 0.7rem; color: #5b6e8c; margin-top: 1rem; }
@@ -56,6 +57,7 @@
         .comuna-region { font-size: 0.7rem; color: #5b6e8c; }
         .hidden { display: none; }
         .location-status { font-size: 0.75rem; margin-top: 0.5rem; color: #5b6e8c; }
+        .direction-select { background: #f0f4f8; border: 1px solid #cbd5e1; }
     </style>
 </head>
 <body>
@@ -85,6 +87,18 @@
                 </div>
 
                 <div class="form-group">
+                    <label>🧭 Dirección de viaje (opcional)</label>
+                    <select id="direction" class="direction-select">
+                        <option value="">📌 No especificar / Estoy en la ciudad</option>
+                        <option value="north_to_south">⬇️ Norte → Sur (bajando hacia Santiago)</option>
+                        <option value="south_to_north">⬆️ Sur → Norte (subiendo desde Santiago)</option>
+                        <option value="east_to_west">⬅️ Este → Oeste</option>
+                        <option value="west_to_east">➡️ Oeste → Este</option>
+                    </select>
+                    <small style="color:#6c7a91">Si estás en ruta, indícalo para optimizar la recomendación</small>
+                </div>
+
+                <div class="form-group">
                     <label>🚗 Tipo de uso</label>
                     <select id="contextType">
                         <option value="domestic">🚘 Doméstico / particular</option>
@@ -95,7 +109,7 @@
 
                 <div class="form-group">
                     <label>⛽ Rendimiento de tu auto (km/L)</label>
-                    <input type="number" id="kmPerLiter" value="10" step="0.5">
+                    <input type="number" id="kmPerLiter" value="13" step="0.5">
                     <small style="color:#6c7a91">Cuántos kilómetros recorres con 1 litro</small>
                 </div>
 
@@ -106,7 +120,7 @@
                     </div>
                     <div class="form-group">
                         <label>💰 Presupuesto hoy ($)</label>
-                        <input type="number" id="budget" value="25000" step="5000">
+                        <input type="number" id="budget" value="50000" step="5000">
                     </div>
                 </div>
 
@@ -401,13 +415,14 @@
         const fuelLevel = parseFloat(document.getElementById('fuelLevel').value);
         const budget = parseFloat(document.getElementById('budget').value);
         const fuelType = document.getElementById('fuelType').value;
+        const direction = document.getElementById('direction').value;
 
         if (isNaN(consumption) || consumption <= 0) {
-            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 10 km/L).</div>`;
+            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 13 km/L).</div>`;
             return;
         }
 
-        // Normalizar nombre de comuna para buscar en el backend
+        // Normalizar nombre de comuna
         const comunaNormalized = comuna.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay');
         
         const payload = {
@@ -423,6 +438,7 @@
                 user_lon: lng,
                 fuel_type: fuelType,
                 comuna: comunaNormalized,
+                direction: direction,
                 is_urban_peak: false,
                 toll_estimate: 0
             }
@@ -450,7 +466,7 @@
     });
 
     // =============================================
-    // RENDER DECISION (con decimales redondeados)
+    // RENDER DECISION
     // =============================================
 
     function renderDecision(data) {
@@ -467,20 +483,38 @@
         if (mode === 0 && data.recommendation) {
             const rec = data.recommendation;
             const station = rec.station || {};
-            // Redondear ahorro hacia abajo
-            let netSaving = Math.floor(rec.net_saving || 0);
-            const price = Math.floor(rec.display_price || 0);
+            const price = rec.display_price || 0;
             const liters = rec.display_liters || 0;
             const distance = rec.display_distance_km || 0;
-            const totalCost = Math.floor(price * liters);
+            const totalCost = rec.display_total_cost || Math.floor(price * liters);
+            const netSaving = Math.floor(rec.net_saving || 0);
+            const refPrice = rec.display_reference_price || price;
+            const savingPerLiter = refPrice - price;
             
             html += `<div class="station-name">⛽ ${station.nombre || 'Estación'}</div>`;
             if (station.direccion) html += `<div class="station-address">📍 ${station.direccion}, ${station.comuna || ''}</div>`;
-            html += `<div class="saving">💰 Ahorro neto: $${netSaving.toLocaleString('es-CL')}</div>`;
-            html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price.toLocaleString('es-CL')}</strong></div>`;
+            
+            if (savingPerLiter > 0) {
+                html += `<div class="saving">💰 Ahorro: <span class="saving-amount">$${savingPerLiter.toLocaleString('es-CL')}</span> por litro</div>`;
+                html += `<div class="detail-row"><span>Precio en esta estación</span><strong>$${price.toLocaleString('es-CL')} /L</strong></div>`;
+                html += `<div class="detail-row"><span>Precio promedio en la zona</span><strong>$${refPrice.toLocaleString('es-CL')} /L</strong></div>`;
+            } else if (savingPerLiter < 0) {
+                html += `<div class="saving">⚠️ Estación ${Math.abs(savingPerLiter).toLocaleString('es-CL')} más cara que el promedio</div>`;
+                html += `<div class="detail-row"><span>Precio en esta estación</span><strong>$${price.toLocaleString('es-CL')} /L</strong></div>`;
+            } else {
+                html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price.toLocaleString('es-CL')}</strong></div>`;
+            }
+            
             html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} litros</strong></div>`;
             html += `<div class="detail-row"><span>Costo total aproximado</span><strong>$${totalCost.toLocaleString('es-CL')}</strong></div>`;
-            html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>${distance.toFixed(1)} km</strong></div>`;
+            if (netSaving > 0) {
+                html += `<div class="detail-row"><span>Ahorro total en esta carga</span><strong>$${netSaving.toLocaleString('es-CL')}</strong></div>`;
+            }
+            if (distance > 0) {
+                html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>${distance.toFixed(1)} km</strong></div>`;
+            } else {
+                html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>En tu ruta</strong></div>`;
+            }
             
             if (station.precios_detalle && station.precios_detalle.length > 0) {
                 html += `<div style="margin-top: 0.8rem; font-size: 0.8rem; background: #f0f4f8; padding: 0.5rem; border-radius: 0.5rem;">`;
@@ -496,7 +530,9 @@
                 const altStation = alt.station || {};
                 let altSaving = Math.floor(alt.net_saving || 0);
                 html += `<hr>`;
-                html += `<div style="font-size:0.85rem; opacity:0.8;">🔄 Alternativa: ${altStation.nombre || 'otra estación'} · ahorro $${altSaving.toLocaleString('es-CL')}</div>`;
+                html += `<div style="font-size:0.85rem; opacity:0.8;">🔄 Alternativa: ${altStation.nombre || 'otra estación'}`;
+                if (altSaving > 0) html += ` · ahorro $${altSaving.toLocaleString('es-CL')}`;
+                html += `</div>`;
                 if (altStation.direccion) html += `<div style="font-size:0.75rem; opacity:0.7;">📍 ${altStation.direccion}</div>`;
             }
         } else if (mode === 0 && !data.recommendation) {
