@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Marcha · RST Chile</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -35,7 +35,6 @@
             overflow-x: hidden;
         }
 
-        /* Fondo con retícula tenue */
         body::before {
             content: '';
             position: fixed;
@@ -56,7 +55,7 @@
             padding: 1.5rem 1rem 4rem;
         }
 
-        /* ── HEADER ── */
+        /* Header */
         .header {
             display: flex;
             align-items: center;
@@ -74,14 +73,6 @@
             border: 1px solid var(--line2);
         }
         .logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .logo-wrap-fallback {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--line2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; flex-shrink: 0;
-        }
         .header-text h1 {
             font-size: 1.5rem;
             font-weight: 800;
@@ -111,10 +102,8 @@
             50% { opacity: 0.3; }
         }
 
-        /* ── SECCIONES DEL FORMULARIO ── */
-        .section {
-            margin-bottom: 0.5rem;
-        }
+        /* Formulario */
+        .section { margin-bottom: 0.5rem; }
         .field-label {
             font-family: var(--mono);
             font-size: 0.62rem;
@@ -134,36 +123,20 @@
             opacity: 0.6;
         }
 
-        /* Inputs */
-        input[type="text"],
-        input[type="number"],
-        select {
+        input, select {
             width: 100%;
             background: var(--bg2);
             border: 1px solid var(--line2);
             border-radius: 6px;
             color: var(--text);
             font-family: var(--mono);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             padding: 0.75rem 1rem;
             outline: none;
             transition: border-color 0.2s, background 0.2s;
-            -webkit-appearance: none;
         }
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        select:focus {
-            border-color: var(--accent);
-            background: var(--bg3);
-        }
-        input::placeholder { color: var(--muted); font-size: 0.85rem; }
-        select option { background: var(--bg2); }
-
-        .location-row {
-            display: flex;
-            gap: 0.5rem;
-            align-items: stretch;
-        }
+        input:focus, select:focus { border-color: var(--accent); background: var(--bg3); }
+        .location-row { display: flex; gap: 0.5rem; align-items: stretch; }
         .location-row input { flex: 1; }
 
         .btn-icon {
@@ -177,14 +150,13 @@
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.15s;
-            letter-spacing: 0.04em;
             display: flex;
             align-items: center;
             gap: 0.35rem;
         }
         .btn-icon:hover { background: var(--bg3); border-color: var(--line); color: var(--accent); }
         .btn-icon.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
-        .btn-icon.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+        .btn-icon.primary:hover { background: var(--accent2); }
 
         .location-status {
             font-family: var(--mono);
@@ -195,20 +167,13 @@
             min-height: 1rem;
         }
         .location-status.warn { color: var(--accent); }
-        .location-status.err  { color: var(--red); }
+        .location-status.err { color: var(--red); }
 
-        /* Grid 2 columnas */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-        /* Selector de tipo */
-        .type-pills {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-        }
+        .type-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
         .type-pill {
             flex: 1;
-            min-width: 100px;
             background: var(--bg2);
             border: 1px solid var(--line2);
             border-radius: 6px;
@@ -219,12 +184,11 @@
             cursor: pointer;
             text-align: center;
             transition: all 0.15s;
-            letter-spacing: 0.02em;
         }
         .type-pill:hover { border-color: var(--accent); color: var(--text); }
         .type-pill.selected { background: var(--surface); border-color: var(--accent); color: var(--accent); }
 
-        /* Gauge de combustible */
+        /* Gauge */
         .gauge-wrap {
             background: var(--bg2);
             border: 1px solid var(--line2);
@@ -236,8 +200,6 @@
             background: var(--line2);
             border-radius: 2px;
             margin-bottom: 0.875rem;
-            position: relative;
-            overflow: visible;
         }
         .gauge-fill {
             height: 100%;
@@ -261,7 +223,6 @@
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.15s;
-            letter-spacing: 0.02em;
         }
         .gauge-mark:hover { color: var(--text); }
         .gauge-mark.selected { color: var(--accent); font-weight: 500; }
@@ -273,7 +234,7 @@
             margin-top: 0.5rem;
         }
 
-        /* Dropdown de comunas */
+        /* Autocomplete */
         .autocomplete-wrap { position: relative; }
         .communes-drop {
             position: absolute;
@@ -287,9 +248,6 @@
             z-index: 100;
             box-shadow: 0 16px 40px rgba(0,0,0,0.5);
         }
-        .communes-drop::-webkit-scrollbar { width: 4px; }
-        .communes-drop::-webkit-scrollbar-track { background: transparent; }
-        .communes-drop::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
         .commune-item {
             padding: 0.65rem 1rem;
             cursor: pointer;
@@ -302,14 +260,12 @@
         .commune-region { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
         .hidden { display: none; }
 
-        /* Divider */
         .divider {
             height: 1px;
             background: var(--line);
             margin: 1.25rem 0;
         }
 
-        /* Botón principal */
         .btn-main {
             width: 100%;
             background: transparent;
@@ -344,12 +300,8 @@
         .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-main:disabled::before { display: none; }
 
-        /* ── RESULTADO ── */
-        .result-wrap {
-            margin-top: 2rem;
-        }
-
-        /* Placeholder inicial */
+        /* Resultados */
+        .result-wrap { margin-top: 2rem; }
         .result-placeholder {
             background: var(--bg2);
             border: 1px solid var(--line);
@@ -359,12 +311,8 @@
             font-family: var(--mono);
             font-size: 0.72rem;
             color: var(--muted);
-            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
-        .result-placeholder .big { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
-
-        /* Card resultado */
         .result-card {
             background: var(--bg2);
             border-radius: 8px;
@@ -373,7 +321,7 @@
         }
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .result-header {
@@ -393,16 +341,9 @@
             font-weight: 500;
         }
         .mode-tag.m0 { background: rgba(46,204,138,0.15); color: var(--green); border: 1px solid rgba(46,204,138,0.25); }
-        .mode-tag.m1 { background: rgba(232,160,48,0.15);  color: var(--accent); border: 1px solid rgba(232,160,48,0.25); }
-        .mode-tag.m2 { background: rgba(224,80,80,0.12);   color: var(--red);    border: 1px solid rgba(224,80,80,0.2); }
-        .mode-tag.m3 { background: rgba(255,255,255,0.05); color: var(--muted);  border: 1px solid var(--line2); }
-
-        .result-ts {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--muted);
-            letter-spacing: 0.06em;
-        }
+        .mode-tag.m1 { background: rgba(232,160,48,0.15); color: var(--accent); border: 1px solid rgba(232,160,48,0.25); }
+        .mode-tag.m2 { background: rgba(224,80,80,0.12); color: var(--red); border: 1px solid rgba(224,80,80,0.2); }
+        .mode-tag.m3 { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--line2); }
 
         .result-body { padding: 1.25rem 1.5rem; }
 
@@ -434,23 +375,18 @@
             color: var(--muted);
             margin-top: 0.3rem;
         }
-        .price-display {
-            text-align: right;
-            flex-shrink: 0;
-        }
+        .price-display { text-align: right; flex-shrink: 0; }
         .price-label {
             font-family: var(--mono);
             font-size: 0.55rem;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
         }
         .price-value {
             font-family: var(--mono);
             font-size: 1.6rem;
             font-weight: 500;
             color: var(--accent);
-            letter-spacing: -0.02em;
             line-height: 1.1;
         }
         .price-unit {
@@ -459,7 +395,6 @@
             color: var(--muted);
         }
 
-        /* Bloque de ahorro */
         .saving-banner {
             background: rgba(46,204,138,0.08);
             border: 1px solid rgba(46,204,138,0.2);
@@ -475,14 +410,7 @@
             font-size: 1.75rem;
             font-weight: 500;
             color: var(--green);
-            letter-spacing: -0.03em;
         }
-        .saving-desc {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-            color: rgba(46,204,138,0.7);
-        }
-
         .neutral-banner {
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--line);
@@ -504,12 +432,10 @@
             color: var(--accent);
         }
 
-        /* Tabla de datos */
         .data-table { margin-bottom: 1rem; }
         .data-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 0.55rem 0;
             border-bottom: 1px solid var(--line);
         }
@@ -518,7 +444,6 @@
             font-family: var(--mono);
             font-size: 0.68rem;
             color: var(--muted);
-            letter-spacing: 0.02em;
         }
         .data-val {
             font-family: var(--mono);
@@ -527,9 +452,7 @@
             font-weight: 500;
         }
         .data-val.hi { color: var(--green); }
-        .data-val.lo { color: var(--red); }
 
-        /* Precios detalle */
         .prices-grid {
             background: var(--bg3);
             border-radius: 6px;
@@ -541,7 +464,6 @@
             font-size: 0.58rem;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
             margin-bottom: 0.5rem;
         }
         .prices-grid-items {
@@ -560,7 +482,6 @@
         }
         .price-chip .chip-type { color: var(--muted); margin-right: 0.3rem; }
 
-        /* Bloque alternativas */
         .alt-section {
             border-top: 1px solid var(--line);
             margin-top: 0.5rem;
@@ -571,7 +492,6 @@
             font-size: 0.58rem;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
             margin-bottom: 0.75rem;
         }
         .alt-card {
@@ -592,7 +512,6 @@
             font-size: 0.95rem;
             font-weight: 700;
             color: var(--text);
-            letter-spacing: -0.01em;
         }
         .alt-addr {
             font-family: var(--mono);
@@ -608,11 +527,7 @@
             text-align: right;
         }
         .alt-price small { font-size: 0.6rem; color: var(--muted); display: block; }
-        .alt-meta {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
+        .alt-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
         .alt-chip {
             font-family: var(--mono);
             font-size: 0.63rem;
@@ -624,7 +539,6 @@
         .alt-chip.pos { color: var(--green); }
         .alt-chip.neg { color: var(--red); }
 
-        /* Mensaje de estado */
         .status-msg {
             background: rgba(255,255,255,0.03);
             border-left: 2px solid var(--accent);
@@ -636,14 +550,10 @@
             color: var(--muted);
             line-height: 1.6;
         }
-        .status-msg.green  { border-left-color: var(--green); }
-        .status-msg.red    { border-left-color: var(--red); }
+        .status-msg.green { border-left-color: var(--green); }
+        .status-msg.red { border-left-color: var(--red); }
 
-        /* Loading */
-        .loading-state {
-            padding: 3rem 1.5rem;
-            text-align: center;
-        }
+        .loading-state { padding: 3rem 1.5rem; text-align: center; }
         .loading-ring {
             width: 32px; height: 32px;
             border: 2px solid var(--line2);
@@ -657,27 +567,18 @@
             font-family: var(--mono);
             font-size: 0.68rem;
             color: var(--muted);
-            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
-        /* Footer */
         .footer {
             text-align: center;
             font-family: var(--mono);
             font-size: 0.58rem;
             color: rgba(255,255,255,0.15);
             margin-top: 3rem;
-            letter-spacing: 0.06em;
             text-transform: uppercase;
         }
 
-        /* Scrollbar global */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
-
-        /* Responsive leve */
         @media (max-width: 420px) {
             .grid-2 { grid-template-columns: 1fr; }
             .station-name { font-size: 1.15rem; }
@@ -689,21 +590,18 @@
 <body>
 <div class="wrap">
 
-    <!-- HEADER -->
     <header class="header">
         <div class="logo-wrap">
             <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⛽'">
         </div>
         <div class="header-text">
             <h1>En <span>Marcha</span></h1>
-            <p><span class="status-dot"></span>Motor activo · RST Chile · 2026</p>
+            <p><span class="status-dot"></span>RST Chile · motor de decisión</p>
         </div>
     </header>
 
-    <!-- FORMULARIO -->
     <form id="marchaForm" autocomplete="off">
 
-        <!-- Ubicación -->
         <div class="section">
             <div class="field-label">Ubicación</div>
             <div class="autocomplete-wrap">
@@ -722,7 +620,6 @@
 
         <div class="divider"></div>
 
-        <!-- Tipo de uso -->
         <div class="section">
             <div class="field-label">Tipo de uso</div>
             <div class="type-pills">
@@ -735,7 +632,6 @@
 
         <div class="divider"></div>
 
-        <!-- Dirección de viaje -->
         <div class="section">
             <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em">(opcional)</span></div>
             <select id="direction">
@@ -749,16 +645,15 @@
 
         <div class="divider"></div>
 
-        <!-- Vehículo -->
         <div class="section">
             <div class="field-label">Vehículo</div>
             <div class="grid-2">
                 <div>
-                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Rendimiento km/L</div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Rendimiento km/L</div>
                     <input type="number" id="kmPerLiter" value="13" min="1" max="40" step="0.5">
                 </div>
                 <div>
-                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Estanque (L)</div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Estanque (L)</div>
                     <input type="number" id="tankCapacity" value="56" min="10" max="1000" step="1">
                 </div>
             </div>
@@ -766,12 +661,11 @@
 
         <div class="divider"></div>
 
-        <!-- Combustible y presupuesto -->
         <div class="section">
             <div class="field-label">Carga</div>
             <div class="grid-2">
                 <div>
-                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Combustible</div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Combustible</div>
                     <select id="fuelType">
                         <option value="diesel">Diesel</option>
                         <option value="gas93">Gasolina 93</option>
@@ -780,7 +674,7 @@
                     </select>
                 </div>
                 <div>
-                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Presupuesto hoy ($)</div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Presupuesto ($)</div>
                     <input type="number" id="budget" value="50000" min="1">
                 </div>
             </div>
@@ -788,7 +682,6 @@
 
         <div class="divider"></div>
 
-        <!-- Nivel estanque -->
         <div class="section">
             <div class="field-label">Nivel del estanque</div>
             <div class="gauge-wrap">
@@ -808,14 +701,12 @@
             <input type="hidden" id="fuelLevel" value="25">
         </div>
 
-        <!-- CTA -->
         <button type="submit" class="btn-main" id="submitBtn">
             <span>▶ Evaluar ahora</span>
         </button>
 
     </form>
 
-    <!-- RESULTADO -->
     <div class="result-wrap" id="resultWrap">
         <div class="result-placeholder">
             <span class="big">⊙</span>
@@ -823,29 +714,27 @@
         </div>
     </div>
 
-    <div class="footer">Marcha · motor de decisión · RST Chile 2026 · datos API real</div>
+    <div class="footer">Marcha · motor de decisión · RST Chile · datos API real</div>
 </div>
 
 <script>
 // ──────────────────────────────────────────────
-// UTILIDADES
+// Utilidades
 // ──────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 function fmt(n) { return Math.floor(n).toLocaleString('es-CL'); }
 function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
-
 function setLocStatus(msg, type='') {
     const el = $('locStatus');
     el.textContent = msg;
     el.className = 'location-status' + (type ? ' '+type : '');
 }
-
 function now() {
     return new Date().toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
 }
 
 // ──────────────────────────────────────────────
-// COMUNAS
+// Comunas
 // ──────────────────────────────────────────────
 let comunasList = [];
 fetch('/data/comunas-completo.json')
@@ -939,7 +828,7 @@ $('gpsBtn').addEventListener('click', () => {
 });
 
 // ──────────────────────────────────────────────
-// TYPE PILLS
+// Type pills
 // ──────────────────────────────────────────────
 document.querySelectorAll('.type-pill').forEach(p => {
     p.addEventListener('click', () => {
@@ -950,7 +839,7 @@ document.querySelectorAll('.type-pill').forEach(p => {
 });
 
 // ──────────────────────────────────────────────
-// GAUGE
+// Gauge
 // ──────────────────────────────────────────────
 function setGauge(pct) {
     $('fuelLevel').value = pct;
@@ -966,7 +855,7 @@ document.querySelectorAll('.gauge-mark').forEach(m =>
 setGauge(25);
 
 // ──────────────────────────────────────────────
-// SUBMIT
+// Submit
 // ──────────────────────────────────────────────
 $('marchaForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -1025,7 +914,7 @@ $('marchaForm').addEventListener('submit', async e => {
 });
 
 // ──────────────────────────────────────────────
-// RENDER
+// Render (con soporte para múltiples alternativas)
 // ──────────────────────────────────────────────
 function render(data) {
     const mode = data.mode;
@@ -1068,7 +957,6 @@ function render(data) {
             </div>
         </div>`;
 
-        // Bloque de ahorro
         if (savPL > 0) {
             html += `<div class="saving-banner">
                 <div class="saving-amount">$${fmt(savPL)}/L</div>
@@ -1077,7 +965,7 @@ function render(data) {
         } else if (savPL < 0) {
             html += `<div class="warn-banner">$${fmt(Math.abs(savPL))}/L sobre el promedio · no es la más barata</div>`;
         } else {
-            html += `<div class="neutral-banner">Precio igual al promedio · no hay diferencial entre estaciones cercanas hoy</div>`;
+            html += `<div class="neutral-banner">Precio igual al promedio · sin diferencial entre estaciones cercanas hoy</div>`;
         }
 
         html += `<div class="data-table">
@@ -1085,10 +973,8 @@ function render(data) {
             <div class="data-row"><span class="data-key">Costo total</span><span class="data-val">$${fmt(total)}</span></div>
             <div class="data-row"><span class="data-key">Ahorro estimado</span><span class="data-val ${netSave>0?'hi':''}">${netSave>0?'$'+fmt(netSave):'$0 · sin diferencial disponible'}</span></div>
             <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${dist>0?dist.toFixed(1)+' km':'en tu ruta'}</span></div>
-            <div class="data-row"><span class="data-key">Precio ref. zona</span><span class="data-val">$${fmt(refPr)}/L</span></div>
         </div>`;
 
-        // Precios detalle deduplicados
         if (st.precios_detalle && st.precios_detalle.length > 0) {
             const deduped = {};
             for (const p of st.precios_detalle) {
@@ -1105,7 +991,7 @@ function render(data) {
             html += `</div></div>`;
         }
 
-        // Alternativas
+        // Alternativas (2da, 3ra opción, etc.)
         const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
         if (altList.length > 0) {
             const labels = ['Segunda opción', 'Tercera opción'];
@@ -1123,9 +1009,7 @@ function render(data) {
                             <div class="alt-name">${altSt.nombre || alt.station_name || 'Estación'}</div>
                             ${altSt.direccion ? `<div class="alt-addr">${altSt.direccion}</div>` : ''}
                         </div>
-                        <div class="alt-price">
-                            $${fmt(altPrice)}<small>/L</small>
-                        </div>
+                        <div class="alt-price">$${fmt(altPrice)}<small>/L</small></div>
                     </div>
                     <div class="alt-meta">
                         ${altDist>0?`<span class="alt-chip">◎ ${altDist.toFixed(1)} km</span>`:''}
