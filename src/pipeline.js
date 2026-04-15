@@ -274,7 +274,7 @@ function prepareStation(station, fuelType, realDistanceKm) {
     servicios:         station.servicios,
     metodos_pago:      station.metodos_pago,
     precio_convenio:   null,
-    data_age_minutes:  ageMinutes,
+    data:              { ageminutes: ageMinutes, reportcount: 1 },
     report_count:      1,
     zone_type:         inferZoneType(station.region),
     leaves_main_route: false,
