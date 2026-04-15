@@ -1,20 +1,15 @@
 {
   "name": "marcha-motor",
   "version": "1.0.0",
-  "description": "Motor Marcha — Optimización de recarga de combustible",
+  "description": "Marcha motor backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "crawl": "node src/crawler.js",
-    "crawl:test": "node src/crawler.js --test 20",
-    "crawl:update": "node src/crawler.js --update",
-    "test": "node test/engine.test.js"
+    "crawl:test": "node src/crawler.js --test 50",
+    "crawl:update": "node src/crawler.js --update"
   },
   "dependencies": {
     "express": "^4.19.2"
-  },
-  "devDependencies": {},
-  "author": "RSTChile",
-  "license": "UNLICENSED",
-  "private": true
+  }
 }
