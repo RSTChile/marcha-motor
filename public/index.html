@@ -43,6 +43,7 @@
         .mode-2 { background: #ffe4e2; color: #9b1c1c; }
         .mode-3 { background: #e2e8f0; color: #334155; }
         .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .station-address { font-size: 0.8rem; color: #5b6e8c; margin-bottom: 0.5rem; }
         .saving { font-size: 1.5rem; font-weight: 800; color: #0b3b3f; margin: 0.5rem 0; }
         .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
         .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-style: italic; }
@@ -223,12 +224,16 @@
     updateFuelLevel(25, '1/4');
 
     // =============================================
-    // BÚSQUEDA MANUAL DE COMUNAS
+    // NORMALIZACIÓN DE TEXTO
     // =============================================
 
     function normalizeText(str) {
         return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
+
+    // =============================================
+    // BÚSQUEDA MANUAL DE COMUNAS
+    // =============================================
 
     function searchComunas(query) {
         if (!query || query.length < 2 || comunasList.length === 0) {
@@ -380,7 +385,7 @@
 
         const lat = parseFloat(latInput.value);
         const lng = parseFloat(lngInput.value);
-        const comuna = comunaInput.value;
+        let comuna = comunaInput.value;
         
         if (isNaN(lat) || isNaN(lng) || !comuna) {
             resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una comuna válida o usa "Detectar".</div>`;
@@ -402,6 +407,9 @@
             return;
         }
 
+        // Normalizar nombre de comuna para buscar en el backend
+        const comunaNormalized = comuna.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay');
+        
         const payload = {
             userProfile: {
                 context_type: contextType,
@@ -414,7 +422,7 @@
                 user_lat: lat,
                 user_lon: lng,
                 fuel_type: fuelType,
-                comuna: comuna,
+                comuna: comunaNormalized,
                 is_urban_peak: false,
                 toll_estimate: 0
             }
@@ -442,7 +450,7 @@
     });
 
     // =============================================
-    // RENDER DECISION
+    // RENDER DECISION (con decimales redondeados)
     // =============================================
 
     function renderDecision(data) {
@@ -459,24 +467,54 @@
         if (mode === 0 && data.recommendation) {
             const rec = data.recommendation;
             const station = rec.station || {};
-            const netSaving = rec.net_saving || 0;
-            const price = rec.display_price || '?';
+            // Redondear ahorro hacia abajo
+            let netSaving = Math.floor(rec.net_saving || 0);
+            const price = Math.floor(rec.display_price || 0);
             const liters = rec.display_liters || 0;
             const distance = rec.display_distance_km || 0;
-            const totalCost = (price * liters).toFixed(0);
+            const totalCost = Math.floor(price * liters);
+            
             html += `<div class="station-name">⛽ ${station.nombre || 'Estación'}</div>`;
-            html += `<div class="saving">💰 Ahorro neto: $${netSaving.toLocaleString()}</div>`;
-            html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price}</strong></div>`;
-            html += `<div class="detail-row"><span>Carga</span><strong>${liters.toFixed(1)} L</strong></div>`;
-            html += `<div class="detail-row"><span>Costo total</span><strong>$${totalCost}</strong></div>`;
-            html += `<div class="detail-row"><span>Desvío</span><strong>${distance.toFixed(1)} km</strong></div>`;
+            if (station.direccion) html += `<div class="station-address">📍 ${station.direccion}, ${station.comuna || ''}</div>`;
+            html += `<div class="saving">💰 Ahorro neto: $${netSaving.toLocaleString('es-CL')}</div>`;
+            html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price.toLocaleString('es-CL')}</strong></div>`;
+            html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} litros</strong></div>`;
+            html += `<div class="detail-row"><span>Costo total aproximado</span><strong>$${totalCost.toLocaleString('es-CL')}</strong></div>`;
+            html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>${distance.toFixed(1)} km</strong></div>`;
+            
+            if (station.precios_detalle && station.precios_detalle.length > 0) {
+                html += `<div style="margin-top: 0.8rem; font-size: 0.8rem; background: #f0f4f8; padding: 0.5rem; border-radius: 0.5rem;">`;
+                html += `<strong>⛽ Precios en esta estación:</strong><br>`;
+                for (const p of station.precios_detalle) {
+                    html += `<span style="display: inline-block; margin-right: 0.8rem;">${p.tipo}: $${Math.floor(p.precio).toLocaleString('es-CL')}</span>`;
+                }
+                html += `</div>`;
+            }
+            
             if (data.alternative) {
                 const alt = data.alternative;
                 const altStation = alt.station || {};
-                html += `<hr><div style="font-size:0.85rem;">🔄 Alternativa: ${altStation.nombre} · ahorro $${(alt.net_saving || 0).toLocaleString()}</div>`;
+                let altSaving = Math.floor(alt.net_saving || 0);
+                html += `<hr>`;
+                html += `<div style="font-size:0.85rem; opacity:0.8;">🔄 Alternativa: ${altStation.nombre || 'otra estación'} · ahorro $${altSaving.toLocaleString('es-CL')}</div>`;
+                if (altStation.direccion) html += `<div style="font-size:0.75rem; opacity:0.7;">📍 ${altStation.direccion}</div>`;
             }
+        } else if (mode === 0 && !data.recommendation) {
+            html += `<div class="message">⚠️ No se encontró una estación óptima con tus parámetros actuales.</div>`;
         }
+        
         if (data.message) html += `<div class="message">💬 ${data.message}</div>`;
+        
+        if (mode === 1) {
+            html += `<div class="message">🔍 Los precios disponibles no están completamente verificados.<br>El motor prefiere declarar incertidumbre antes que engañarte.</div>`;
+        }
+        if (mode === 2 && !data.message?.includes('poco combustible')) {
+            html += `<div class="message">📉 El ahorro potencial no justifica desviarte. Sigue tu ruta normal.</div>`;
+        }
+        if (mode === 3) {
+            html += `<div class="message">🧭 No hay estaciones registradas cerca de tu ubicación.<br>Intenta con una comuna cercana como "Colina" o "Quilicura".</div>`;
+        }
+
         html += `</div>`;
         resultArea.innerHTML = html;
     }
