@@ -1,18 +1,35 @@
 const express = require("express");
 const path = require("path");
 
-const { runPipeline } = require("./src/pipeline");
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ===== IMPORTS (ajustados a tu repo real) =====
+let runPipeline;
+try {
+  ({ runPipeline } = require("./src/pipeline"));
+} catch (e) {
+  console.error("Error cargando pipeline:", e.message);
+}
+
+// ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// 🔥 ENDPOINT PRINCIPAL
+// ===== HEALTH CHECK (Render necesita esto vivo) =====
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// ===== API =====
 app.post("/api/decide", async (req, res) => {
   try {
+    if (!runPipeline) {
+      return res.status(500).json({
+        error: "Pipeline no disponible",
+      });
+    }
+
     const { userProfile, context } = req.body;
 
     if (!userProfile || !context) {
@@ -28,24 +45,19 @@ app.post("/api/decide", async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Error en /api/decide:", err);
+    console.error("ERROR /api/decide:", err);
     res.status(500).json({
       error: "Error interno",
     });
   }
 });
 
-// Health check (clave para Render)
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-// SPA fallback (para tu index.html)
+// ===== FALLBACK FRONTEND =====
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// Start server
+// ===== START =====
 app.listen(PORT, () => {
-  console.log(`🚀 Marcha corriendo en puerto ${PORT}`);
+  console.log(`🚀 Marcha activo en puerto ${PORT}`);
 });
