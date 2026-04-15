@@ -51,6 +51,13 @@
             margin-top: 8px;
         }
 
+        .header-sub small {
+            display: block;
+            font-size: 10px;
+            color: #4a5a6e;
+            margin-top: 4px;
+        }
+
         /* Secciones */
         .section {
             padding: 16px 20px;
@@ -64,32 +71,6 @@
             letter-spacing: 1px;
             color: #f5a623;
             margin-bottom: 12px;
-        }
-
-        /* Grid info */
-        .info-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .info-item {
-            flex: 1;
-            min-width: 100px;
-        }
-
-        .info-label {
-            font-size: 10px;
-            color: #6b7c93;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .info-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
         }
 
         /* Ubicación */
@@ -124,6 +105,32 @@
             padding-left: 4px;
         }
 
+        /* Grid info */
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .info-label {
+            font-size: 10px;
+            color: #6b7c93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
         /* Selector de nivel */
         .fuel-level {
             display: flex;
@@ -152,7 +159,8 @@
 
         /* Botón principal */
         .btn-evaluate {
-            width: 100%;
+            width: calc(100% - 40px);
+            margin: 8px 20px 20px;
             background: #f5a623;
             border: none;
             color: #0a1628;
@@ -161,8 +169,6 @@
             font-weight: 700;
             border-radius: 40px;
             cursor: pointer;
-            margin: 8px 20px 20px;
-            width: calc(100% - 40px);
             transition: all 0.2s;
         }
 
@@ -258,23 +264,44 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .alt-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
         .alt-name {
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .alt-address {
+            font-size: 10px;
+            color: #6b7c93;
+            margin-top: 2px;
         }
 
         .alt-price {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: #f5a623;
+            text-align: right;
+        }
+
+        .alt-price small {
+            font-size: 10px;
+            color: #6b7c93;
         }
 
         .alt-distance {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7c93;
+            margin-top: 2px;
         }
 
         .loading {
@@ -285,46 +312,6 @@
 
         .hidden {
             display: none;
-        }
-
-        /* Autocomplete */
-        .autocomplete-wrap {
-            position: relative;
-        }
-
-        .communes-drop {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #0f1a2c;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 100;
-            margin-top: 4px;
-        }
-
-        .commune-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .commune-item:hover {
-            background: #1a2538;
-        }
-
-        .commune-name {
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .commune-region {
-            font-size: 11px;
-            color: #6b7c93;
-            margin-top: 2px;
         }
 
         /* Inputs */
@@ -367,6 +354,55 @@
             background: #f5a623;
             color: #0a1628;
             border: none;
+        }
+
+        .autocomplete-wrap {
+            position: relative;
+        }
+
+        .communes-drop {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f1a2c;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+        }
+
+        .commune-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .commune-item:hover {
+            background: #1a2538;
+        }
+
+        .commune-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .commune-region {
+            font-size: 11px;
+            color: #6b7c93;
+            margin-top: 2px;
+        }
+
+        .warning-msg {
+            background: rgba(245, 166, 35, 0.1);
+            border-left: 3px solid #f5a623;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #f5a623;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -491,7 +527,7 @@
     });
 
     // =============================================
-    // Comunas (lista completa desde el backend)
+    // Comunas
     // =============================================
     let comunasList = [];
     
@@ -649,72 +685,86 @@
     // =============================================
     function renderDecision(data) {
         const mode = data.mode;
+        const isOverride = (mode === 2);
         
-        if (mode !== 0 || !data.recommendation) {
+        if (!data.recommendation && (!data.alternatives || data.alternatives.length === 0)) {
             resultArea.innerHTML = `<div class="result-card" style="text-align:center;">
                 <div style="margin-bottom:12px;">⚠️</div>
-                <div>${data.message || 'No se encontraron recomendaciones disponibles.'}</div>
+                <div>${data.message || 'No se encontraron estaciones disponibles.'}</div>
             </div>`;
             return;
         }
 
-        const rec = data.recommendation;
-        const station = rec.station || {};
-        const price = rec.display_price || 0;
-        const liters = rec.display_liters || 0;
-        const distance = rec.display_distance_km || 0;
-        const totalCost = rec.display_total_cost || Math.floor(price * liters);
-        const netSaving = Math.floor(rec.net_saving || 0);
-        const refPrice = rec.display_reference_price || price;
-        const savingPerLiter = refPrice - price;
+        // Si hay recomendación, mostrarla
+        let html = ``;
+        
+        if (data.recommendation) {
+            const rec = data.recommendation;
+            const station = rec.station || {};
+            const price = rec.display_price || 0;
+            const liters = rec.display_liters || 0;
+            const distance = rec.display_distance_km || 0;
+            const totalCost = rec.display_total_cost || Math.floor(price * liters);
+            const netSaving = Math.floor(rec.net_saving || 0);
+            const refPrice = rec.display_reference_price || price;
+            const savingPerLiter = refPrice - price;
 
-        let html = `<div class="result-card">
-            <div class="result-badge">RECOMENDACIÓN ACTIVA</div>
-            <div class="station-name">${station.nombre || rec.station_name || 'Estación'}</div>
-            <div class="station-address">${station.direccion || ''}${station.comuna ? ', ' + station.comuna : ''}</div>
-            <div class="saving-row">
-                <div class="saving-amount">$${fmt(netSaving)}</div>
-                <div class="saving-label">${savingPerLiter > 0 ? `ahorro ($${fmt(savingPerLiter)}/L)` : (savingPerLiter < 0 ? 'más cara que el promedio' : 'sin diferencial en la zona hoy')}</div>
-            </div>
-            <div class="detail-row">
-                <div class="detail-label">Carga recomendada</div>
-                <div class="detail-value">${liters.toFixed(1)} L</div>
-            </div>
-            <div class="detail-row">
-                <div class="detail-label">Costo total</div>
-                <div class="detail-value">$${fmt(totalCost)}</div>
-            </div>
-            <div class="detail-row">
-                <div class="detail-label">Distancia</div>
-                <div class="detail-value">${distance.toFixed(1)} km</div>
-            </div>`;
+            html += `<div class="result-card">
+                <div class="result-badge">RECOMENDACIÓN ACTIVA</div>
+                <div class="station-name">${station.nombre || rec.station_name || 'Estación'}</div>
+                <div class="station-address">${station.direccion || ''}${station.comuna ? ', ' + station.comuna : ''}</div>
+                <div class="saving-row">
+                    <div class="saving-amount">$${fmt(netSaving)}</div>
+                    <div class="saving-label">${savingPerLiter > 0 ? `ahorro ($${fmt(savingPerLiter)}/L)` : (savingPerLiter < 0 ? 'más cara que el promedio' : 'sin diferencial en la zona hoy')}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Carga recomendada</div>
+                    <div class="detail-value">${liters.toFixed(1)} L</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Costo total</div>
+                    <div class="detail-value">$${fmt(totalCost)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Distancia</div>
+                    <div class="detail-value">${distance.toFixed(1)} km</div>
+                </div>`;
+        } else {
+            html += `<div class="result-card">`;
+        }
 
-        // Alternativas: usar alternatives array (hasta 2 opciones)
-        const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
+        // Alternativas (hasta 2)
+        const altList = data.alternatives || [];
         if (altList.length > 0) {
             html += `<div class="alt-section">
-                <div class="alt-title">Otras opciones</div>`;
-            // Mostrar hasta 2 alternativas (segunda y tercera opción)
+                <div class="alt-title">OTRAS OPCIONES</div>`;
+            
             altList.slice(0, 2).forEach((alt, idx) => {
                 const altStation = alt.station || {};
                 const altPrice = alt.display_price || 0;
                 const altDistance = alt.display_distance_km || 0;
-                const altLabel = idx === 0 ? 'SEGUNDA OPCIÓN' : 'TERCERA OPCIÓN';
-                html += `<div class="alt-item" style="flex-direction:column; align-items:flex-start; gap:4px; margin-bottom:16px;">
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <div>
-                            <div class="alt-name" style="font-weight:700;">${altLabel}</div>
-                            <div class="alt-name">${altStation.nombre || alt.station_name || 'Estación'}</div>
-                        </div>
-                        <div class="alt-price">$${fmt(altPrice)}<span style="font-size:10px;">/L</span></div>
+                const altName = altStation.nombre || alt.station_name || 'Estación';
+                const altAddress = altStation.direccion || '';
+                
+                html += `<div class="alt-item">
+                    <div style="flex:1;">
+                        <div class="alt-name">${idx === 0 ? 'SEGUNDA OPCIÓN' : 'TERCERA OPCIÓN'}</div>
+                        <div class="alt-name" style="font-size:13px; margin-top:4px;">${altName}</div>
+                        ${altAddress ? `<div class="alt-address">${altAddress}</div>` : ''}
+                        <div class="alt-distance">📍 ${altDistance.toFixed(1)} km</div>
                     </div>
-                    <div class="alt-distance">📍 ${altDistance.toFixed(1)} km desde tu ubicación</div>
+                    <div class="alt-price">
+                        $${fmt(altPrice)}<small>/L</small>
+                    </div>
                 </div>`;
             });
             html += `</div>`;
         }
 
-        if (data.message) {
+        // Mensaje de advertencia si es modo override
+        if (isOverride && data.message) {
+            html += `<div class="warning-msg">⚠️ ${data.message}</div>`;
+        } else if (data.message && !isOverride) {
             html += `<div style="margin-top: 12px; font-size: 11px; color: #6b7c93;">${data.message}</div>`;
         }
 
