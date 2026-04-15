@@ -1,6 +1,7 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
+ * Los precios se redondean a enteros (sin decimales)
  */
 
 const engine = require('./engine');
@@ -71,13 +72,14 @@ async function fetchStationById(id) {
     
     if (!d?.latitud || !d?.longitud) return null;
     
-    // Extraer precios completos
+    // Extraer precios (redondeados a entero, sin decimales)
     const precios = {};
     const preciosDetalle = [];
     
     for (const c of d.combustibles || []) {
       if (!c.precio) continue;
-      const precioNum = parseFloat(c.precio);
+      // Redondear a entero (Math.floor para precios, el usuario no espera decimales)
+      const precioNum = Math.floor(parseFloat(c.precio));
       if (c.nombre_corto === 'DI') precios.diesel = precioNum;
       if (c.nombre_corto === '93') precios.gas93 = precioNum;
       if (c.nombre_corto === '95') precios.gas95 = precioNum;
@@ -96,7 +98,7 @@ async function fetchStationById(id) {
     const station = {
       id: d.id,
       nombre: d.razon_social?.razon_social || d.razon_social || 'Estación',
-      nombre_comercial: d.marca_nombre || getMarcaNombre(d.marca),
+      nombre_comercial: getMarcaNombre(d.marca),
       marca: d.marca || 'NA',
       region: d.region || '',
       comuna: d.comuna || '',
@@ -307,6 +309,14 @@ async function runPipeline({ userProfile, context }) {
         toll_estimate: context.toll_estimate || 0
       }
     );
+    
+    // Redondear ahorros hacia abajo (para no generar expectativas falsas)
+    if (result.recommendation && result.recommendation.net_saving) {
+      result.recommendation.net_saving = Math.floor(result.recommendation.net_saving);
+    }
+    if (result.alternative && result.alternative.net_saving) {
+      result.alternative.net_saving = Math.floor(result.alternative.net_saving);
+    }
     
     // Enriquecer el resultado con datos completos de la estación
     if (result.recommendation && result.recommendation.station) {
