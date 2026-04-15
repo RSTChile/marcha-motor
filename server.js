@@ -67,7 +67,6 @@ app.post('/api/detect-commune', async (req, res) => {
       });
     }
     
-    // Cargar lista completa de comunas
     const comunasFile = path.join(__dirname, 'data', 'comunas-completo.json');
     if (!fs.existsSync(comunasFile)) {
       return res.status(500).json({
@@ -79,7 +78,6 @@ app.post('/api/detect-commune', async (req, res) => {
     const data = JSON.parse(fs.readFileSync(comunasFile, 'utf8'));
     const comunasList = data.comunas || [];
     
-    // Tu API key de OpenRouteService
     const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU0ODZkY2U1MzU0MTQ4YzFiMDgwMTg2YTYyYTBiOThiIiwiaCI6Im11cm11cjY0In0=';
     
     async function getRealDistance(lat1, lon1, lat2, lon2) {
@@ -104,7 +102,7 @@ app.post('/api/detect-commune', async (req, res) => {
         }
         const routeData = await response.json();
         if (routeData.features && routeData.features[0] && routeData.features[0].properties.summary) {
-          return routeData.features[0].properties.summary.distance / 1000; // metros a km
+          return routeData.features[0].properties.summary.distance / 1000;
         }
         return null;
       } catch (err) {
@@ -113,16 +111,15 @@ app.post('/api/detect-commune', async (req, res) => {
       }
     }
     
-    // Calcular distancia en línea recta para todas
-    const withDist = comunasList.map(c => ({
-      ...c,
-      _straight_dist: haversineDistance(lat, lng, c.lat, c.lng)
-    })).sort((a, b) => a._straight_dist - b._straight_dist);
+    const withDist = comunasList
+      .map(c => ({
+        ...c,
+        _straight_dist: haversineDistance(lat, lng, c.lat, c.lng)
+      }))
+      .sort((a, b) => a._straight_dist - b._straight_dist);
     
-    // Tomar las 5 más cercanas en línea recta
     const candidates = withDist.slice(0, 5);
     
-    // Intentar obtener distancia real para los candidatos
     for (const c of candidates) {
       const realDist = await getRealDistance(lat, lng, c.lat, c.lng);
       c._real_dist = realDist !== null ? realDist : c._straight_dist;
@@ -131,10 +128,9 @@ app.post('/api/detect-commune', async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     
-    // Ordenar por distancia real
     candidates.sort((a, b) => a._real_dist - b._real_dist);
     
-    let closest = candidates[0];
+    const closest = candidates[0];
     
     if (!closest) {
       return res.status(404).json({
@@ -188,7 +184,7 @@ app.get('/api/stats', (req, res) => {
 });
 
 // =============================================
-// MOTOR PRINCIPAL
+// MOTOR PRINCIPAL v1
 // =============================================
 
 app.post('/api/decide', async (req, res) => {
@@ -210,6 +206,36 @@ app.post('/api/decide', async (req, res) => {
     });
   } catch (err) {
     console.error('ERROR /api/decide:', err);
+    res.status(500).json({
+      ok: false,
+      error: 'Error interno del sistema'
+    });
+  }
+});
+
+// =============================================
+// MOTOR PRINCIPAL v2
+// =============================================
+
+app.post('/api/decide-v2', async (req, res) => {
+  try {
+    const { userProfile, context } = req.body;
+
+    if (!userProfile || !context) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Faltan userProfile o context'
+      });
+    }
+
+    const result = await runPipeline({ userProfile, context });
+
+    res.json({
+      ok: true,
+      result
+    });
+  } catch (err) {
+    console.error('ERROR /api/decide-v2:', err);
     res.status(500).json({
       ok: false,
       error: 'Error interno del sistema'
