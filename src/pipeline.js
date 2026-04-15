@@ -1,253 +1,195 @@
 /**
  * Marcha — Pipeline de datos
- * Loader + filtro geográfico + integración con engine.js
- * No documentar públicamente.
+ * Consulta API BencinaEnLinea en tiempo real.
+ * Busca estaciones en un rango de IDs hasta encontrar suficientes.
  */
 
-const fs = require('fs');
-const path = require('path');
 const engine = require('./engine');
 
-const DATA_FILE = path.join(__dirname, '../data/stations.json');
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;  // 6 horas
+const API_BASE = 'https://api.bencinaenlinea.cl/api/estacion_ciudadano';
+const CACHE_TTL = 300000; // 5 minutos
 
-// ─── Estado en memoria ───────────────────────────────────────────────────────
+const cache = new Map();
 
-let _cache = null;
-let _cacheLoadedAt = null;
+// ─── Consulta a la API ───────────────────────────────────────────────────────
 
-// ─── Loader ──────────────────────────────────────────────────────────────────
-
-/**
- * loadStations()
- * Carga estaciones desde disco con caché en memoria.
- */
-function loadStations(forceReload = false) {
-  const now = Date.now();
-  if (!forceReload && _cache && _cacheLoadedAt && (now - _cacheLoadedAt) < CACHE_TTL_MS) {
-    return _cache;
-  }
-
-  if (!fs.existsSync(DATA_FILE)) {
-    console.warn('[pipeline] stations.json no encontrado. Ejecuta: node src/crawler.js --test 5');
-    return [];
-  }
-
+async function fetchStationById(id) {
+  const url = `${API_BASE}/${id}`;
+  
   try {
-    const raw = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    _cache = raw.stations || [];
-    _cacheLoadedAt = now;
-    return _cache;
-  } catch (e) {
-    console.error('[pipeline] Error leyendo stations.json:', e.message);
-    return [];
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Origin': 'https://www.bencinaenlinea.cl',
+        'Referer': 'https://www.bencinaenlinea.cl/'
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json?.data?.latitud) return null;
+    return json;
+  } catch (err) {
+    return null;
   }
 }
 
-// ─── Filtro geográfico ───────────────────────────────────────────────────────
+// ─── Normalización ───────────────────────────────────────────────────────────
 
-/**
- * getNearbyStations(userLat, userLon, stations, radiusMeters)
- * Filtra estaciones dentro del radio especificado.
- */
-function getNearbyStations(userLat, userLon, stations, radiusMeters = 5000) {
-  return stations
-    .filter(s => {
-      if (!s.lat || !s.lon) return false;
-      const dist = engine.distanceMeters(userLat, userLon, s.lat, s.lon);
-      return dist <= radiusMeters;
-    })
-    .map(s => ({
-      ...s,
-      _dist_m: engine.distanceMeters(userLat, userLon, s.lat, s.lon),
-    }))
-    .sort((a, b) => a._dist_m - b._dist_m);
-}
-
-// ─── Preparación para engine ─────────────────────────────────────────────────
-
-/**
- * prepareForEngine(station, fuelType)
- * Transforma una estación al formato que espera engine.evaluateStation().
- */
-function prepareForEngine(station, fuelType = 'diesel') {
-  // Mapeo de tipos de combustible
-  const fuelMap = {
-    'gas93': 'gas93',
-    'gas95': 'gas95',
-    'gas97': 'gas97',
-    'diesel': 'diesel',
-    'kerosene': 'kerosene',
-  };
+function normalizeStation(raw) {
+  const d = raw.data;
+  if (!d) return null;
   
-  const targetFuel = fuelMap[fuelType] || 'diesel';
-  const precio = station.precios?.[targetFuel];
+  const prices = {};
+  let latestUpdate = null;
   
-  if (!precio) return null;
-
-  const ageMinutes = station.updated_at
-    ? (Date.now() - new Date(station.updated_at).getTime()) / 60000
-    : 99999;
-
+  for (const c of (d.combustibles || [])) {
+    const key = mapFuel(c.nombre_corto);
+    if (key && c.precio) {
+      prices[key] = parseFloat(c.precio);
+      if (c.precio_fecha) {
+        const ts = new Date(c.precio_fecha);
+        if (!latestUpdate || ts > latestUpdate) latestUpdate = ts;
+      }
+    }
+  }
+  
+  if (!prices.gas93 && !prices.gas95 && !prices.diesel) return null;
+  
   return {
-    id: station.id,
-    nombre: station.nombre,
-    marca: station.marca,
-    lat: station.lat,
-    lon: station.lon,
-    precio_actual: precio,
-    precio_convenio: null,
-    data_age_minutes: Math.round(ageMinutes),
-    report_count: station.report_count || 1,
-    zone_type: station.zone_type || 'semi',
-    leaves_main_route: station.leaves_main_route || false,
+    id: d.id,
+    nombre: d.razon_social?.razon_social || d.razon_social || 'Sin nombre',
+    marca: d.marca || 'Desconocida',
+    lat: parseFloat(d.latitud),
+    lon: parseFloat(d.longitud),
+    region: d.region || '',
+    comuna: d.comuna || '',
+    direccion: d.direccion || '',
+    precios: prices,
+    updated_at: latestUpdate ? latestUpdate.toISOString() : null,
+    zone_type: inferZone(d.region || ''),
+    report_count: 1,
+    leaves_main_route: false
   };
 }
 
-// ─── Precio de referencia ────────────────────────────────────────────────────
-
-/**
- * computeReferencePrice(stations, fuelType)
- * Precio de referencia = mediana de estaciones cercanas.
- */
-function computeReferencePrice(stations, fuelType = 'diesel') {
-  const prices = stations
-    .map(s => s.precios?.[fuelType])
-    .filter(p => p && p > 0)
-    .sort((a, b) => a - b);
-
-  if (prices.length === 0) return 1100;
-  
-  const mid = Math.floor(prices.length / 2);
-  return prices.length % 2 === 0
-    ? Math.round((prices[mid - 1] + prices[mid]) / 2)
-    : prices[mid];
+function mapFuel(code) {
+  const map = { '93':'gas93', '95':'gas95', '97':'gas97', 'DI':'diesel', 'KE':'kerosene' };
+  return map[code] || null;
 }
 
-// ─── Integración principal ───────────────────────────────────────────────────
+function inferZone(region) {
+  if (region.includes('Metropolitana')) return 'urban';
+  if (['Valparaíso', 'Biobío', 'Maule', "O'Higgins", 'Araucanía', 'Coquimbo'].some(r => region.includes(r))) return 'semi';
+  return 'rural';
+}
 
-/**
- * getDecision(userProfile, context)
- * Función principal del pipeline.
- */
-function getDecision(userProfile, context) {
-  const {
-    lat,
-    lon,
-    fuel_type = 'diesel',
-    reference_price,
-    is_urban_peak = false,
-    toll_estimate = 0,
-  } = context;
+// ─── Búsqueda por radio (busca en rango de IDs) ─────────────────────────────
 
-  // 1. Cargar estaciones
-  const allStations = loadStations();
-  if (allStations.length === 0) {
-    return {
-      mode: 3,
-      recommendation: null,
-      alternative: null,
-      message: 'Sin datos de estaciones disponibles. El sistema se está inicializando.',
-    };
-  }
-
-  // 2. Radio según contexto
-  const radius = userProfile.context_type === 'cargo' ? 15000 : 5000;
-  const nearby = getNearbyStations(lat, lon, allStations, radius);
+async function findStationsByRadius(lat, lon, radiusMeters = 5000) {
+  const found = [];
   
-  if (nearby.length === 0) {
+  // Rango de IDs a explorar (1 a 3000 es el rango completo de Chile)
+  // Para no hacer 3000 peticiones, exploramos en pasos hasta encontrar suficientes
+  const ID_START = 1;
+  const ID_END = 3000;
+  const MAX_STATIONS = 20;
+  const BATCH_SIZE = 50;
+  
+  for (let start = ID_START; start <= ID_END && found.length < MAX_STATIONS; start += BATCH_SIZE) {
+    const end = Math.min(start + BATCH_SIZE - 1, ID_END);
+    const ids = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    
+    // Consultar en paralelo (pero limitado para no sobrecargar)
+    const batch = ids.map(id => (async () => {
+      const cached = cache.get(id);
+      if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+        return cached.data;
+      }
+      const raw = await fetchStationById(id);
+      if (raw) cache.set(id, { data: raw, timestamp: Date.now() });
+      return raw;
+    })());
+    
+    const results = await Promise.all(batch);
+    
+    for (const raw of results) {
+      if (!raw) continue;
+      const station = normalizeStation(raw);
+      if (!station) continue;
+      
+      const dist = engine.distanceMeters(lat, lon, station.lat, station.lon);
+      if (dist <= radiusMeters) {
+        station._dist = dist;
+        found.push(station);
+      }
+    }
+    
+    // Pequeña pausa para no saturar la API
+    await new Promise(r => setTimeout(r, 100));
+  }
+  
+  return found.sort((a, b) => a._dist - b._dist);
+}
+
+// ─── Función principal ───────────────────────────────────────────────────────
+
+async function getDecision(userProfile, context) {
+  const { lat, lon, fuel_type = 'diesel', reference_price, is_urban_peak = false, toll_estimate = 0 } = context;
+  
+  const radius = userProfile.context_type === 'cargo' ? 15000 : 5000;
+  
+  console.log(`[pipeline] Buscando estaciones en radio ${radius}m desde (${lat}, ${lon})`);
+  
+  const stations = await findStationsByRadius(lat, lon, radius);
+  
+  if (stations.length === 0) {
     return {
       mode: 3,
       recommendation: null,
       alternative: null,
-      message: 'No encontramos estaciones en tu zona.',
+      message: 'No encontramos estaciones de servicio en tu zona. El sistema está en construcción.'
     };
   }
-
-  // 3. Precio de referencia
-  const refPrice = reference_price || computeReferencePrice(nearby, fuel_type);
-
-  // 4. Preparar estaciones para engine
+  
+  console.log(`[pipeline] Encontradas ${stations.length} estaciones`);
+  
+  // Precio de referencia (mediana)
+  const prices = stations.map(s => s.precios[fuel_type]).filter(p => p && p > 0);
+  const refPrice = reference_price || (prices.length ? prices.sort((a,b) => a-b)[Math.floor(prices.length/2)] : 1500);
+  
+  // Preparar para el motor
+  const engineStations = stations.map(s => {
+    const ageMinutes = s.updated_at ? (Date.now() - new Date(s.updated_at).getTime()) / 60000 : 99999;
+    return {
+      id: s.id,
+      nombre: s.nombre,
+      marca: s.marca,
+      lat: s.lat,
+      lon: s.lon,
+      precio_actual: s.precios[fuel_type] || 1500,
+      precio_convenio: null,
+      data_age_minutes: Math.round(ageMinutes),
+      report_count: s.report_count || 1,
+      zone_type: s.zone_type || 'semi',
+      leaves_main_route: false,
+      _dist_km: (s._dist / 1000).toFixed(1)
+    };
+  }).filter(s => s.precio_actual > 0);
+  
   const engineContext = {
     user_lat: lat,
     user_lon: lon,
     reference_price: refPrice,
     is_urban_peak,
-    toll_estimate,
+    toll_estimate
   };
-
-  const engineStations = nearby
-    .map(s => prepareForEngine(s, fuel_type))
-    .filter(Boolean);
-
-  if (engineStations.length === 0) {
-    return {
-      mode: 3,
-      recommendation: null,
-      alternative: null,
-      message: `No encontramos estaciones con ${fuel_type} en tu zona.`,
-    };
-  }
-
-  // 5. Decisión
-  const result = engine.decide(userProfile, engineStations, engineContext);
   
-  // Enriquecer resultado con datos adicionales si hay recomendación
-  if (result.recommendation) {
-    const originalStation = nearby.find(s => s.id === result.recommendation.station.id);
-    if (originalStation) {
-      result.recommendation.direccion = originalStation.direccion;
-      result.recommendation.comuna = originalStation.comuna;
-    }
-  }
-  
-  if (result.alternative) {
-    const originalStation = nearby.find(s => s.id === result.alternative.station.id);
-    if (originalStation) {
-      result.alternative.direccion = originalStation.direccion;
-      result.alternative.comuna = originalStation.comuna;
-    }
-  }
-
-  return result;
+  return engine.decide(engineStations, userProfile, engineContext);
 }
 
-// ─── Estadísticas ────────────────────────────────────────────────────────────
-
-/**
- * getDatasetStats()
- * Retorna estadísticas del dataset para monitoreo.
- */
-function getDatasetStats() {
-  const stations = loadStations();
-  if (stations.length === 0) return { total: 0, fresh: 0, stale: 0, noDate: 0 };
-
-  const now = Date.now();
-  let fresh = 0, stale = 0, noDate = 0;
-
-  stations.forEach(s => {
-    if (!s.updated_at) { noDate++; return; }
-    const ageH = (now - new Date(s.updated_at).getTime()) / 3600000;
-    if (ageH < 24) fresh++;
-    else stale++;
-  });
-
-  return {
-    total: stations.length,
-    fresh,
-    stale,
-    noDate,
-    freshPct: Math.round((fresh / stations.length) * 100),
-  };
-}
-
-// ─── Exports ─────────────────────────────────────────────────────────────────
-
-module.exports = {
-  loadStations,
-  getNearbyStations,
-  prepareForEngine,
-  getDecision,
-  getDatasetStats,
-  computeReferencePrice,
-};
+module.exports = { getDecision };
