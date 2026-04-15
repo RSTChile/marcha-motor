@@ -274,7 +274,8 @@ function prepareStation(station, fuelType, realDistanceKm) {
     servicios:         station.servicios,
     metodos_pago:      station.metodos_pago,
     precio_convenio:   null,
-    data:              { ageminutes: ageMinutes, reportcount: 1 },
+    data_age_minutes:  ageMinutes,
+    report_count:      1,
     zone_type:         inferZoneType(station.region),
     leaves_main_route: false,
     _real_distance_km: realDistanceKm,
@@ -462,6 +463,5 @@ async function runPipeline({ userProfile, context }) {
     return { mode: 3, recommendation: null, alternative: null, message: `Error interno: ${err.message}` };
   }
 }
-function getNearbyStations(comunaData) {
-  const mainIds = comunaData.stations?.map(s
+
 module.exports = { runPipeline };
