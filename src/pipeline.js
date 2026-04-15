@@ -1,7 +1,7 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
- * CORREGIDO: selección correcta de combustible SIN FALLBACK
+ * CORREGIDO: asegura que solo se usen estaciones con el combustible seleccionado
  */
 
 const engine = require('./engine');
@@ -191,7 +191,7 @@ function inferZoneType(region) {
 }
 
 // =============================================
-// PREPARAR ESTACIÓN PARA EL MOTOR (SIN FALLBACK)
+// PREPARAR ESTACIÓN PARA EL MOTOR (SOLO COMBUSTIBLE SOLICITADO)
 // =============================================
 
 function prepareStation(station, fuelType) {
@@ -213,13 +213,15 @@ function prepareStation(station, fuelType) {
     selectedFuel = 'Gasolina 97';
   }
   
-  // Si la estación NO tiene el combustible solicitado, retornar null (no usar fallback)
+  // Si la estación NO tiene el combustible solicitado, retornar null
   if (!price || price <= 0) {
-    console.log(`[pipeline] ⚠️ Estación ${station.id} (${station.nombre}) no tiene ${selectedFuel || fuelType}`);
     return null;
   }
   
   const ageMinutes = Math.min(Math.round((Date.now() - station.fetched_at) / 60000), 60);
+  
+  // Log para depuración
+  console.log(`[pipeline] 📊 Estación ${station.nombre}: ${selectedFuel} = $${price}`);
   
   return {
     id: station.id,
@@ -244,32 +246,12 @@ function prepareStation(station, fuelType) {
 }
 
 // =============================================
-// CALCULAR PRECIO DE REFERENCIA (solo estaciones con el combustible correcto)
+// CALCULAR PRECIO DE REFERENCIA
 // =============================================
 
-function calculateReferencePrice(stations, fuelType) {
-  // Filtrar solo estaciones que tienen el combustible solicitado
-  const validStations = stations.filter(s => {
-    if (fuelType === 'diesel') return s.precios?.diesel > 0;
-    if (fuelType === 'gas93') return s.precios?.gas93 > 0;
-    if (fuelType === 'gas95') return s.precios?.gas95 > 0;
-    if (fuelType === 'gas97') return s.precios?.gas97 > 0;
-    return false;
-  });
-  
-  const prices = validStations.map(s => {
-    if (fuelType === 'diesel') return s.precios.diesel;
-    if (fuelType === 'gas93') return s.precios.gas93;
-    if (fuelType === 'gas95') return s.precios.gas95;
-    if (fuelType === 'gas97') return s.precios.gas97;
-    return 0;
-  }).filter(p => p > 0).sort((a, b) => a - b);
-  
-  if (prices.length === 0) {
-    console.log(`[pipeline] ⚠️ No se encontraron estaciones con ${fuelType} para calcular precio referencia`);
-    return fuelType === 'diesel' ? 1500 : 1600;
-  }
-  
+function calculateReferencePrice(engineStations) {
+  const prices = engineStations.map(s => s.precio_actual).filter(p => p > 0).sort((a, b) => a - b);
+  if (prices.length === 0) return 1500;
   const mid = Math.floor(prices.length / 2);
   return prices.length % 2 === 0 ? Math.round((prices[mid - 1] + prices[mid]) / 2) : prices[mid];
 }
@@ -331,6 +313,7 @@ async function runPipeline({ userProfile, context }) {
       return { mode: 3, recommendation: null, alternative: null, message: 'No se encontraron estaciones' };
     }
     
+    // Calcular distancia
     const stationsWithDist = stations.map(s => ({
       ...s,
       dist: distanceMeters(user_lat, user_lon, s.lat, s.lon)
@@ -349,10 +332,11 @@ async function runPipeline({ userProfile, context }) {
       return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} en ${comuna}. Prueba con otro combustible.` };
     }
     
-    // Calcular precio de referencia usando SOLO estaciones con el combustible correcto
-    const refPrice = calculateReferencePrice(stations, fuel_type);
+    // Calcular precio de referencia
+    const refPrice = calculateReferencePrice(engineStations);
     console.log(`[pipeline] 💹 Precio referencia para ${fuel_type}: $${refPrice}`);
     
+    // Ejecutar motor
     const result = engine.decide(
       userProfile,
       engineStations,
@@ -365,18 +349,22 @@ async function runPipeline({ userProfile, context }) {
       }
     );
     
-    // Redondear ahorros hacia abajo
-    if (result.recommendation && result.recommendation.net_saving) {
-      result.recommendation.net_saving = Math.floor(result.recommendation.net_saving);
-    }
-    if (result.alternative && result.alternative.net_saving) {
-      result.alternative.net_saving = Math.floor(result.alternative.net_saving);
-    }
-    
-    // Enriquecer el resultado con datos completos
+    // Asegurar que el display_price de la recomendación sea correcto
     if (result.recommendation && result.recommendation.station) {
       const stationData = stationsWithDist.find(s => s.id === result.recommendation.station.id);
       if (stationData) {
+        // Obtener el precio correcto del combustible
+        let correctPrice = null;
+        if (fuel_type === 'diesel') correctPrice = stationData.precios.diesel;
+        else if (fuel_type === 'gas93') correctPrice = stationData.precios.gas93;
+        else if (fuel_type === 'gas95') correctPrice = stationData.precios.gas95;
+        else if (fuel_type === 'gas97') correctPrice = stationData.precios.gas97;
+        
+        if (correctPrice && correctPrice > 0) {
+          result.recommendation.display_price = correctPrice;
+          console.log(`[pipeline] 🔧 Corregido display_price: $${correctPrice}`);
+        }
+        
         result.recommendation.station = {
           ...result.recommendation.station,
           direccion: stationData.direccion,
@@ -388,16 +376,12 @@ async function runPipeline({ userProfile, context }) {
       }
     }
     
-    if (result.alternative && result.alternative.station) {
-      const stationData = stationsWithDist.find(s => s.id === result.alternative.station.id);
-      if (stationData) {
-        result.alternative.station = {
-          ...result.alternative.station,
-          direccion: stationData.direccion,
-          comuna: stationData.comuna,
-          precios_detalle: stationData.precios_detalle
-        };
-      }
+    // Redondear ahorros
+    if (result.recommendation && result.recommendation.net_saving) {
+      result.recommendation.net_saving = Math.floor(result.recommendation.net_saving);
+    }
+    if (result.alternative && result.alternative.net_saving) {
+      result.alternative.net_saving = Math.floor(result.alternative.net_saving);
     }
     
     const elapsed = Date.now() - startTime;
