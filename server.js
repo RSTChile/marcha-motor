@@ -54,7 +54,6 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 
 // =============================================
 // DETECTAR COMUNA POR COORDENADAS (GPS)
-// Usa distancia REAL por carretera (OpenRouteService)
 // =============================================
 
 app.post('/api/detect-commune', async (req, res) => {
@@ -81,19 +80,28 @@ app.post('/api/detect-commune', async (req, res) => {
     const comunasList = data.comunas || [];
     
     // Tu API key de OpenRouteService
-    const ORS_API_KEY = '5b3ce3597851110001cf6248c9d8c8c5c8a84f2d8c8c8c8c8c8c8c8';
+    const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU0ODZkY2U1MzU0MTQ4YzFiMDgwMTg2YTYyYTBiOThiIiwiaCI6Im11cm11cjY0In0=';
     
-    // Función para obtener distancia real desde OpenRouteService
     async function getRealDistance(lat1, lon1, lat2, lon2) {
-      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`;
+      const url = `https://api.openrouteservice.org/v2/directions/driving-car?start=${lon1},${lat1}&end=${lon2},${lat2}`;
       
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${ORS_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
         clearTimeout(timeout);
         
-        if (!response.ok) return null;
+        if (!response.ok) {
+          console.error(`[ORS] HTTP ${response.status}: ${response.statusText}`);
+          return null;
+        }
         const routeData = await response.json();
         if (routeData.features && routeData.features[0] && routeData.features[0].properties.summary) {
           return routeData.features[0].properties.summary.distance / 1000; // metros a km
@@ -105,31 +113,28 @@ app.post('/api/detect-commune', async (req, res) => {
       }
     }
     
-    // Primero, filtrar comunas por distancia en línea recta (para no sobrecargar ORS)
-    const MAX_CANDIDATES = 5;
-    const withStraightDist = comunasList.map(c => ({
+    // Calcular distancia en línea recta para todas
+    const withDist = comunasList.map(c => ({
       ...c,
       _straight_dist: haversineDistance(lat, lng, c.lat, c.lng)
-    })).sort((a, b) => a._straight_dist - b._straight_dist)
-      .slice(0, MAX_CANDIDATES);
+    })).sort((a, b) => a._straight_dist - b._straight_dist);
     
-    // Luego, calcular distancia REAL para las 5 más cercanas en línea recta
-    const withRealDist = [];
-    for (const c of withStraightDist) {
+    // Tomar las 5 más cercanas en línea recta
+    const candidates = withDist.slice(0, 5);
+    
+    // Intentar obtener distancia real para los candidatos
+    for (const c of candidates) {
       const realDist = await getRealDistance(lat, lng, c.lat, c.lng);
-      withRealDist.push({
-        ...c,
-        _real_dist: realDist !== null ? realDist : c._straight_dist,
-        _is_estimated: realDist === null
-      });
-      // Pequeña pausa para no saturar la API
-      await new Promise(r => setTimeout(r, 200));
+      c._real_dist = realDist !== null ? realDist : c._straight_dist;
+      c._is_estimated = realDist === null;
+      console.log(`[ORS] ${c.nombre}: real=${c._real_dist?.toFixed(1)} km, straight=${c._straight_dist?.toFixed(1)} km, estimated=${c._is_estimated}`);
+      await new Promise(r => setTimeout(r, 300));
     }
     
     // Ordenar por distancia real
-    withRealDist.sort((a, b) => a._real_dist - b._real_dist);
+    candidates.sort((a, b) => a._real_dist - b._real_dist);
     
-    const closest = withRealDist[0];
+    let closest = candidates[0];
     
     if (!closest) {
       return res.status(404).json({
@@ -138,7 +143,7 @@ app.post('/api/detect-commune', async (req, res) => {
       });
     }
     
-    console.log(`[detect-commune] Comuna detectada: ${closest.nombre} (distancia real: ${closest._real_dist.toFixed(1)} km, línea recta: ${closest._straight_dist.toFixed(1)} km)`);
+    console.log(`[detect-commune] ✅ Comuna detectada: ${closest.nombre} (distancia real: ${closest._real_dist.toFixed(1)} km)`);
     
     res.json({
       ok: true,
@@ -146,7 +151,7 @@ app.post('/api/detect-commune', async (req, res) => {
         nombre: closest.nombre,
         region: closest.region,
         lat: closest.lat,
-        lon: closest.lng
+        lon: closest.lon
       },
       distance_km: closest._real_dist,
       is_estimated: closest._is_estimated || false
