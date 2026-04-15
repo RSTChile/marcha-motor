@@ -1,7 +1,7 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
- * CORREGIDO: selección correcta de combustible
+ * CORREGIDO: selección correcta de combustible SIN FALLBACK
  */
 
 const engine = require('./engine');
@@ -101,11 +101,6 @@ async function fetchStationById(id) {
       });
     }
     
-    // Verificar si tiene al menos un combustible útil
-    if (!precios.diesel && !precios.gas93 && !precios.gas95 && !precios.gas97) {
-      return null;
-    }
-    
     // Obtener nombre comercial de la marca
     const marcaNombre = getMarcaNombre(d.marca);
     
@@ -196,24 +191,32 @@ function inferZoneType(region) {
 }
 
 // =============================================
-// PREPARAR ESTACIÓN PARA EL MOTOR
+// PREPARAR ESTACIÓN PARA EL MOTOR (SIN FALLBACK)
 // =============================================
 
 function prepareStation(station, fuelType) {
   // Seleccionar el precio correcto según el tipo de combustible
   let price = null;
-  if (fuelType === 'diesel') price = station.precios.diesel;
-  else if (fuelType === 'gas93') price = station.precios.gas93;
-  else if (fuelType === 'gas95') price = station.precios.gas95;
-  else if (fuelType === 'gas97') price = station.precios.gas97;
+  let selectedFuel = null;
   
-  // Si no tiene el combustible exacto, buscar alternativas
+  if (fuelType === 'diesel') {
+    price = station.precios.diesel;
+    selectedFuel = 'Diesel';
+  } else if (fuelType === 'gas93') {
+    price = station.precios.gas93;
+    selectedFuel = 'Gasolina 93';
+  } else if (fuelType === 'gas95') {
+    price = station.precios.gas95;
+    selectedFuel = 'Gasolina 95';
+  } else if (fuelType === 'gas97') {
+    price = station.precios.gas97;
+    selectedFuel = 'Gasolina 97';
+  }
+  
+  // Si la estación NO tiene el combustible solicitado, retornar null (no usar fallback)
   if (!price || price <= 0) {
-    if (station.precios.diesel) price = station.precios.diesel;
-    else if (station.precios.gas95) price = station.precios.gas95;
-    else if (station.precios.gas93) price = station.precios.gas93;
-    else if (station.precios.gas97) price = station.precios.gas97;
-    else return null;
+    console.log(`[pipeline] ⚠️ Estación ${station.id} (${station.nombre}) no tiene ${selectedFuel || fuelType}`);
+    return null;
   }
   
   const ageMinutes = Math.min(Math.round((Date.now() - station.fetched_at) / 60000), 60);
@@ -236,16 +239,37 @@ function prepareStation(station, fuelType) {
     report_count: 1,
     zone_type: inferZoneType(station.region),
     leaves_main_route: false,
+    fuel_type: selectedFuel
   };
 }
 
 // =============================================
-// CALCULAR PRECIO DE REFERENCIA (mediana de precios)
+// CALCULAR PRECIO DE REFERENCIA (solo estaciones con el combustible correcto)
 // =============================================
 
-function calculateReferencePrice(stations) {
-  const prices = stations.map(s => s.precio_actual).filter(p => p > 0).sort((a, b) => a - b);
-  if (prices.length === 0) return 1500;
+function calculateReferencePrice(stations, fuelType) {
+  // Filtrar solo estaciones que tienen el combustible solicitado
+  const validStations = stations.filter(s => {
+    if (fuelType === 'diesel') return s.precios?.diesel > 0;
+    if (fuelType === 'gas93') return s.precios?.gas93 > 0;
+    if (fuelType === 'gas95') return s.precios?.gas95 > 0;
+    if (fuelType === 'gas97') return s.precios?.gas97 > 0;
+    return false;
+  });
+  
+  const prices = validStations.map(s => {
+    if (fuelType === 'diesel') return s.precios.diesel;
+    if (fuelType === 'gas93') return s.precios.gas93;
+    if (fuelType === 'gas95') return s.precios.gas95;
+    if (fuelType === 'gas97') return s.precios.gas97;
+    return 0;
+  }).filter(p => p > 0).sort((a, b) => a - b);
+  
+  if (prices.length === 0) {
+    console.log(`[pipeline] ⚠️ No se encontraron estaciones con ${fuelType} para calcular precio referencia`);
+    return fuelType === 'diesel' ? 1500 : 1600;
+  }
+  
   const mid = Math.floor(prices.length / 2);
   return prices.length % 2 === 0 ? Math.round((prices[mid - 1] + prices[mid]) / 2) : prices[mid];
 }
@@ -314,16 +338,20 @@ async function runPipeline({ userProfile, context }) {
     
     console.log(`[pipeline] 📌 ${stationsWithDist.length} estaciones encontradas`);
     
+    // Preparar estaciones para el motor (solo las que tienen el combustible solicitado)
     let engineStations = stationsWithDist
       .map(s => prepareStation(s, fuel_type))
       .filter(Boolean);
     
+    console.log(`[pipeline] 🔍 Estaciones con ${fuel_type}: ${engineStations.length}`);
+    
     if (engineStations.length === 0) {
-      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} en ${comuna}` };
+      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} en ${comuna}. Prueba con otro combustible.` };
     }
     
-    const refPrice = calculateReferencePrice(engineStations);
-    console.log(`[pipeline] 💹 Precio referencia: $${refPrice}`);
+    // Calcular precio de referencia usando SOLO estaciones con el combustible correcto
+    const refPrice = calculateReferencePrice(stations, fuel_type);
+    console.log(`[pipeline] 💹 Precio referencia para ${fuel_type}: $${refPrice}`);
     
     const result = engine.decide(
       userProfile,
