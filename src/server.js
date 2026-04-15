@@ -1,20 +1,59 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path');
+const fs = require('fs');
+
 const { getDecision } = require('./pipeline');
+const { crawlAll } = require('./crawler');
 
 const app = express();
-app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.send('Marcha API OK');
+// ==============================
+// CONFIG
+// ==============================
+const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data', 'stations.json');
+
+// ==============================
+// MIDDLEWARE
+// ==============================
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ==============================
+// INIT DATASET (AUTO)
+// ==============================
+async function ensureDataset() {
+  try {
+    if (!fs.existsSync(DATA_FILE)) {
+      console.log('📡 No hay dataset. Ejecutando crawl inicial...');
+      await crawlAll({ testLimit: 50 }); // rápido para iniciar
+      console.log('✅ Dataset inicial creado');
+    } else {
+      console.log('📦 Dataset existente encontrado');
+    }
+  } catch (err) {
+    console.error('❌ Error inicializando dataset:', err.message);
+  }
+}
+
+// ==============================
+// ROUTES
+// ==============================
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ ok: true, status: 'running' });
 });
 
+// Motor de decisión
 app.post('/decision', (req, res) => {
   try {
     const { userProfile, context } = req.body;
 
     if (!userProfile || !context) {
       return res.status(400).json({
+        ok: false,
         error: 'Faltan userProfile o context'
       });
     }
@@ -27,6 +66,7 @@ app.post('/decision', (req, res) => {
     });
 
   } catch (err) {
+    console.error('Error en /decision:', err);
     res.status(500).json({
       ok: false,
       error: err.message
@@ -34,7 +74,7 @@ app.post('/decision', (req, res) => {
   }
 });
 
-// 🔥 Caso Cero directo
+// Caso Cero (tu escenario real)
 app.get('/caso-cero', (req, res) => {
 
   const userProfile = {
@@ -58,7 +98,12 @@ app.get('/caso-cero', (req, res) => {
   res.json(result);
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Marcha corriendo en http://localhost:${PORT}`);
+// ==============================
+// START SERVER
+// ==============================
+app.listen(PORT, async () => {
+  console.log(`🚀 Marcha corriendo en puerto ${PORT}`);
+  console.log(`🌐 http://localhost:${PORT}`);
+
+  await ensureDataset();
 });

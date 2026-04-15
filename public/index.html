@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marcha</title>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: white;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      background: #22c55e;
+      color: black;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .secondary {
+      background: #334155;
+      color: white;
+    }
+
+    .result {
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⛽ Marcha</h1>
+
+<div class="card">
+  <label>% Estanque</label>
+  <input id="fuel" type="number" value="20"/>
+
+  <label>Presupuesto ($)</label>
+  <input id="budget" type="number" value="25000"/>
+
+  <button class="btn" onclick="decidir()">Evaluar</button>
+</div>
+
+<div class="card result" id="output">
+  Esperando decisión...
+</div>
+
+<script>
+async function decidir() {
+
+  const fuel = Number(document.getElementById('fuel').value);
+  const budget = Number(document.getElementById('budget').value);
+
+  const userProfile = {
+    context_type: "domestic",
+    fuel_consumption: 10,
+    tank_capacity: 56,
+    current_level_pct: fuel,
+    budget_today: budget
+  };
+
+  const context = {
+    lat: -32.8396,
+    lon: -70.9530,
+    fuel_type: "diesel",
+    reference_price: 1500,
+    is_urban_peak: false
+  };
+
+  const res = await fetch('/decision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userProfile, context })
+  });
+
+  const data = await res.json();
+
+  document.getElementById('output').innerText =
+    data.result?.message || JSON.stringify(data);
+}
+</script>
+
+</body>
+</html>
