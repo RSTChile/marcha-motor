@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
-const { runPipeline, getDatasetStats } = require('./src/pipeline');
+const { runPipeline } = require('./src/pipeline');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,9 +15,19 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'running' });
 });
 
-// Estadísticas del dataset
+// Estadísticas del dataset (versión simple que no falla)
 app.get('/api/stats', (req, res) => {
-  res.json(getDatasetStats());
+  try {
+    const dataPath = path.join(__dirname, 'data', 'stations.json');
+    if (!fs.existsSync(dataPath)) {
+      return res.json({ ok: true, total: 0, message: 'Dataset no generado aún' });
+    }
+    const raw = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const total = raw.stations ? raw.stations.length : 0;
+    res.json({ ok: true, total, updated_at: raw.meta?.updated_at || null });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
 });
 
 // Fuerza la ejecución manual del crawler
@@ -24,7 +35,7 @@ app.get('/force-crawl', async (req, res) => {
   try {
     const { crawlAll } = require('./src/crawler');
     console.log('[force-crawl] Iniciando crawler manual...');
-    await crawlAll({ testLimit: 50 });
+    await crawlAll({ testLimit: 500 });
     res.json({ ok: true, message: 'Crawl completado' });
   } catch (err) {
     console.error('[force-crawl] Error:', err);
