@@ -1,0 +1,1639 @@
+{
+  "meta": {
+    "generated_at": "2026-04-15T09:33:28.770Z",
+    "total_comunas": 114,
+    "total_stations": 1059,
+    "source": "API BencinaEnLinea"
+  },
+  "comunas": {
+    "Arica": {
+      "region": "Arica y Parinacota",
+      "station_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    "Iquique": {
+      "region": "Tarapacá",
+      "station_ids": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ]
+    },
+    "Alto Hospicio": {
+      "region": "Tarapacá",
+      "station_ids": [
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61
+      ]
+    },
+    "Pozo Almonte": {
+      "region": "Tarapacá",
+      "station_ids": [
+        62,
+        63,
+        64,
+        65,
+        66
+      ]
+    },
+    "Pica": {
+      "region": "Tarapacá",
+      "station_ids": [
+        67
+      ]
+    },
+    "Antofagasta": {
+      "region": "Antofagasta",
+      "station_ids": [
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97
+      ]
+    },
+    "Mejillones": {
+      "region": "Antofagasta",
+      "station_ids": [
+        98,
+        99
+      ]
+    },
+    "Sierra Gorda": {
+      "region": "Antofagasta",
+      "station_ids": [
+        100
+      ]
+    },
+    "Taltal": {
+      "region": "Antofagasta",
+      "station_ids": [
+        101,
+        102,
+        103
+      ]
+    },
+    "Calama": {
+      "region": "Antofagasta",
+      "station_ids": [
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115
+      ]
+    },
+    "San Pedro de Atacama": {
+      "region": "Antofagasta",
+      "station_ids": [
+        116,
+        117
+      ]
+    },
+    "Tocopilla": {
+      "region": "Antofagasta",
+      "station_ids": [
+        118,
+        119,
+        120,
+        121
+      ]
+    },
+    "María Elena": {
+      "region": "Antofagasta",
+      "station_ids": [
+        122
+      ]
+    },
+    "Copiapó": {
+      "region": "Atacama",
+      "station_ids": [
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146
+      ]
+    },
+    "Caldera": {
+      "region": "Atacama",
+      "station_ids": [
+        147,
+        148,
+        149
+      ]
+    },
+    "Tierra Amarilla": {
+      "region": "Atacama",
+      "station_ids": [
+        150
+      ]
+    },
+    "Chañaral": {
+      "region": "Atacama",
+      "station_ids": [
+        151,
+        152,
+        153,
+        154,
+        155
+      ]
+    },
+    "Diego de Almagro": {
+      "region": "Atacama",
+      "station_ids": [
+        156,
+        157,
+        158
+      ]
+    },
+    "Vallenar": {
+      "region": "Atacama",
+      "station_ids": [
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167
+      ]
+    },
+    "Huasco": {
+      "region": "Atacama",
+      "station_ids": [
+        168,
+        169
+      ]
+    },
+    "La Serena": {
+      "region": "Coquimbo",
+      "station_ids": [
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200
+      ]
+    },
+    "Coquimbo": {
+      "region": "Coquimbo",
+      "station_ids": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231
+      ]
+    },
+    "Andacollo": {
+      "region": "Coquimbo",
+      "station_ids": [
+        232
+      ]
+    },
+    "Vicuña": {
+      "region": "Coquimbo",
+      "station_ids": [
+        233,
+        234,
+        235
+      ]
+    },
+    "Illapel": {
+      "region": "Coquimbo",
+      "station_ids": [
+        236,
+        237,
+        238
+      ]
+    },
+    "Canela": {
+      "region": "Coquimbo",
+      "station_ids": [
+        239,
+        240
+      ]
+    },
+    "Los Vilos": {
+      "region": "Coquimbo",
+      "station_ids": [
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247
+      ]
+    },
+    "Salamanca": {
+      "region": "Coquimbo",
+      "station_ids": [
+        248,
+        249,
+        250
+      ]
+    },
+    "Ovalle": {
+      "region": "Coquimbo",
+      "station_ids": [
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265
+      ]
+    },
+    "Combarbalá": {
+      "region": "Coquimbo",
+      "station_ids": [
+        266,
+        267
+      ]
+    },
+    "Monte Patria": {
+      "region": "Coquimbo",
+      "station_ids": [
+        268,
+        269
+      ]
+    },
+    "Punitaqui": {
+      "region": "Coquimbo",
+      "station_ids": [
+        270,
+        271
+      ]
+    },
+    "Valparaíso": {
+      "region": "Valparaíso",
+      "station_ids": [
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ]
+    },
+    "Casablanca": {
+      "region": "Valparaíso",
+      "station_ids": [
+        306,
+        307,
+        308
+      ]
+    },
+    "Concón": {
+      "region": "Valparaíso",
+      "station_ids": [
+        309,
+        310,
+        311,
+        312,
+        313,
+        314
+      ]
+    },
+    "Puchuncaví": {
+      "region": "Valparaíso",
+      "station_ids": [
+        315,
+        316,
+        317
+      ]
+    },
+    "Quintero": {
+      "region": "Valparaíso",
+      "station_ids": [
+        318,
+        319,
+        320,
+        321,
+        322
+      ]
+    },
+    "Viña del Mar": {
+      "region": "Valparaíso",
+      "station_ids": [
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360
+      ]
+    },
+    "Isla de Pascua": {
+      "region": "Valparaíso",
+      "station_ids": [
+        361,
+        362,
+        363
+      ]
+    },
+    "Los Andes": {
+      "region": "Valparaíso",
+      "station_ids": [
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376
+      ]
+    },
+    "Calle Larga": {
+      "region": "Valparaíso",
+      "station_ids": [
+        377
+      ]
+    },
+    "San Esteban": {
+      "region": "Valparaíso",
+      "station_ids": [
+        378,
+        379
+      ]
+    },
+    "Rinconada": {
+      "region": "Valparaíso",
+      "station_ids": [
+        380
+      ]
+    },
+    "La Ligua": {
+      "region": "Valparaíso",
+      "station_ids": [
+        381,
+        382,
+        383
+      ]
+    },
+    "Cabildo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        384,
+        385
+      ]
+    },
+    "Papudo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        386,
+        387
+      ]
+    },
+    "Petorca": {
+      "region": "Valparaíso",
+      "station_ids": [
+        388
+      ]
+    },
+    "Zapallar": {
+      "region": "Valparaíso",
+      "station_ids": [
+        389
+      ]
+    },
+    "Quillota": {
+      "region": "Valparaíso",
+      "station_ids": [
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400,
+        401,
+        402
+      ]
+    },
+    "Calera": {
+      "region": "Valparaíso",
+      "station_ids": [
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409
+      ]
+    },
+    "Hijuelas": {
+      "region": "Valparaíso",
+      "station_ids": [
+        410,
+        411,
+        412
+      ]
+    },
+    "La Cruz": {
+      "region": "Valparaíso",
+      "station_ids": [
+        413
+      ]
+    },
+    "Nogales": {
+      "region": "Valparaíso",
+      "station_ids": [
+        414,
+        415
+      ]
+    },
+    "San Antonio": {
+      "region": "Valparaíso",
+      "station_ids": [
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430
+      ]
+    },
+    "Algarrobo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        431,
+        432
+      ]
+    },
+    "Cartagena": {
+      "region": "Valparaíso",
+      "station_ids": [
+        433,
+        434
+      ]
+    },
+    "El Quisco": {
+      "region": "Valparaíso",
+      "station_ids": [
+        435,
+        436,
+        437
+      ]
+    },
+    "El Tabo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        438
+      ]
+    },
+    "Santo Domingo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        439,
+        440
+      ]
+    },
+    "San Felipe": {
+      "region": "Valparaíso",
+      "station_ids": [
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453
+      ]
+    },
+    "Catemu": {
+      "region": "Valparaíso",
+      "station_ids": [
+        454
+      ]
+    },
+    "Llaillay": {
+      "region": "Valparaíso",
+      "station_ids": [
+        455,
+        456,
+        457,
+        458
+      ]
+    },
+    "Panquehue": {
+      "region": "Valparaíso",
+      "station_ids": [
+        459
+      ]
+    },
+    "Putaendo": {
+      "region": "Valparaíso",
+      "station_ids": [
+        460,
+        461
+      ]
+    },
+    "Santa María": {
+      "region": "Valparaíso",
+      "station_ids": [
+        462
+      ]
+    },
+    "Quilpué": {
+      "region": "Valparaíso",
+      "station_ids": [
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483
+      ]
+    },
+    "Limache": {
+      "region": "Valparaíso",
+      "station_ids": [
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494
+      ]
+    },
+    "Olmué": {
+      "region": "Valparaíso",
+      "station_ids": [
+        495,
+        496
+      ]
+    },
+    "Villa Alemana": {
+      "region": "Valparaíso",
+      "station_ids": [
+        497,
+        498,
+        499,
+        500,
+        501,
+        502,
+        503,
+        504,
+        505,
+        506,
+        507
+      ]
+    },
+    "Rancagua": {
+      "region": "Del Libertador Gral. Bernardo O’Higgins",
+      "station_ids": [
+        508,
+        509,
+        510,
+        511,
+        512,
+        513,
+        514,
+        515,
+        516,
+        517,
+        518,
+        519,
+        520,
+        521,
+        522,
+        523,
+        524,
+        525,
+        526,
+        527,
+        528,
+        529,
+        530,
+        531,
+        532,
+        533,
+        534,
+        535,
+        536,
+        537,
+        538,
+        539,
+        540
+      ]
+    },
+    "Conchalí": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1601,
+        1602,
+        1603
+      ]
+    },
+    "El Bosque": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1604,
+        1605,
+        1606,
+        1607,
+        1608,
+        1609,
+        1610,
+        1611,
+        1612,
+        1613
+      ]
+    },
+    "Estación Central": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1614,
+        1615,
+        1616,
+        1617,
+        1618,
+        1619,
+        1620,
+        1621,
+        1622,
+        1623,
+        1624,
+        1625,
+        1626,
+        1627,
+        1628
+      ]
+    },
+    "Huechuraba": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1629,
+        1630,
+        1631,
+        1632,
+        1633,
+        1634,
+        1635,
+        1636
+      ]
+    },
+    "Independencia": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1637,
+        1638,
+        1639,
+        1640,
+        1641,
+        1642,
+        1643,
+        1644,
+        1645,
+        1646,
+        1647,
+        1648,
+        1649,
+        1650,
+        1651,
+        1652
+      ]
+    },
+    "La Cisterna": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1653,
+        1654,
+        1655,
+        1656,
+        1657,
+        1658,
+        1659
+      ]
+    },
+    "La Florida": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1660,
+        1661,
+        1662,
+        1663,
+        1664,
+        1665,
+        1666,
+        1667,
+        1668,
+        1669,
+        1670,
+        1671,
+        1672,
+        1673,
+        1674,
+        1675,
+        1676,
+        1677,
+        1678,
+        1679,
+        1680,
+        1681,
+        1682,
+        1683
+      ]
+    },
+    "La Granja": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1684,
+        1685,
+        1686,
+        1687
+      ]
+    },
+    "La Pintana": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1688,
+        1689,
+        1690,
+        1691,
+        1692,
+        1693
+      ]
+    },
+    "La Reina": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1694,
+        1695,
+        1696,
+        1697,
+        1698,
+        1699,
+        1700,
+        1701,
+        1702,
+        1703,
+        1704,
+        1705
+      ]
+    },
+    "Las Condes": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1706,
+        1707,
+        1708,
+        1709,
+        1710,
+        1711,
+        1712,
+        1713,
+        1714,
+        1715,
+        1716,
+        1717,
+        1718,
+        1719,
+        1720,
+        1721,
+        1722,
+        1723,
+        1724,
+        1725,
+        1726,
+        1727,
+        1728
+      ]
+    },
+    "Lo Barnechea": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1729,
+        1730,
+        1731,
+        1732,
+        1733,
+        1734,
+        1735,
+        1736,
+        1737,
+        1738,
+        1739,
+        1740,
+        1741,
+        1742,
+        1743
+      ]
+    },
+    "Lo Espejo": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1744,
+        1745
+      ]
+    },
+    "Lo Prado": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1746,
+        1747
+      ]
+    },
+    "Macul": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1748,
+        1749,
+        1750,
+        1751,
+        1752,
+        1753,
+        1754,
+        1755,
+        1756,
+        1757,
+        1758
+      ]
+    },
+    "Maipú": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1759,
+        1760,
+        1761,
+        1762,
+        1763,
+        1764,
+        1765,
+        1766,
+        1767,
+        1768,
+        1769,
+        1770,
+        1771,
+        1772,
+        1773,
+        1774,
+        1775,
+        1776,
+        1777,
+        1778,
+        1779,
+        1780,
+        1781,
+        1782,
+        1783,
+        1784,
+        1785,
+        1786,
+        1787
+      ]
+    },
+    "Ñuñoa": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1788,
+        1789,
+        1790,
+        1791,
+        1792,
+        1793,
+        1794,
+        1795,
+        1796,
+        1797,
+        1798,
+        1799,
+        1800,
+        1801,
+        1802,
+        1803,
+        1804,
+        1805,
+        1806,
+        1807,
+        1808,
+        1809,
+        1810,
+        1811
+      ]
+    },
+    "Pedro Aguirre Cerda": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1812,
+        1813,
+        1814,
+        1815,
+        1816,
+        1817,
+        1818,
+        1819
+      ]
+    },
+    "Peñalolén": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1820,
+        1821,
+        1822,
+        1823,
+        1824,
+        1825,
+        1826,
+        1827,
+        1828,
+        1829,
+        1830,
+        1831,
+        1832,
+        1833,
+        1834,
+        1835,
+        1836,
+        1837
+      ]
+    },
+    "Providencia": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1838,
+        1839,
+        1840,
+        1841,
+        1842,
+        1843,
+        1844,
+        1845,
+        1846,
+        1847,
+        1848,
+        1849,
+        1850,
+        1851,
+        1852,
+        1853,
+        1854,
+        1855,
+        1856,
+        1857,
+        1858,
+        1859,
+        1860
+      ]
+    },
+    "Pudahuel": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1867,
+        1868,
+        1869,
+        1870,
+        1871,
+        1872,
+        1873
+      ]
+    },
+    "Quilicura": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1874,
+        1875,
+        1876,
+        1877,
+        1878,
+        1879,
+        1880,
+        1881,
+        1882,
+        1883,
+        1884,
+        1885,
+        1886,
+        1887,
+        1888
+      ]
+    },
+    "Quinta Normal": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1889,
+        1890,
+        1891,
+        1892,
+        1893,
+        1894,
+        1895,
+        1896,
+        1897,
+        1898,
+        1899,
+        1900,
+        1901,
+        1902,
+        1903,
+        1904,
+        1905,
+        1906,
+        1907,
+        1908
+      ]
+    },
+    "Recoleta": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1909,
+        1910,
+        1911,
+        1912,
+        1913,
+        1914,
+        1915,
+        1916,
+        1917,
+        1918,
+        1919,
+        1920,
+        1921
+      ]
+    },
+    "Renca": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1922,
+        1923,
+        1924,
+        1925,
+        1926,
+        1927,
+        1928,
+        1929,
+        1930,
+        1931
+      ]
+    },
+    "San Joaquín": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1932,
+        1933,
+        1934,
+        1935,
+        1936,
+        1937,
+        1938,
+        1939,
+        1940,
+        1941,
+        1942,
+        1943
+      ]
+    },
+    "San Miguel": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1944,
+        1945,
+        1946,
+        1947,
+        1948,
+        1949,
+        1950,
+        1951,
+        1952,
+        1953
+      ]
+    },
+    "San Ramón": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1954,
+        1955,
+        1956,
+        1957,
+        1958
+      ]
+    },
+    "Vitacura": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974
+      ]
+    },
+    "Puente Alto": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002
+      ]
+    },
+    "Pirque": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2003,
+        2004
+      ]
+    },
+    "San José de Maipo": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2005,
+        2006
+      ]
+    },
+    "Colina": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ]
+    },
+    "Lampa": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2026,
+        2027,
+        2028,
+        2029,
+        2030,
+        2031,
+        2032,
+        2033,
+        2034,
+        2035,
+        2036,
+        2037,
+        2038
+      ]
+    },
+    "Tiltil": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2039,
+        2040,
+        2041
+      ]
+    },
+    "San Bernardo": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2042,
+        2043,
+        2044,
+        2045,
+        2046,
+        2047,
+        2048,
+        2049,
+        2050,
+        2051,
+        2052,
+        2053,
+        2054,
+        2055,
+        2056,
+        2057,
+        2058,
+        2059,
+        2060,
+        2061,
+        2062,
+        2063,
+        2064,
+        2065,
+        2066,
+        2067,
+        2068,
+        2069,
+        2070,
+        2071,
+        2072,
+        2073
+      ]
+    },
+    "Buin": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2074,
+        2075,
+        2076,
+        2077,
+        2078,
+        2079,
+        2080,
+        2081,
+        2082,
+        2083,
+        2084,
+        2085
+      ]
+    },
+    "Calera de Tango": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2086,
+        2087,
+        2088,
+        2089
+      ]
+    },
+    "Paine": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2090,
+        2091,
+        2092,
+        2093,
+        2094,
+        2095,
+        2096
+      ]
+    },
+    "Melipilla": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2097,
+        2098,
+        2099,
+        2100,
+        2101,
+        2102,
+        2103,
+        2104,
+        2105,
+        2106,
+        2107,
+        2108,
+        2109,
+        2110,
+        2111
+      ]
+    },
+    "Alhué": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2112
+      ]
+    },
+    "Curacaví": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2113,
+        2114,
+        2115
+      ]
+    },
+    "María Pinto": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2116
+      ]
+    },
+    "Talagante": {
+      "region": "Metropolitana de Santiago",
+      "station_ids": [
+        2117,
+        2118,
+        2120
+      ]
+    }
+  }
+}
