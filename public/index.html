@@ -1,260 +1,1328 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Marcha — Motor de Decisión</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcha · RST Chile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:       #07111f;
+            --bg2:      #0d1e30;
+            --bg3:      #122033;
+            --surface:  #162840;
+            --line:     rgba(255,255,255,0.07);
+            --line2:    rgba(255,255,255,0.12);
+            --text:     #e8edf2;
+            --muted:    #6b8099;
+            --accent:   #e8a030;
+            --accent2:  #f0c060;
+            --green:    #2ecc8a;
+            --red:      #e05050;
+            --blue:     #4a9eff;
+            --mono:     'DM Mono', monospace;
+            --sans:     'Syne', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<style>
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: linear-gradient(180deg, #071224, #0a1628);
-  color: #e6edf3;
-}
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
 
-.container {
-  max-width: 720px;
-  margin: auto;
-  padding: 16px;
-}
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-/* HEADER */
-.header {
-  background: #0f1f3a;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.4);
-}
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+        }
 
-.header h1 {
-  margin: 0;
-  font-size: 22px;
-}
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0 2rem;
+            border-bottom: 1px solid var(--line2);
+            margin-bottom: 2rem;
+        }
 
-.header p {
-  margin: 8px 0 0;
-  color: #8aa2c7;
-}
+        .logo-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid var(--line2);
+        }
 
-/* FORM */
-.card {
-  background: #0f1f3a;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
+        .logo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  margin-bottom: 12px;
-  border-radius: 8px;
-  border: none;
-  background: #071224;
-  color: #fff;
-}
+        .logo-wrap-fallback {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
 
-button {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  background: #ff7a18;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
+        .header-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            line-height: 1;
+        }
 
-/* RESULT */
-.result-card {
-  background: #102547;
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 16px;
-  box-shadow: 0 0 40px rgba(0,0,0,0.5);
-}
+        .header-text h1 span {
+            color: var(--accent);
+        }
 
-.station-name {
-  font-size: 20px;
-  font-weight: bold;
-}
+        .header-text p {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
 
-.station-addr {
-  font-size: 13px;
-  color: #9fb3d1;
-  margin-bottom: 10px;
-}
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            margin-right: 0.4rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
 
-.price {
-  font-size: 28px;
-  font-weight: bold;
-}
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
 
-.meta {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 12px;
-  font-size: 14px;
-}
+        .section { margin-bottom: 0.5rem; }
 
-/* ALT */
-.alt-section {
-  margin-top: 16px;
-}
+        .field-label {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
 
-.alt-card {
-  background: #0b1b33;
-  border-radius: 10px;
-  padding: 10px;
-  margin-top: 8px;
-}
+        .field-label::before {
+            content: '';
+            width: 1px;
+            height: 10px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
 
-.alt-title {
-  font-size: 12px;
-  color: #7fa4ff;
-}
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            -webkit-appearance: none;
+        }
 
-.alt-name {
-  font-weight: bold;
-}
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--accent);
+            background: var(--bg3);
+        }
 
-.alt-addr {
-  font-size: 12px;
-  color: #8aa2c7;
-}
+        input::placeholder {
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
 
-/* STATUS */
-.status {
-  margin-top: 12px;
-  font-size: 14px;
-}
-</style>
+        select option {
+            background: var(--bg2);
+        }
+
+        .location-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .location-row input { flex: 1; }
+
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.75rem 0.875rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg3);
+            border-color: var(--line);
+            color: var(--accent);
+        }
+
+        .btn-icon.primary {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            font-weight: 500;
+        }
+
+        .btn-icon.primary:hover {
+            background: var(--accent2);
+            border-color: var(--accent2);
+        }
+
+        .location-status {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--green);
+            margin-top: 0.4rem;
+            padding-left: 0.25rem;
+            min-height: 1rem;
+        }
+
+        .location-status.warn { color: var(--accent); }
+        .location-status.err { color: var(--red); }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .grid-2 > div {
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+        }
+
+        .grid-2 > div > div:first-child {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.04em;
+        }
+
+        .grid-2 > div input,
+        .grid-2 > div select {
+            padding: 0.55rem 0.8rem;
+            font-size: 0.92rem;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--line);
+            margin: 1.25rem 0;
+        }
+
+        .type-pills {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .type-pill {
+            flex: 1;
+            min-width: 100px;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.65rem 0.75rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            letter-spacing: 0.02em;
+        }
+
+        .type-pill:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .type-pill.selected {
+            background: var(--surface);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .gauge-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            padding: 1rem 1.25rem 0.875rem;
+        }
+
+        .gauge-track {
+            height: 3px;
+            background: var(--line2);
+            border-radius: 2px;
+            margin-bottom: 0.875rem;
+            position: relative;
+            overflow: visible;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--red), var(--accent), var(--green));
+            transition: width 0.4s cubic-bezier(.4,0,.2,1);
+            width: 0;
+        }
+
+        .gauge-marks {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.25rem;
+        }
+
+        .gauge-mark {
+            flex: 1;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            padding: 0.35rem 0.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+            letter-spacing: 0.02em;
+        }
+
+        .gauge-mark:hover { color: var(--text); }
+
+        .gauge-mark.selected {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .gauge-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .autocomplete-wrap { position: relative; }
+
+        .communes-drop {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--bg3);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        }
+
+        .communes-drop::-webkit-scrollbar { width: 4px; }
+        .communes-drop::-webkit-scrollbar-track { background: transparent; }
+        .communes-drop::-webkit-scrollbar-thumb {
+            background: var(--line2);
+            border-radius: 2px;
+        }
+
+        .commune-item {
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--line);
+            transition: background 0.1s;
+        }
+
+        .commune-item:last-child { border-bottom: none; }
+        .commune-item:hover { background: var(--surface); }
+
+        .commune-name {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .commune-region {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .hidden { display: none; }
+
+        .btn-main {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-main::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease;
+            z-index: 0;
+        }
+
+        .btn-main:hover::before { transform: scaleX(1); }
+        .btn-main:hover { color: var(--bg); }
+        .btn-main span { position: relative; z-index: 1; }
+        .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-main:disabled::before { display: none; }
+
+        .result-wrap { margin-top: 2rem; }
+
+        .result-placeholder {
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .result-placeholder .big {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            opacity: 0.3;
+        }
+
+        .result-card {
+            background: var(--bg2);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeUp 0.4s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mode-tag {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.25rem 0.625rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .mode-tag.m0 {
+            background: rgba(46,204,138,0.15);
+            color: var(--green);
+            border: 1px solid rgba(46,204,138,0.25);
+        }
+
+        .mode-tag.m1 {
+            background: rgba(232,160,48,0.15);
+            color: var(--accent);
+            border: 1px solid rgba(232,160,48,0.25);
+        }
+
+        .mode-tag.m2 {
+            background: rgba(224,80,80,0.12);
+            color: var(--red);
+            border: 1px solid rgba(224,80,80,0.2);
+        }
+
+        .mode-tag.m3 {
+            background: rgba(255,255,255,0.05);
+            color: var(--muted);
+            border: 1px solid var(--line2);
+        }
+
+        .result-ts {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        .result-body { padding: 1.25rem 1.5rem; }
+
+        .station-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .station-brand {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.25rem;
+        }
+
+        .station-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            color: var(--text);
+        }
+
+        .station-addr {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+
+        .price-display {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .price-label {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .price-value {
+            font-family: var(--mono);
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .price-unit {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+        }
+
+        .saving-banner {
+            background: rgba(46,204,138,0.08);
+            border: 1px solid rgba(46,204,138,0.2);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .saving-amount {
+            font-family: var(--mono);
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--green);
+            letter-spacing: -0.03em;
+        }
+
+        .saving-desc {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: rgba(46,204,138,0.7);
+        }
+
+        .neutral-banner {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+
+        .warn-banner {
+            background: rgba(232,160,48,0.08);
+            border: 1px solid rgba(232,160,48,0.2);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--accent);
+        }
+
+        .data-table { margin-bottom: 1rem; }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .data-row:last-child { border-bottom: none; }
+
+        .data-key {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.02em;
+        }
+
+        .data-val {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .data-val.hi { color: var(--green); }
+        .data-val.lo { color: var(--red); }
+
+        .prices-grid {
+            background: var(--bg3);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .prices-grid-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .prices-grid-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .price-chip {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text);
+        }
+
+        .price-chip .chip-type {
+            color: var(--muted);
+            margin-right: 0.3rem;
+        }
+
+        .alt-section {
+            border-top: 1px solid var(--line);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+
+        .alt-section-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .alt-card {
+            background: var(--bg3);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .alt-card:last-child { margin-bottom: 0; }
+
+        .alt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .alt-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .alt-addr {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            margin-top: 0.15rem;
+        }
+
+        .alt-price {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .alt-price small {
+            font-size: 0.6rem;
+            color: var(--muted);
+            display: block;
+        }
+
+        .alt-meta {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .alt-chip {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .alt-chip.pos { color: var(--green); }
+        .alt-chip.neg { color: var(--red); }
+
+        .status-msg {
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid var(--accent);
+            border-radius: 0 4px 4px 0;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .status-msg.green { border-left-color: var(--green); }
+        .status-msg.red { border-left-color: var(--red); }
+
+        .loading-state {
+            padding: 3rem 1.5rem;
+            text-align: center;
+        }
+
+        .loading-ring {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--line2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .footer {
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: rgba(255,255,255,0.15);
+            margin-top: 3rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--line2);
+            border-radius: 2px;
+        }
+
+        @media (max-width: 420px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .station-name { font-size: 1.15rem; }
+            .price-value { font-size: 1.3rem; }
+            .saving-amount { font-size: 1.4rem; }
+        }
+    </style>
 </head>
-
 <body>
+<div class="wrap">
 
-<div class="container">
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-wrap">
+            <img src="data/logo-rst-redondo-blanco-bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⚙️'">
+        </div>
+        <div class="header-text">
+            <h1>En <span>Marcha</span></h1>
+            <p><span class="status-dot"></span>Motor activo RST Chile 2026</p>
+        </div>
+    </header>
 
-  <div class="header">
-    <h1>⛽ Marcha</h1>
-    <p>Decide si conviene cargar · no adivina, calcula</p>
-  </div>
+    <!-- FORMULARIO -->
+    <form id="marchaForm" autocomplete="off">
 
-  <div class="card">
-    <label>Ubicación</label>
-    <input id="location" placeholder="Ej: Llay-Llay"/>
+        <!-- Ubicación -->
+        <div class="section">
+            <div class="field-label">Ubicación</div>
+            <div class="autocomplete-wrap">
+                <div class="location-row">
+                    <input type="text" id="locationInput" placeholder="Comuna, ej: Huechuraba, Temuco...">
+                    <button type="button" id="searchBtn" class="btn-icon">Buscar</button>
+                    <button type="button" id="gpsBtn" class="btn-icon primary">GPS</button>
+                </div>
+                <div id="communesDrop" class="communes-drop hidden"></div>
+            </div>
+            <div id="locStatus" class="location-status"></div>
+            <input type="hidden" id="lat">
+            <input type="hidden" id="lng">
+            <input type="hidden" id="comuna">
+        </div>
 
-    <label>Rendimiento (km/L)</label>
-    <input id="km" value="13"/>
+        <div class="divider"></div>
 
-    <label>Estanque (L)</label>
-    <input id="tank" value="56"/>
+        <!-- Tipo de uso -->
+        <div class="section">
+            <div class="field-label">Tipo de uso</div>
+            <div class="type-pills">
+                <div class="type-pill selected" data-val="domestic">Doméstico</div>
+                <div class="type-pill" data-val="labor">Laboral</div>
+                <div class="type-pill" data-val="cargo">Carga</div>
+            </div>
+            <input type="hidden" id="contextType" value="domestic">
+        </div>
 
-    <label>Presupuesto ($)</label>
-    <input id="budget" value="25000"/>
+        <div class="divider"></div>
 
-    <label>Nivel (%)</label>
-    <input id="level" value="25"/>
+        <!-- Dirección de viaje -->
+        <div class="section">
+            <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em;">opcional</span></div>
+            <select id="direction">
+                <option value="">Sin especificar</option>
+                <option value="northtosouth">Norte → Sur</option>
+                <option value="southtonorth">Sur → Norte</option>
+                <option value="easttowest">Este → Oeste</option>
+                <option value="westtoeast">Oeste → Este</option>
+            </select>
+        </div>
 
-    <label>Combustible</label>
-    <select id="fuel">
-      <option>diesel</option>
-      <option>93</option>
-      <option>95</option>
-      <option>97</option>
-    </select>
+        <div class="divider"></div>
 
-    <button onclick="evaluar()">Evaluar</button>
-  </div>
+        <!-- Vehículo -->
+        <div class="section">
+            <div class="field-label">Vehículo</div>
+            <div class="grid-2">
+                <div>
+                    <div>Rendimiento km/L</div>
+                    <input type="number" id="kmPerLiter" value="13" min="1" max="40" step="0.5">
+                </div>
+                <div>
+                    <div>Estanque L</div>
+                    <input type="number" id="tankCapacity" value="56" min="10" max="1000" step="1">
+                </div>
+            </div>
+        </div>
 
-  <div id="result"></div>
+        <div class="divider"></div>
 
+        <!-- Combustible y presupuesto -->
+        <div class="section">
+            <div class="field-label">Carga</div>
+            <div class="grid-2">
+                <div>
+                    <div>Combustible</div>
+                    <select id="fuelType">
+                        <option value="diesel">Diesel</option>
+                        <option value="gas93">Gasolina 93</option>
+                        <option value="gas95">Gasolina 95</option>
+                        <option value="gas97">Gasolina 97</option>
+                    </select>
+                </div>
+                <div>
+                    <div>Presupuesto hoy</div>
+                    <input type="number" id="budget" value="50000" min="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Nivel estanque -->
+        <div class="section">
+            <div class="field-label">Nivel del estanque</div>
+            <div class="gauge-wrap">
+                <div class="gauge-track">
+                    <div class="gauge-fill" id="gaugeFill"></div>
+                </div>
+                <div class="gauge-marks">
+                    <div class="gauge-mark" data-pct="5">Reserva</div>
+                    <div class="gauge-mark" data-pct="12.5">Min.</div>
+                    <div class="gauge-mark selected" data-pct="25">1/4</div>
+                    <div class="gauge-mark" data-pct="50">1/2</div>
+                    <div class="gauge-mark" data-pct="75">3/4</div>
+                    <div class="gauge-mark" data-pct="100">Lleno</div>
+                </div>
+                <div class="gauge-label" id="gaugeLabel">25%</div>
+                <input type="hidden" id="fuelLevel" value="25">
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <button type="submit" class="btn-main" id="submitBtn"><span>Evaluar ahora</span></button>
+    </form>
+
+    <!-- RESULTADO -->
+    <div class="result-wrap" id="resultWrap">
+        <div class="result-placeholder">
+            <span class="big">◌</span>
+            Ingresa tu ubicación y presiona evaluar
+        </div>
+    </div>
+
+    <div class="footer">Marcha motor de decisión RST Chile 2026 · datos API real</div>
 </div>
 
 <script>
+const $ = id => document.getElementById(id);
 
-function fmt(n){
-  return Number(n).toLocaleString("es-CL");
+function fmt(n) {
+    return Math.floor(Number(n || 0)).toLocaleString('es-CL');
 }
 
-async function evaluar() {
-
-  const body = {
-    location: document.getElementById('location').value,
-    fuel_consumption: Number(document.getElementById('km').value),
-    tank_capacity: Number(document.getElementById('tank').value),
-    budget_today: Number(document.getElementById('budget').value),
-    current_level_pct: Number(document.getElementById('level').value),
-    fuel_type: document.getElementById('fuel').value
-  };
-
-  const res = await fetch('/api/decide', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(body)
-  });
-
-  const data = await res.json();
-
-  render(data);
+function norm(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-function render(data){
-
-  if(!data || !data.recommendation){
-    document.getElementById('result').innerHTML = "Sin datos";
-    return;
-  }
-
-  const r = data.recommendation;
-  const s = r.station || {};
-
-  const alt = (data.alternatives || []).slice(0,2).map((a,i)=>{
-    const st = a.station || {};
-    return `
-      <div class="alt-card">
-        <div class="alt-title">${i==0?'SEGUNDA OPCIÓN':'TERCERA OPCIÓN'}</div>
-        <div class="alt-name">${st.nombre_legal || 'Estación'}</div>
-        <div class="alt-addr">${st.direccion || ''}</div>
-        <div>$${fmt(a.display_price)} /L · ${a.display_distance_km} km</div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('result').innerHTML = `
-    <div class="result-card">
-
-      <div class="station-name">${s.nombre_legal || 'Estación'}</div>
-      <div class="station-addr">${s.direccion || ''}</div>
-
-      <div class="price">$${fmt(r.display_price)} /L</div>
-
-      <div class="meta">
-        <div>📍 ${r.display_distance_km} km</div>
-        <div>⛽ ${r.display_liters} L</div>
-      </div>
-
-      <div class="meta">
-        <div>Total</div>
-        <div>$${fmt(r.display_total_cost)}</div>
-      </div>
-
-      <div class="alt-section">
-        ${alt}
-      </div>
-
-      <div class="status">
-        ${data.message || ''}
-      </div>
-
-    </div>
-  `;
+function setLocStatus(msg, type='') {
+    const el = $('locStatus');
+    el.textContent = msg;
+    el.className = `location-status ${type || ''}`;
 }
 
+function now() {
+    return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+}
+
+let comunasList = [];
+fetch('/api/comunas-list')
+    .then(r => r.json())
+    .then(d => comunasList = d.comunas || [])
+    .catch(() => {});
+
+function searchComunas(q) {
+    if (!q || q.length < 2) return [];
+    const qn = norm(q);
+    return comunasList
+        .filter(c => norm(c.nombre).includes(qn) || norm(c.region).includes(qn))
+        .sort((a,b) => {
+            const as = norm(a.nombre).startsWith(qn);
+            const bs = norm(b.nombre).startsWith(qn);
+            if (as && !bs) return -1;
+            if (!as && bs) return 1;
+            return norm(a.nombre).localeCompare(norm(b.nombre));
+        })
+        .slice(0, 8);
+}
+
+function showDrop(results) {
+    const drop = $('communesDrop');
+    if (!results.length) {
+        drop.classList.add('hidden');
+        return;
+    }
+    drop.innerHTML = results.map(c => `
+        <div class="commune-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
+            <div class="commune-name">${c.nombre}</div>
+            <div class="commune-region">${c.region}</div>
+        </div>
+    `).join('');
+    drop.classList.remove('hidden');
+    drop.querySelectorAll('.commune-item').forEach(el => {
+        el.addEventListener('click', () => selectComune({
+            nombre: el.dataset.nombre,
+            region: el.dataset.region,
+            lat: el.dataset.lat,
+            lng: el.dataset.lng
+        }));
+    });
+}
+
+function selectComune(c) {
+    $('lat').value = c.lat;
+    $('lng').value = c.lng;
+    $('comuna').value = c.nombre;
+    $('locationInput').value = c.nombre;
+    setLocStatus(`${c.nombre}, ${c.region}`);
+    $('communesDrop').classList.add('hidden');
+    $('submitBtn').disabled = false;
+}
+
+$('locationInput').addEventListener('input', e => showDrop(searchComunas(e.target.value)));
+
+$('searchBtn').addEventListener('click', () => {
+    const r = searchComunas($('locationInput').value);
+    showDrop(r);
+    if (!r.length && $('locationInput').value.length >= 2) {
+        setLocStatus('No encontrada. Revisa el nombre.', 'warn');
+    }
+});
+
+document.addEventListener('click', e => {
+    if (!$('locationInput').contains(e.target) && !$('communesDrop').contains(e.target)) {
+        $('communesDrop').classList.add('hidden');
+    }
+});
+
+$('gpsBtn').addEventListener('click', () => {
+    setLocStatus('Obteniendo ubicación...');
+    if (!navigator.geolocation) {
+        setLocStatus('GPS no disponible. Busca manualmente.', 'err');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        $('lat').value = lat;
+        $('lng').value = lng;
+        setLocStatus('Detectando comuna...');
+
+        try {
+            const res = await fetch('/api/detect-commune', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat, lng })
+            });
+            const d = await res.json();
+            if (d.ok && d.commune) {
+                selectComune({
+                    nombre: d.commune.nombre,
+                    region: d.commune.region,
+                    lat,
+                    lng
+                });
+                setLocStatus(`${d.commune.nombre}, ${d.commune.region} · ${d.distancekm?.toFixed(1)} km`);
+            } else {
+                throw new Error(d.message || 'No detectado');
+            }
+        } catch (e) {
+            setLocStatus(`GPS: ${e.message}. Busca manualmente.`, 'warn');
+        }
+        $('submitBtn').disabled = false;
+    }, err => {
+        const msgs = {
+            1: 'Acceso denegado.',
+            2: 'No disponible.',
+            3: 'Tiempo agotado.'
+        };
+        setLocStatus(`${msgs[err.code] || 'Error GPS'}. Busca manualmente.`, 'err');
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    });
+});
+
+document.querySelectorAll('.type-pill').forEach(p => p.addEventListener('click', () => {
+    document.querySelectorAll('.type-pill').forEach(x => x.classList.remove('selected'));
+    p.classList.add('selected');
+    $('contextType').value = p.dataset.val;
+}));
+
+function setGauge(pct) {
+    $('fuelLevel').value = pct;
+    $('gaugeFill').style.width = pct + '%';
+    $('gaugeLabel').textContent = pct + '%';
+    document.querySelectorAll('.gauge-mark').forEach(m => {
+        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct) - pct) < 0.1);
+    });
+}
+
+document.querySelectorAll('.gauge-mark').forEach(m => {
+    m.addEventListener('click', () => setGauge(parseFloat(m.dataset.pct)));
+});
+setGauge(25);
+
+$('marchaForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const lat = parseFloat($('lat').value);
+    const lng = parseFloat($('lng').value);
+    const comuna = $('comuna').value;
+    if (isNaN(lat) || isNaN(lng) || !comuna) {
+        setLocStatus('Selecciona una comuna válida.', 'err');
+        return;
+    }
+
+    $('resultWrap').innerHTML = `
+        <div class="result-card">
+            <div class="loading-state">
+                <div class="loading-ring"></div>
+                <div class="loading-text">Evaluando estaciones · calculando decisión</div>
+            </div>
+        </div>`;
+
+    $('submitBtn').disabled = true;
+
+    const kmL = parseFloat($('kmPerLiter').value);
+    const payload = {
+        userProfile: {
+            context_type: $('contextType').value,
+            fuel_consumption: 100 / kmL,
+            tank_capacity: parseFloat($('tankCapacity').value),
+            current_level_pct: parseFloat($('fuelLevel').value),
+            budget_today: parseFloat($('budget').value),
+            convenio_discount: 0
+        },
+        context: {
+            user_lat: lat,
+            user_lon: lng,
+            fuel_type: $('fuelType').value,
+            comuna: comuna.replace(/Llay\\-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay'),
+            direction: $('direction').value,
+            is_urban_peak: false,
+            toll_estimate: 0
+        }
+    };
+
+    try {
+        const res = await fetch('/api/decide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        render(data.result || data);
+    } catch(err) {
+        $('resultWrap').innerHTML = `
+            <div class="result-card">
+                <div class="result-body">
+                    <div class="status-msg red">Error de conexión: ${err.message}</div>
+                </div>
+            </div>`;
+    } finally {
+        $('submitBtn').disabled = false;
+    }
+});
+
+// ──────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────
+function render(data) {
+    const mode = data.mode ?? 0;
+    const modeMap = {
+        0: ['Recomendación activa', 'm0'],
+        1: ['Datos inciertos',      'm1'],
+        2: ['Sin ahorro disponible','m2'],
+        3: ['Sin datos',            'm3'],
+    };
+    const [modeLabel, modeClass] = modeMap[mode] || modeMap[3];
+    const meta = data.meta || {};
+
+    const pickStation = (x) => x?.station || {};
+    const fmtKm = (n) => Number(n || 0).toFixed(1);
+
+    let html = `<div class="result-card">
+        <div class="result-header">
+            <span class="mode-tag ${modeClass}">${modeLabel}</span>
+            <span class="result-ts">${now()}</span>
+        </div>
+        <div class="result-body">`;
+
+    if (mode === 0 && data.recommendation) {
+        const rec = data.recommendation;
+        const st = pickStation(rec);
+        const price = rec.display_price || 0;
+        const liters = rec.display_liters || 0;
+        const dist = rec.display_distance_km || 0;
+        const total = rec.display_total_cost || Math.floor(price * liters);
+        const netSave = Math.floor(rec.net_saving || 0);
+        const refPr = rec.display_reference_price || price;
+        const savPL = refPr - price;
+
+        html += `<div class="station-head">
+            <div>
+                <div class="station-brand">${st.marca || '—'}</div>
+                <div class="station-name">${st.nombre || 'Estación'}</div>
+                ${st.direccion ? `<div class="station-addr">${st.direccion}${st.comuna ? ', ' + st.comuna : ''}</div>` : ''}
+            </div>
+            <div class="price-display">
+                <div class="price-label">Precio</div>
+                <div class="price-value">$${fmt(price)}</div>
+                <div class="price-unit">por litro</div>
+            </div>
+        </div>`;
+
+        if (savPL > 0) {
+            html += `<div class="saving-banner">
+                <div class="saving-amount">$${fmt(savPL)}/L</div>
+                <div class="saving-desc">bajo el promedio de la zona ($${fmt(refPr)}/L)</div>
+            </div>`;
+        } else if (savPL < 0) {
+            html += `<div class="warn-banner">$${fmt(Math.abs(savPL))}/L sobre el promedio · no es la más barata</div>`;
+        } else {
+            html += `<div class="neutral-banner">Precio igual al promedio · no hay diferencial entre estaciones cercanas hoy</div>`;
+        }
+
+        html += `<div class="data-table">
+            <div class="data-row"><span class="data-key">Carga recomendada</span><span class="data-val">${liters.toFixed(1)} L</span></div>
+            <div class="data-row"><span class="data-key">Costo total</span><span class="data-val">$${fmt(total)}</span></div>
+            <div class="data-row"><span class="data-key">Ahorro estimado</span><span class="data-val ${netSave >= 0 ? 'hi' : 'lo'}">${netSave >= 0 ? '$' + fmt(netSave) : 'sin diferencial disponible'}</span></div>
+            <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${fmtKm(dist)} km</span></div>
+            <div class="data-row"><span class="data-key">Precio ref. zona</span><span class="data-val">$${fmt(refPr)}</span></div>
+        </div>`;
+
+        if (st.precios_detalle && st.precios_detalle.length > 0) {
+            const deduped = {};
+            for (const p of st.precios_detalle) {
+                const k = String(p.tipo || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (!deduped[k] || p.precio < deduped[k].precio) deduped[k] = p;
+            }
+            const unique = Object.values(deduped).sort((a,b) => a.precio - b.precio);
+            html += `<div class="prices-grid"><div class="prices-grid-label">Todos los precios en esta estación</div><div class="prices-grid-items">`;
+            for (const p of unique) {
+                html += `<div class="price-chip"><span class="chip-type">${p.tipo}</span>$${fmt(p.precio)}</div>`;
+            }
+            html += `</div></div>`;
+        }
+
+        const allAlternatives = Array.isArray(data.alternatives) ? data.alternatives.filter(Boolean) : [];
+        if (allAlternatives.length > 0) {
+            html += `<div class="alt-section"><div class="alt-section-label">Otras opciones evaluadas</div>`;
+            const labels = ['SEGUNDA OPCIÓN', 'TERCERA OPCIÓN'];
+            allAlternatives.slice(0, 2).forEach((alt, i) => {
+                const ast = pickStation(alt);
+                const ap = alt.display_price || 0;
+                const ad = alt.display_distance_km || 0;
+                const asave = Math.floor(alt.net_saving || 0);
+                const asavPL = refPr - ap;
+                html += `<div class="alt-card">
+                    <div class="alt-header">
+                        <div>
+                            <div class="alt-name">${labels[i] || 'OPCIÓN'}</div>
+                            <div class="alt-addr">${ast.nombre || 'Estación'}${ast.direccion ? ' · ' + ast.direccion : ''}</div>
+                        </div>
+                        <div class="alt-price">$${fmt(ap)}<small>/L · ${fmtKm(ad)} km</small></div>
+                    </div>
+                    <div class="alt-meta">
+                        <span class="alt-chip">${ast.comuna || ''}</span>
+                        <span class="alt-chip ${asavPL >= 0 ? 'pos' : 'neg'}">${asavPL >= 0 ? '$' + fmt(asavPL) + '/L' : '$' + fmt(Math.abs(asavPL)) + '/L'}</span>
+                        <span class="alt-chip ${asave >= 0 ? 'pos' : 'neg'}">Ahorro ${asave >= 0 ? '$' + fmt(asave) : '$' + fmt(Math.abs(asave))}</span>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        if (meta.reference_price) {
+            html += `<div class="status-msg green">Referencia usada: $${fmt(meta.reference_price)} · Litros necesarios: ${Number(meta.liters_needed || liters).toFixed(1)} L</div>`;
+        }
+    } else if (data.message) {
+        html += `<div class="status-msg red">${data.message}</div>`;
+    } else {
+        html += `<div class="status-msg red">No se pudo calcular una recomendación.</div>`;
+    }
+
+    html += `</div></div>`;
+    $('resultWrap').innerHTML = html;
+}
 </script>
-
 </body>
 </html>
