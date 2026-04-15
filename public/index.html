@@ -25,9 +25,9 @@
         .btn-secondary:hover { background: #cbd5e1; }
         .btn-location { background: #0b3b3f; color: white; }
         .btn-location:hover { background: #0f5257; }
-        button { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #0f5257; transform: scale(0.98); }
-        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        button[type="submit"] { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; transition: 0.2s; }
+        button[type="submit"]:hover:not(:disabled) { background: #0f5257; transform: scale(0.98); }
+        button[type="submit"]:disabled { background: #9ca3af; cursor: not-allowed; }
         .fuel-gauge { background: #1a2a32; border-radius: 2rem; padding: 1rem; margin-bottom: 0.5rem; }
         .gauge-bar { background: #2d3e48; border-radius: 1rem; height: 0.5rem; width: 100%; margin-bottom: 1rem; }
         .gauge-fill { background: linear-gradient(90deg, #dc2626, #eab308, #22c55e); border-radius: 1rem; height: 100%; width: 0%; transition: width 0.3s ease; }
@@ -35,22 +35,35 @@
         .fuel-mark { flex: 1; text-align: center; padding: 0.5rem 0.25rem; background: #e2e8f0; border-radius: 2rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .fuel-mark.reserva { background: #fee2e2; color: #991b1b; }
         .fuel-mark.selected { background: #0b3b3f; color: white; border-color: #f5a623; transform: scale(0.98); }
-        .fuel-value-display { text-align: center; font-size: 0.8rem; color: #5b6e8c; margin-top: 0.5rem; }
+        .fuel-value-display { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem; }
         .result-card { background: #fef9e3; border-left: 6px solid #f5a623; padding: 1.25rem; border-radius: 1.5rem; margin-top: 1.5rem; }
         .mode-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.7rem; font-weight: bold; margin-bottom: 0.75rem; }
         .mode-0 { background: #d1fae5; color: #065f46; }
         .mode-1 { background: #fed7aa; color: #9b4a00; }
         .mode-2 { background: #ffe4e2; color: #9b1c1c; }
         .mode-3 { background: #e2e8f0; color: #334155; }
-        .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .station-address { font-size: 0.8rem; color: #5b6e8c; margin-bottom: 0.5rem; }
-        .saving { font-size: 1.3rem; font-weight: 700; color: #0b3b3f; margin: 0.5rem 0; }
-        .saving-amount { font-size: 1.8rem; font-weight: 800; color: #0b3b3f; }
-        .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
-        .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-style: italic; }
+        .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .station-address { font-size: 0.8rem; color: #5b6e8c; margin-bottom: 0.75rem; }
+        .saving-block { background: #d1fae5; border-radius: 1rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+        .saving-label { font-size: 0.8rem; color: #065f46; margin-bottom: 0.1rem; }
+        .saving-amount { font-size: 2rem; font-weight: 800; color: #065f46; }
+        .saving-sub { font-size: 0.75rem; color: #047857; }
+        .same-price-block { background: #f1f5f9; border-radius: 1rem; padding: 0.6rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #5b6e8c; }
+        .detail-row { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-row span { color: #5b6e8c; }
+        .detail-row strong { color: #1e2a3e; }
+        .alt-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem; margin-top: 1rem; }
+        .alt-title { font-size: 0.85rem; font-weight: 600; color: #2c5f6b; margin-bottom: 0.5rem; }
+        .alt-name { font-size: 1rem; font-weight: 600; color: #1e2a3e; margin-bottom: 0.25rem; }
+        .alt-address { font-size: 0.75rem; color: #5b6e8c; margin-bottom: 0.5rem; }
+        .precios-detalle { background: #f0f4f8; padding: 0.6rem 0.8rem; border-radius: 0.75rem; margin-top: 0.75rem; font-size: 0.8rem; }
+        .precios-detalle strong { display: block; margin-bottom: 0.3rem; }
+        .precio-tag { display: inline-block; margin-right: 0.75rem; margin-top: 0.15rem; }
+        .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-size: 0.85rem; font-style: italic; color: #4a5b6e; line-height: 1.5; }
         .footer { text-align: center; font-size: 0.7rem; color: #5b6e8c; margin-top: 1rem; }
         .loading { text-align: center; padding: 2rem; color: #0b3b3f; }
-        .comunas-list { max-height: 250px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-radius: 1rem; margin-top: 0.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .comunas-list { max-height: 250px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-radius: 1rem; margin-top: 0.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 10; position: relative; }
         .comuna-item { padding: 0.6rem 1rem; cursor: pointer; border-bottom: 1px solid #e2e8f0; }
         .comuna-item:hover { background: #f0f4f8; }
         .comuna-nombre { font-weight: 500; }
@@ -58,6 +71,7 @@
         .hidden { display: none; }
         .location-status { font-size: 0.75rem; margin-top: 0.5rem; color: #5b6e8c; }
         .direction-select { background: #f0f4f8; border: 1px solid #cbd5e1; }
+        hr { border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0; }
     </style>
 </head>
 <body>
@@ -72,10 +86,11 @@
         </div>
         <div class="card-body">
             <form id="marchaForm">
+
                 <div class="form-group">
                     <label>📍 Tu ubicación</label>
                     <div class="location-row">
-                        <input type="text" id="locationInput" placeholder="Escribe tu comuna (ej: Llay-Llay, Santiago, etc.)" autocomplete="off">
+                        <input type="text" id="locationInput" placeholder="Escribe tu comuna (ej: Llay-Llay, Santiago...)" autocomplete="off">
                         <button type="button" id="searchLocationBtn" class="btn-secondary">🔍 Buscar</button>
                         <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Detectar</button>
                     </div>
@@ -95,7 +110,7 @@
                         <option value="east_to_west">⬅️ Este → Oeste</option>
                         <option value="west_to_east">➡️ Oeste → Este</option>
                     </select>
-                    <small style="color:#6c7a91">Si estás en ruta, indícalo para optimizar la recomendación</small>
+                    <small style="color:#6c7a91; font-size:0.75rem;">Si estás en ruta, indícalo para optimizar la recomendación</small>
                 </div>
 
                 <div class="form-group">
@@ -108,19 +123,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label>⛽ Rendimiento de tu auto (km/L)</label>
-                    <input type="number" id="kmPerLiter" value="13" step="0.5">
-                    <small style="color:#6c7a91">Cuántos kilómetros recorres con 1 litro</small>
+                    <label>⛽ Rendimiento de tu vehículo (km/L)</label>
+                    <input type="number" id="kmPerLiter" value="13" step="0.5" min="1" max="40">
+                    <small style="color:#6c7a91; font-size:0.75rem;">Cuántos kilómetros recorres con 1 litro</small>
                 </div>
 
                 <div class="row-2">
                     <div class="form-group">
                         <label>🛢️ Capacidad estanque (L)</label>
-                        <input type="number" id="tankCapacity" value="56" step="1">
+                        <input type="number" id="tankCapacity" value="56" step="1" min="10" max="1000">
                     </div>
                     <div class="form-group">
                         <label>💰 Presupuesto hoy ($)</label>
-                        <input type="number" id="budget" value="50000" step="5000">
+                        <input type="number" id="budget" value="50000" step="5000" min="1000">
                     </div>
                 </div>
 
@@ -131,14 +146,14 @@
                             <div class="gauge-fill" id="gaugeFill"></div>
                         </div>
                         <div class="fuel-marks">
-                            <div class="fuel-mark reserva" data-level="5" data-pct="5">🔴 Reserva</div>
-                            <div class="fuel-mark" data-level="12.5" data-pct="12.5">Mínimo</div>
-                            <div class="fuel-mark" data-level="25" data-pct="25">1/4</div>
-                            <div class="fuel-mark" data-level="50" data-pct="50">1/2</div>
-                            <div class="fuel-mark" data-level="75" data-pct="75">3/4</div>
-                            <div class="fuel-mark" data-level="100" data-pct="100">Lleno</div>
+                            <div class="fuel-mark reserva" data-pct="5">🔴 Reserva</div>
+                            <div class="fuel-mark" data-pct="12.5">Mínimo</div>
+                            <div class="fuel-mark" data-pct="25">1/4</div>
+                            <div class="fuel-mark" data-pct="50">1/2</div>
+                            <div class="fuel-mark" data-pct="75">3/4</div>
+                            <div class="fuel-mark" data-pct="100">Lleno</div>
                         </div>
-                        <div class="fuel-value-display" id="fuelLevelDisplay">Nivel seleccionado: 1/4 (25%)</div>
+                        <div class="fuel-value-display" id="fuelLevelDisplay">Nivel: 1/4 (25%)</div>
                     </div>
                     <input type="hidden" id="fuelLevel" value="25">
                 </div>
@@ -157,403 +172,382 @@
             </form>
 
             <div id="resultArea">
-                <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e;">
+                <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e; border-left-color:#cbd5e1;">
                     📍 Ingresa tu comuna o presiona "Detectar"<br>
                     <span style="font-size:0.8rem;">La app analizará estaciones reales en tu zona</span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="footer">Marcha · motor de decisión no teleológico · datos desde API real + crowdsourcing</div>
+    <div class="footer">Marcha · motor de decisión · datos desde API real + crowdsourcing · RST Chile 2026</div>
 </div>
 
 <script>
-    // =============================================
-    // CARGAR LISTA DE COMUNAS DESDE JSON EXTERNO
-    // =============================================
-    let comunasList = [];
+// =============================================
+// CARGAR LISTA DE COMUNAS
+// =============================================
+let comunasList = [];
 
-    async function loadComunas() {
-        try {
-            const response = await fetch('/data/comunas-completo.json');
-            if (!response.ok) throw new Error('No se pudo cargar la lista de comunas');
-            const data = await response.json();
-            comunasList = data.comunas || [];
-            console.log(`✅ ${comunasList.length} comunas cargadas`);
-        } catch (err) {
-            console.error('Error cargando comunas:', err);
-            comunasList = [];
-        }
+async function loadComunas() {
+    try {
+        const response = await fetch('/data/comunas-completo.json');
+        if (!response.ok) throw new Error('No se pudo cargar la lista de comunas');
+        const data = await response.json();
+        comunasList = data.comunas || [];
+        console.log(`✅ ${comunasList.length} comunas cargadas`);
+    } catch (err) {
+        console.error('Error cargando comunas:', err);
+        comunasList = [];
     }
-    loadComunas();
+}
+loadComunas();
 
-    // =============================================
-    // ELEMENTOS DEL DOM
-    // =============================================
-    
-    const locationInput = document.getElementById('locationInput');
-    const searchResults = document.getElementById('searchResults');
-    const latInput = document.getElementById('lat');
-    const lngInput = document.getElementById('lng');
-    const comunaInput = document.getElementById('comuna');
-    const locationStatus = document.getElementById('locationStatus');
-    const searchBtn = document.getElementById('searchLocationBtn');
-    const getLocationBtn = document.getElementById('getLocationBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const form = document.getElementById('marchaForm');
-    const resultArea = document.getElementById('resultArea');
+// =============================================
+// ELEMENTOS DEL DOM
+// =============================================
+const locationInput  = document.getElementById('locationInput');
+const searchResults  = document.getElementById('searchResults');
+const latInput       = document.getElementById('lat');
+const lngInput       = document.getElementById('lng');
+const comunaInput    = document.getElementById('comuna');
+const locationStatus = document.getElementById('locationStatus');
+const searchBtn      = document.getElementById('searchLocationBtn');
+const getLocationBtn = document.getElementById('getLocationBtn');
+const submitBtn      = document.getElementById('submitBtn');
+const form           = document.getElementById('marchaForm');
+const resultArea     = document.getElementById('resultArea');
+const fuelLevelInput = document.getElementById('fuelLevel');
+const gaugeFill      = document.getElementById('gaugeFill');
+const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
 
-    // Selector de combustible
-    const fuelMarks = document.querySelectorAll('.fuel-mark');
-    const fuelLevelInput = document.getElementById('fuelLevel');
-    const gaugeFill = document.getElementById('gaugeFill');
-    const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
-
-    function updateFuelLevel(levelPct, levelName) {
-        fuelLevelInput.value = levelPct;
-        gaugeFill.style.width = `${levelPct}%`;
-        let displayText = '';
-        if (levelPct <= 5) displayText = `Nivel: Reserva (${levelPct}%)`;
-        else if (levelPct <= 12.5) displayText = `Nivel: Mínimo (${levelPct}%)`;
-        else if (levelPct <= 25) displayText = `Nivel: 1/4 (${levelPct}%)`;
-        else if (levelPct <= 50) displayText = `Nivel: 1/2 (${levelPct}%)`;
-        else if (levelPct <= 75) displayText = `Nivel: 3/4 (${levelPct}%)`;
-        else displayText = `Nivel: Lleno (${levelPct}%)`;
-        fuelLevelDisplay.textContent = displayText;
-        fuelMarks.forEach(mark => {
-            mark.classList.remove('selected');
-            const markPct = parseInt(mark.dataset.pct);
-            if (Math.abs(markPct - levelPct) < 0.1 || (levelPct <= 5 && markPct === 5)) {
-                mark.classList.add('selected');
-            }
-        });
-    }
-
-    fuelMarks.forEach(mark => {
-        mark.addEventListener('click', () => {
-            const levelPct = parseFloat(mark.dataset.pct);
-            updateFuelLevel(levelPct, mark.textContent.trim());
-        });
+// =============================================
+// SELECTOR DE NIVEL DE COMBUSTIBLE
+// =============================================
+function updateFuelLevel(levelPct) {
+    fuelLevelInput.value = levelPct;
+    gaugeFill.style.width = `${levelPct}%`;
+    let label = '';
+    if      (levelPct <= 5)    label = `Nivel: Reserva (${levelPct}%)`;
+    else if (levelPct <= 12.5) label = `Nivel: Mínimo (${levelPct}%)`;
+    else if (levelPct <= 25)   label = `Nivel: 1/4 (${levelPct}%)`;
+    else if (levelPct <= 50)   label = `Nivel: 1/2 (${levelPct}%)`;
+    else if (levelPct <= 75)   label = `Nivel: 3/4 (${levelPct}%)`;
+    else                        label = `Nivel: Lleno (${levelPct}%)`;
+    fuelLevelDisplay.textContent = label;
+    document.querySelectorAll('.fuel-mark').forEach(mark => {
+        mark.classList.toggle('selected', Math.abs(parseFloat(mark.dataset.pct) - levelPct) < 0.1);
     });
-    updateFuelLevel(25, '1/4');
+}
 
-    // =============================================
-    // NORMALIZACIÓN DE TEXTO
-    // =============================================
+document.querySelectorAll('.fuel-mark').forEach(mark => {
+    mark.addEventListener('click', () => updateFuelLevel(parseFloat(mark.dataset.pct)));
+});
+updateFuelLevel(25);
 
-    function normalizeText(str) {
-        return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// =============================================
+// BÚSQUEDA DE COMUNAS
+// =============================================
+function normalizeText(str) {
+    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function searchComunas(query) {
+    if (!query || query.length < 2 || comunasList.length === 0) {
+        searchResults.classList.add('hidden');
+        return [];
     }
+    const q = normalizeText(query);
+    const matches = comunasList.filter(c =>
+        normalizeText(c.nombre).includes(q) ||
+        normalizeText(c.region).includes(q)
+    );
+    matches.sort((a, b) => {
+        const aS = normalizeText(a.nombre).startsWith(q);
+        const bS = normalizeText(b.nombre).startsWith(q);
+        if (aS && !bS) return -1;
+        if (!aS && bS) return 1;
+        return normalizeText(a.nombre).localeCompare(normalizeText(b.nombre));
+    });
+    return matches.slice(0, 10);
+}
 
-    // =============================================
-    // BÚSQUEDA MANUAL DE COMUNAS
-    // =============================================
+function selectComuna(c) {
+    latInput.value   = parseFloat(c.lat);
+    lngInput.value   = parseFloat(c.lng);
+    comunaInput.value = c.nombre;
+    locationInput.value = `${c.nombre}, ${c.region}`;
+    locationStatus.innerHTML = `📍 Comuna seleccionada: ${c.nombre}, ${c.region}`;
+    searchResults.classList.add('hidden');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '🔍 Evaluar ahora';
+}
 
-    function searchComunas(query) {
-        if (!query || query.length < 2 || comunasList.length === 0) {
-            searchResults.classList.add('hidden');
-            return [];
-        }
-        const q = normalizeText(query);
-        const matches = comunasList.filter(c => 
-            normalizeText(c.nombre).includes(q) || 
-            normalizeText(c.region).includes(q)
-        );
-        matches.sort((a, b) => {
-            const aStarts = normalizeText(a.nombre).startsWith(q);
-            const bStarts = normalizeText(b.nombre).startsWith(q);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return normalizeText(a.nombre).localeCompare(normalizeText(b.nombre));
-        });
-        return matches.slice(0, 10);
+function showSearchResults(results) {
+    if (results.length === 0) { searchResults.classList.add('hidden'); return; }
+    searchResults.innerHTML = results.map(c =>
+        `<div class="comuna-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
+            <div class="comuna-nombre">${c.nombre}</div>
+            <div class="comuna-region">${c.region}</div>
+        </div>`
+    ).join('');
+    searchResults.classList.remove('hidden');
+    document.querySelectorAll('.comuna-item').forEach(el => {
+        el.addEventListener('click', () => selectComuna({
+            nombre: el.dataset.nombre,
+            region: el.dataset.region,
+            lat:    el.dataset.lat,
+            lng:    el.dataset.lng,
+        }));
+    });
+}
+
+locationInput.addEventListener('input', e => showSearchResults(searchComunas(e.target.value)));
+searchBtn.addEventListener('click', () => {
+    const results = searchComunas(locationInput.value);
+    showSearchResults(results);
+    if (results.length === 0 && locationInput.value.length >= 2)
+        locationStatus.innerHTML = '⚠️ No encontramos esa comuna. Revisa el nombre.';
+});
+document.addEventListener('click', e => {
+    if (!locationInput.contains(e.target) && !searchResults.contains(e.target))
+        searchResults.classList.add('hidden');
+});
+
+// =============================================
+// DETECCIÓN DE UBICACIÓN GPS
+// =============================================
+getLocationBtn.addEventListener('click', () => {
+    locationStatus.innerHTML = '📍 Obteniendo tu ubicación...';
+    if (!navigator.geolocation) {
+        locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización. Busca manualmente.';
+        return;
     }
-
-    function showSearchResults(results) {
-        if (results.length === 0) {
-            searchResults.classList.add('hidden');
-            return;
-        }
-        searchResults.innerHTML = results.map(c => `
-            <div class="comuna-item" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${c.nombre}" data-region="${c.region}">
-                <div class="comuna-nombre">${c.nombre}</div>
-                <div class="comuna-region">${c.region}</div>
-            </div>
-        `).join('');
-        searchResults.classList.remove('hidden');
-        
-        document.querySelectorAll('.comuna-item').forEach(el => {
-            el.addEventListener('click', () => {
-                latInput.value = parseFloat(el.dataset.lat);
-                lngInput.value = parseFloat(el.dataset.lng);
-                comunaInput.value = el.dataset.nombre;
-                locationInput.value = `${el.dataset.nombre}, ${el.dataset.region}`;
-                locationStatus.innerHTML = `📍 Comuna seleccionada: ${el.dataset.nombre}, ${el.dataset.region}`;
-                searchResults.classList.add('hidden');
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🔍 Evaluar ahora';
-            });
-        });
-    }
-
-    locationInput.addEventListener('input', (e) => {
-        const results = searchComunas(e.target.value);
-        showSearchResults(results);
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!locationInput.contains(e.target) && !searchResults.contains(e.target)) {
-            searchResults.classList.add('hidden');
-        }
-    });
-
-    searchBtn.addEventListener('click', () => {
-        const results = searchComunas(locationInput.value);
-        showSearchResults(results);
-        if (results.length === 0 && locationInput.value.length >= 2) {
-            locationStatus.innerHTML = '⚠️ No encontramos esa comuna. Revisa el nombre.';
-        }
-    });
-
-    // =============================================
-    // GEOLOCATION + BACKEND COMMUNE DETECTION
-    // =============================================
-
-    getLocationBtn.addEventListener('click', () => {
-        locationStatus.innerHTML = '📍 Obteniendo tu ubicación...';
-        submitBtn.disabled = true;
-        submitBtn.textContent = '🔍 Detectando...';
-        
-        if (!navigator.geolocation) {
-            locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización. Prueba buscando manualmente.';
-            submitBtn.disabled = false;
-            submitBtn.textContent = '🔍 Evaluar ahora';
-            return;
-        }
-        
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                latInput.value = lat;
-                lngInput.value = lng;
-                
-                console.log(`[Geolocation] Detectado: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-                
-                try {
-                    locationStatus.innerHTML = '🔍 Detectando tu comuna...';
-                    
-                    const response = await fetch('/api/detect-commune', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ lat, lng })
-                    });
-                    
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    
-                    const data = await response.json();
-                    
-                    if (data.ok && data.commune) {
-                        const comunaName = data.commune.nombre;
-                        const comunaRegion = data.commune.region;
-                        const distance = data.distance_km?.toFixed(1) || '?';
-                        
-                        comunaInput.value = comunaName;
-                        locationInput.value = `${comunaName}, ${comunaRegion}`;
-                        locationStatus.innerHTML = `✅ Ubicación confirmada: ${comunaName}, ${comunaRegion} (a ${distance}km)`;
-                        
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = '🔍 Evaluar ahora';
-                        
-                        console.log(`[Backend] Comuna detectada: ${comunaName}`);
-                    } else {
-                        throw new Error(data.message || 'No se detectó comuna');
-                    }
-                } catch (err) {
-                    console.error('[Backend Error]:', err);
-                    locationStatus.innerHTML = `⚠️ Error detectando comuna: ${err.message}. Prueba buscando manualmente.`;
+    navigator.geolocation.getCurrentPosition(
+        async position => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            latInput.value = lat;
+            lngInput.value = lng;
+            locationStatus.innerHTML = '🔍 Detectando tu comuna...';
+            try {
+                const res = await fetch('/api/detect-commune', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.ok && data.commune) {
+                    const { nombre, region } = data.commune;
+                    const dist = data.distance_km?.toFixed(1) || '?';
+                    comunaInput.value    = nombre;
+                    locationInput.value  = `${nombre}, ${region}`;
+                    locationStatus.innerHTML = `✅ Ubicación confirmada: ${nombre}, ${region} (a ${dist}km)`;
                     submitBtn.disabled = false;
                     submitBtn.textContent = '🔍 Evaluar ahora';
+                } else {
+                    throw new Error(data.message || 'No se detectó comuna');
                 }
-            },
-            (error) => {
-                let msg = '❌ No se pudo obtener tu ubicación. ';
-                if (error.code === 1) msg += 'Permite el acceso en configuración.';
-                else if (error.code === 2) msg += 'Servicio de ubicación no disponible.';
-                else msg += 'Intenta de nuevo.';
-                locationStatus.innerHTML = msg + ' Prueba buscando manualmente.';
+            } catch (err) {
+                locationStatus.innerHTML = `⚠️ ${err.message}. Prueba buscando manualmente.`;
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🔍 Evaluar ahora';
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    });
-
-    // =============================================
-    // FORM SUBMISSION
-    // =============================================
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const lat = parseFloat(latInput.value);
-        const lng = parseFloat(lngInput.value);
-        let comuna = comunaInput.value;
-        
-        if (isNaN(lat) || isNaN(lng) || !comuna) {
-            resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una comuna válida o usa "Detectar".</div>`;
-            return;
-        }
-
-        resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><span style="font-size:0.8rem;">analizando mejor decisión para ti</span></div>`;
-
-        const contextType = document.getElementById('contextType').value;
-        const kmPerLiter = parseFloat(document.getElementById('kmPerLiter').value);
-        const consumption = 100 / kmPerLiter;
-        const tankCapacity = parseFloat(document.getElementById('tankCapacity').value);
-        const fuelLevel = parseFloat(document.getElementById('fuelLevel').value);
-        const budget = parseFloat(document.getElementById('budget').value);
-        const fuelType = document.getElementById('fuelType').value;
-        const direction = document.getElementById('direction').value;
-
-        if (isNaN(consumption) || consumption <= 0) {
-            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 13 km/L).</div>`;
-            return;
-        }
-
-        // Normalizar nombre de comuna
-        const comunaNormalized = comuna.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay');
-        
-        const payload = {
-            userProfile: {
-                context_type: contextType,
-                fuel_consumption: consumption,
-                tank_capacity: tankCapacity,
-                current_level_pct: fuelLevel,
-                budget_today: budget
-            },
-            context: {
-                user_lat: lat,
-                user_lon: lng,
-                fuel_type: fuelType,
-                comuna: comunaNormalized,
-                direction: direction,
-                is_urban_peak: false,
-                toll_estimate: 0
             }
-        };
+        },
+        error => {
+            const msgs = ['','Permite el acceso en configuración.','Servicio no disponible.','Tiempo agotado.'];
+            locationStatus.innerHTML = `❌ No se pudo obtener la ubicación. ${msgs[error.code] || ''} Prueba buscando manualmente.`;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+});
 
-        try {
-            const response = await fetch('/api/decide', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+// =============================================
+// ENVÍO DEL FORMULARIO
+// =============================================
+form.addEventListener('submit', async e => {
+    e.preventDefault();
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error ${response.status}`);
-            }
+    const lat    = parseFloat(latInput.value);
+    const lng    = parseFloat(lngInput.value);
+    const comuna = comunaInput.value;
 
-            const data = await response.json();
-            const result = data.result || data;
-            renderDecision(result);
-        } catch (err) {
-            console.error('Error:', err);
-            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Error</strong><br>No se pudo conectar con el motor.</div>`;
-        }
-    });
-
-    // =============================================
-    // RENDER DECISION
-    // =============================================
-
-    function renderDecision(data) {
-        const mode = data.mode;
-        let modeText = '', modeClass = '';
-        if (mode === 0) { modeText = '✅ RECOMENDACIÓN ACTIVA'; modeClass = 'mode-0'; }
-        else if (mode === 1) { modeText = '⚠️ DATOS INCIERTOS (LF-1)'; modeClass = 'mode-1'; }
-        else if (mode === 2) { modeText = '🔄 MEJOR NO CARGAR AHORA'; modeClass = 'mode-2'; }
-        else { modeText = '🔇 SIN DATOS SUFICIENTES'; modeClass = 'mode-3'; }
-
-        let html = `<div class="result-card">`;
-        html += `<div class="mode-badge ${modeClass}">${modeText}</div>`;
-
-        if (mode === 0 && data.recommendation) {
-            const rec = data.recommendation;
-            const station = rec.station || {};
-            const price = rec.display_price || 0;
-            const liters = rec.display_liters || 0;
-            const distance = rec.display_distance_km || 0;
-            const totalCost = rec.display_total_cost || Math.floor(price * liters);
-            const netSaving = Math.floor(rec.net_saving || 0);
-            const refPrice = rec.display_reference_price || price;
-            const savingPerLiter = refPrice - price;
-            
-            html += `<div class="station-name">⛽ ${station.nombre || 'Estación'}</div>`;
-            if (station.direccion) html += `<div class="station-address">📍 ${station.direccion}, ${station.comuna || ''}</div>`;
-            
-            if (savingPerLiter > 0) {
-                html += `<div class="saving">💰 Ahorro: <span class="saving-amount">$${savingPerLiter.toLocaleString('es-CL')}</span> por litro</div>`;
-                html += `<div class="detail-row"><span>Precio en esta estación</span><strong>$${price.toLocaleString('es-CL')} /L</strong></div>`;
-                html += `<div class="detail-row"><span>Precio promedio en la zona</span><strong>$${refPrice.toLocaleString('es-CL')} /L</strong></div>`;
-            } else if (savingPerLiter < 0) {
-                html += `<div class="saving">⚠️ Estación ${Math.abs(savingPerLiter).toLocaleString('es-CL')} más cara que el promedio</div>`;
-                html += `<div class="detail-row"><span>Precio en esta estación</span><strong>$${price.toLocaleString('es-CL')} /L</strong></div>`;
-            } else {
-                html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price.toLocaleString('es-CL')}</strong></div>`;
-            }
-            
-            html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} litros</strong></div>`;
-            html += `<div class="detail-row"><span>Costo total aproximado</span><strong>$${totalCost.toLocaleString('es-CL')}</strong></div>`;
-            if (netSaving > 0) {
-                html += `<div class="detail-row"><span>Ahorro total en esta carga</span><strong>$${netSaving.toLocaleString('es-CL')}</strong></div>`;
-            }
-            if (distance > 0) {
-                html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>${distance.toFixed(1)} km</strong></div>`;
-            } else {
-                html += `<div class="detail-row"><span>Desvío desde tu ubicación</span><strong>En tu ruta</strong></div>`;
-            }
-            
-            if (station.precios_detalle && station.precios_detalle.length > 0) {
-                html += `<div style="margin-top: 0.8rem; font-size: 0.8rem; background: #f0f4f8; padding: 0.5rem; border-radius: 0.5rem;">`;
-                html += `<strong>⛽ Precios en esta estación:</strong><br>`;
-                for (const p of station.precios_detalle) {
-                    html += `<span style="display: inline-block; margin-right: 0.8rem;">${p.tipo}: $${Math.floor(p.precio).toLocaleString('es-CL')}</span>`;
-                }
-                html += `</div>`;
-            }
-            
-            if (data.alternative) {
-                const alt = data.alternative;
-                const altStation = alt.station || {};
-                let altSaving = Math.floor(alt.net_saving || 0);
-                html += `<hr>`;
-                html += `<div style="font-size:0.85rem; opacity:0.8;">🔄 Alternativa: ${altStation.nombre || 'otra estación'}`;
-                if (altSaving > 0) html += ` · ahorro $${altSaving.toLocaleString('es-CL')}`;
-                html += `</div>`;
-                if (altStation.direccion) html += `<div style="font-size:0.75rem; opacity:0.7;">📍 ${altStation.direccion}</div>`;
-            }
-        } else if (mode === 0 && !data.recommendation) {
-            html += `<div class="message">⚠️ No se encontró una estación óptima con tus parámetros actuales.</div>`;
-        }
-        
-        if (data.message) html += `<div class="message">💬 ${data.message}</div>`;
-        
-        if (mode === 1) {
-            html += `<div class="message">🔍 Los precios disponibles no están completamente verificados.<br>El motor prefiere declarar incertidumbre antes que engañarte.</div>`;
-        }
-        if (mode === 2 && !data.message?.includes('poco combustible')) {
-            html += `<div class="message">📉 El ahorro potencial no justifica desviarte. Sigue tu ruta normal.</div>`;
-        }
-        if (mode === 3) {
-            html += `<div class="message">🧭 No hay estaciones registradas cerca de tu ubicación.<br>Intenta con una comuna cercana como "Colina" o "Quilicura".</div>`;
-        }
-
-        html += `</div>`;
-        resultArea.innerHTML = html;
+    if (isNaN(lat) || isNaN(lng) || !comuna) {
+        resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una comuna válida o usa "Detectar".</div>`;
+        return;
     }
+
+    resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><small>analizando mejor decisión para ti</small></div>`;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Evaluando...';
+
+    const kmPerLiter   = parseFloat(document.getElementById('kmPerLiter').value);
+    const consumption  = 100 / kmPerLiter;
+    const tankCapacity = parseFloat(document.getElementById('tankCapacity').value);
+    const fuelLevel    = parseFloat(document.getElementById('fuelLevel').value);
+    const budget       = parseFloat(document.getElementById('budget').value);
+    const fuelType     = document.getElementById('fuelType').value;
+    const direction    = document.getElementById('direction').value;
+    const contextType  = document.getElementById('contextType').value;
+
+    if (isNaN(consumption) || consumption <= 0) {
+        resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 13 km/L).</div>`;
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔍 Evaluar ahora';
+        return;
+    }
+
+    const payload = {
+        userProfile: {
+            context_type:       contextType,
+            fuel_consumption:   consumption,
+            tank_capacity:      tankCapacity,
+            current_level_pct:  fuelLevel,
+            budget_today:       budget
+        },
+        context: {
+            user_lat:        lat,
+            user_lon:        lng,
+            fuel_type:       fuelType,
+            comuna:          comuna.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay'),
+            direction:       direction,
+            is_urban_peak:   false,
+            toll_estimate:   0
+        }
+    };
+
+    try {
+        const response = await fetch('/api/decide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`Error ${response.status}`);
+        const data   = await response.json();
+        const result = data.result || data;
+        renderDecision(result);
+    } catch (err) {
+        console.error('Error:', err);
+        resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Error</strong><br>No se pudo conectar con el motor. Intenta de nuevo.</div>`;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔍 Evaluar ahora';
+    }
+});
+
+// =============================================
+// RENDER DE RESULTADOS
+// =============================================
+function fmt(n) { return Math.floor(n).toLocaleString('es-CL'); }
+
+function renderDecision(data) {
+    const mode = data.mode;
+    const modeLabels = {
+        0: ['✅ RECOMENDACIÓN ACTIVA', 'mode-0'],
+        1: ['⚠️ DATOS INCIERTOS',       'mode-1'],
+        2: ['🔄 MEJOR NO CARGAR AHORA', 'mode-2'],
+        3: ['🔇 SIN DATOS SUFICIENTES', 'mode-3'],
+    };
+    const [modeText, modeClass] = modeLabels[mode] || modeLabels[3];
+
+    let html = `<div class="result-card">`;
+    html += `<div class="mode-badge ${modeClass}">${modeText}</div>`;
+
+    if (mode === 0 && data.recommendation) {
+        const rec      = data.recommendation;
+        const station  = rec.station  || {};
+        const price    = rec.display_price || 0;
+        const liters   = rec.display_liters || 0;
+        const dist     = rec.display_distance_km || 0;
+        const total    = rec.display_total_cost || Math.floor(price * liters);
+        const netSave  = Math.floor(rec.net_saving || rec._net_saving || 0);
+        const refPrice = rec.display_reference_price || price;
+        const savPerL  = refPrice - price;
+
+        // Nombre y dirección
+        html += `<div class="station-name">⛽ ${station.nombre || rec.station_name || 'Estación'}</div>`;
+        if (station.direccion) {
+            html += `<div class="station-address">📍 ${station.direccion}${station.comuna ? ', ' + station.comuna : ''}</div>`;
+        }
+
+        // Bloque de ahorro
+        if (savPerL > 0) {
+            html += `<div class="saving-block">
+                <div class="saving-label">💰 Ahorro por litro</div>
+                <div class="saving-amount">$${fmt(savPerL)}</div>
+                <div class="saving-sub">respecto al precio promedio en la zona ($${fmt(refPrice)}/L)</div>
+            </div>`;
+        } else if (savPerL < 0) {
+            html += `<div class="same-price-block">⚠️ Esta estación está $${fmt(Math.abs(savPerL))}/L sobre el precio promedio de la zona ($${fmt(refPrice)}/L)</div>`;
+        } else {
+            html += `<div class="same-price-block">ℹ️ Precio igual al promedio en la zona · No hay diferencial de precio entre estaciones cercanas</div>`;
+        }
+
+        // Detalle de carga
+        html += `<div class="detail-row"><span>Precio por litro</span><strong>$${fmt(price)} /L</strong></div>`;
+        html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} L</strong></div>`;
+        html += `<div class="detail-row"><span>Costo total</span><strong>$${fmt(total)}</strong></div>`;
+        if (netSave > 0) {
+            html += `<div class="detail-row"><span>Ahorro total en esta carga</span><strong>$${fmt(netSave)}</strong></div>`;
+        }
+        html += `<div class="detail-row"><span>Distancia</span><strong>${dist > 0 ? dist.toFixed(1) + ' km' : 'En tu ruta'}</strong></div>`;
+
+        // Precios detalle de todos los combustibles
+        if (station.precios_detalle && station.precios_detalle.length > 0) {
+            html += `<div class="precios-detalle"><strong>⛽ Todos los precios en esta estación:</strong>`;
+            for (const p of station.precios_detalle) {
+                html += `<span class="precio-tag">${p.tipo}: <strong>$${fmt(p.precio)}</strong></span>`;
+            }
+            html += `</div>`;
+        }
+
+        // Alternativa
+        if (data.alternative) {
+            const alt       = data.alternative;
+            const altSt     = alt.station || {};
+            const altPrice  = alt.display_price || 0;
+            const altDist   = alt.display_distance_km || 0;
+            const altSave   = Math.floor(alt.net_saving || alt._net_saving || 0);
+            const altSavPL  = refPrice - altPrice;
+
+            html += `<div class="alt-block">
+                <div class="alt-title">🔄 Segunda opción disponible</div>
+                <div class="alt-name">⛽ ${altSt.nombre || alt.station_name || 'Otra estación'}</div>`;
+            if (altSt.direccion) html += `<div class="alt-address">📍 ${altSt.direccion}</div>`;
+            html += `<div class="detail-row"><span>Precio</span><strong>$${fmt(altPrice)} /L</strong></div>`;
+            if (altSavPL > 0) {
+                html += `<div class="detail-row"><span>Ahorro vs promedio</span><strong>$${fmt(altSavPL)} /L</strong></div>`;
+            } else if (altSavPL < 0) {
+                html += `<div class="detail-row"><span>Diferencia vs promedio</span><strong>+$${fmt(Math.abs(altSavPL))} /L</strong></div>`;
+            } else {
+                html += `<div class="detail-row"><span>Precio</span><strong>igual al promedio</strong></div>`;
+            }
+            if (altDist > 0) html += `<div class="detail-row"><span>Distancia</span><strong>${altDist.toFixed(1)} km</strong></div>`;
+            if (altSave > 0) html += `<div class="detail-row"><span>Ahorro total</span><strong>$${fmt(altSave)}</strong></div>`;
+            html += `</div>`;
+        }
+
+    } else if (mode === 0 && !data.recommendation) {
+        html += `<div class="message">⚠️ No se encontró una estación óptima con tus parámetros actuales.</div>`;
+    }
+
+    // Mensajes de estado
+    if (data.message) {
+        html += `<div class="message">💬 ${data.message}</div>`;
+    }
+    if (mode === 1) {
+        html += `<div class="message">🔍 Los precios disponibles no están completamente verificados hoy. El motor prefiere declarar incertidumbre antes que darte datos incorrectos.</div>`;
+    }
+    if (mode === 2) {
+        html += `<div class="message">📉 El ahorro potencial no justifica desviarte en este momento. Sigue tu ruta normal.</div>`;
+    }
+    if (mode === 3) {
+        html += `<div class="message">🧭 No hay estaciones registradas cerca de tu ubicación actual. Intenta con una comuna cercana.</div>`;
+    }
+
+    html += `</div>`;
+    resultArea.innerHTML = html;
+}
 </script>
 </body>
 </html>
