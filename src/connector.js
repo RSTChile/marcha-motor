@@ -3,6 +3,8 @@
  * Fuente: api.bencinaenlinea.cl
  */
 
+const fetch = require('node-fetch');
+
 const BASE_URL = 'https://api.bencinaenlinea.cl/api/estacion_ciudadano';
 const TIMEOUT_MS = 10000;
 const RETRY_MAX = 2;
@@ -31,6 +33,8 @@ async function fetchJson(url, timeoutMs = TIMEOUT_MS) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     return await res.json();
+  } catch (err) {
+    return null;
   } finally {
     clearTimeout(timer);
   }
@@ -68,22 +72,9 @@ function mapFuel(code) {
 
 function inferZone(region = '') {
   if (region.includes('Metropolitana')) return 'urban';
-
-  if (
-    [
-      'Valparaíso',
-      'Coquimbo',
-      'Biobío',
-      'Maule',
-      "O'Higgins",
-      'Araucanía',
-      'Ñuble',
-      'Los Lagos',
-    ].some(r => region.includes(r))
-  ) {
+  if (['Valparaíso', 'Coquimbo', 'Biobío', 'Maule', "O'Higgins", 'Araucanía', 'Ñuble', 'Los Lagos'].some(r => region.includes(r))) {
     return 'semi';
   }
-
   return 'rural';
 }
 
@@ -108,7 +99,6 @@ function normalizeStation(raw) {
     }
   }
 
-  // Si no tiene combustibles útiles, no sirve para Marcha
   if (!prices.gas93 && !prices.gas95 && !prices.gas97 && !prices.diesel) {
     return null;
   }
@@ -125,8 +115,6 @@ function normalizeStation(raw) {
     estado: d.estado || '',
     precios: prices,
     updated_at: latestUpdate ? latestUpdate.toISOString() : null,
-
-    // Campos operativos para engine/pipeline
     zone_type: inferZone(d.region || ''),
     report_count: 1,
   };

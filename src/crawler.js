@@ -5,7 +5,7 @@
  * Uso:
  *   node src/crawler.js
  *   node src/crawler.js --update
- *   node src/crawler.js --test 50
+ *   node src/crawler.js --test 10
  */
 
 const fs = require('fs');
@@ -13,9 +13,9 @@ const path = require('path');
 const { fetchStationRaw, normalizeStation } = require('./connector');
 
 const DATA_FILE = path.join(__dirname, '..', 'data', 'stations.json');
-const MAX_ID = 3000;
+const MAX_ID = 1500;
 const BATCH_SIZE = 10;
-const DELAY_MS = 300;
+const DELAY_MS = 500;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -63,19 +63,20 @@ function progress(current, total, found) {
 }
 
 async function crawlAll({ onlyUpdate = false, testLimit = null } = {}) {
+  console.log('[crawler] Iniciando...');
+  
   const existingData = loadExisting();
   const existing = existingData.stations;
   const existingIds = new Set(existing.map(s => s.id));
 
   const results = [...existing];
-  const maxId = testLimit ? Math.max(100, testLimit * 10) : MAX_ID;
+  const maxId = testLimit ? Math.min(MAX_ID, testLimit * 10) : MAX_ID;
 
   let found = existing.length;
   let checked = 0;
-  let consecutiveEmpty = 0;
 
-  console.log(`\nIniciando crawl — rango IDs: 1..${maxId}`);
-  console.log(`Estaciones ya conocidas: ${existing.length}\n`);
+  console.log(`\n[crawler] Rango IDs: 1..${maxId}`);
+  console.log(`[crawler] Estaciones ya conocidas: ${existing.length}\n`);
 
   for (let batchStart = 1; batchStart <= maxId; batchStart += BATCH_SIZE) {
     const ids = Array.from(
@@ -98,18 +99,10 @@ async function crawlAll({ onlyUpdate = false, testLimit = null } = {}) {
       const id = idsToFetch[i];
       const raw = fetched[i];
 
-      if (!raw) {
-        consecutiveEmpty++;
-        continue;
-      }
+      if (!raw) continue;
 
       const station = normalizeStation(raw);
-      if (!station) {
-        consecutiveEmpty++;
-        continue;
-      }
-
-      consecutiveEmpty = 0;
+      if (!station) continue;
 
       if (existingIds.has(id)) {
         const idx = results.findIndex(s => s.id === id);
@@ -118,6 +111,7 @@ async function crawlAll({ onlyUpdate = false, testLimit = null } = {}) {
         results.push(station);
         existingIds.add(id);
         found++;
+        console.log(`\n[crawler] Nueva estación: ID ${id} - ${station.nombre} (${station.comuna})`);
       }
     }
 
@@ -126,15 +120,7 @@ async function crawlAll({ onlyUpdate = false, testLimit = null } = {}) {
 
     if (checked % 100 === 0) {
       saveDataset(results);
-    }
-
-    if (!testLimit && consecutiveEmpty > 200) {
-      console.log('\n\nSin estaciones en 200 IDs consecutivos. Deteniendo.');
-      break;
-    }
-
-    if (testLimit && (found - existing.length) >= testLimit) {
-      break;
+      console.log(`\n[crawler] Checkpoint guardado: ${found} estaciones`);
     }
 
     await sleep(DELAY_MS);
@@ -149,7 +135,7 @@ async function main() {
   const args = process.argv.slice(2);
   const onlyUpdate = args.includes('--update');
   const testIdx = args.indexOf('--test');
-  const testLimit = testIdx >= 0 ? parseInt(args[testIdx + 1], 10) || 20 : null;
+  const testLimit = testIdx >= 0 ? parseInt(args[testIdx + 1], 10) || 10 : null;
 
   if (testLimit) {
     await crawlAll({ testLimit });
@@ -166,7 +152,7 @@ async function main() {
 
 if (require.main === module) {
   main().catch(err => {
-    console.error('\nError:', err.message);
+    console.error('\n[crawler] Error:', err.message);
     process.exit(1);
   });
 }

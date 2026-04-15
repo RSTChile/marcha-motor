@@ -6,10 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "crawl": "node src/crawler.js",
-    "crawl:test": "node src/crawler.js --test 50",
+    "crawl:test": "node src/crawler.js --test 10",
     "crawl:update": "node src/crawler.js --update"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
   }
 }
