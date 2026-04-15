@@ -9,14 +9,27 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health
+// Health check
 app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'running' });
 });
 
-// Stats dataset
+// Estadísticas del dataset
 app.get('/api/stats', (req, res) => {
   res.json(getDatasetStats());
+});
+
+// Fuerza la ejecución manual del crawler
+app.get('/force-crawl', async (req, res) => {
+  try {
+    const { crawlAll } = require('./src/crawler');
+    console.log('[force-crawl] Iniciando crawler manual...');
+    await crawlAll({ testLimit: 50 });
+    res.json({ ok: true, message: 'Crawl completado' });
+  } catch (err) {
+    console.error('[force-crawl] Error:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // Motor real
@@ -46,12 +59,12 @@ app.post('/api/decide', async (req, res) => {
   }
 });
 
-// Caso Cero
+// Caso Cero (Llay-Llay, diesel, 25% estanque)
 app.get('/caso-cero', async (req, res) => {
   try {
     const userProfile = {
       context_type: 'domestic',
-      fuel_consumption: 10,  // L/100km = 10 km/L real
+      fuel_consumption: 10,
       tank_capacity: 56,
       current_level_pct: 25,
       budget_today: 25000,
