@@ -2,8 +2,6 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
-const { runPipeline } = require('./src/pipeline');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -15,7 +13,7 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'running' });
 });
 
-// Estadísticas del dataset (versión simple que no falla)
+// Estadísticas del dataset (implementación directa, sin funciones externas)
 app.get('/api/stats', (req, res) => {
   try {
     const dataPath = path.join(__dirname, 'data', 'stations.json');
@@ -26,7 +24,7 @@ app.get('/api/stats', (req, res) => {
     const total = raw.stations ? raw.stations.length : 0;
     res.json({ ok: true, total, updated_at: raw.meta?.updated_at || null });
   } catch (err) {
-    res.json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
@@ -46,6 +44,7 @@ app.get('/force-crawl', async (req, res) => {
 // Motor real
 app.post('/api/decide', async (req, res) => {
   try {
+    const { runPipeline } = require('./src/pipeline');
     const { userProfile, context } = req.body;
 
     if (!userProfile || !context) {
@@ -73,6 +72,8 @@ app.post('/api/decide', async (req, res) => {
 // Caso Cero (Llay-Llay, diesel, 25% estanque)
 app.get('/caso-cero', async (req, res) => {
   try {
+    const { runPipeline } = require('./src/pipeline');
+    
     const userProfile = {
       context_type: 'domestic',
       fuel_consumption: 10,
