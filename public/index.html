@@ -3,122 +3,669 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Marcha · Optimizador de recarga</title>
+    <title>Marcha · RST Chile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; padding: 1rem; color: #1e2a3e; }
-        .container { max-width: 680px; margin: 0 auto; }
-        .card { background: white; border-radius: 2rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1.5rem; }
-        .card-header { background: #0b3b3f; color: white; padding: 1.5rem; text-align: center; }
-        .card-header h1 { font-size: 2rem; font-weight: 600; }
-        .card-header p { opacity: 0.8; margin-top: 0.25rem; font-size: 0.9rem; }
-        .card-body { padding: 1.5rem; }
-        .form-group { margin-bottom: 1.25rem; }
-        label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; color: #2c5f6b; }
-        input, select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 1rem; font-size: 1rem; background: #fff; }
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .location-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+        :root {
+            --bg:       #07111f;
+            --bg2:      #0d1e30;
+            --bg3:      #122033;
+            --surface:  #162840;
+            --line:     rgba(255,255,255,0.07);
+            --line2:    rgba(255,255,255,0.12);
+            --text:     #e8edf2;
+            --muted:    #6b8099;
+            --accent:   #e8a030;
+            --accent2:  #f0c060;
+            --green:    #2ecc8a;
+            --red:      #e05050;
+            --blue:     #4a9eff;
+            --mono:     'DM Mono', monospace;
+            --sans:     'Syne', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0 2rem;
+            border-bottom: 1px solid var(--line2);
+            margin-bottom: 2rem;
+        }
+        .logo-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid var(--line2);
+        }
+        .logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .header-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            line-height: 1;
+        }
+        .header-text h1 span { color: var(--accent); }
+        .header-text p {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            margin-right: 0.4rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Formulario */
+        .section { margin-bottom: 0.5rem; }
+        .field-label {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .field-label::before {
+            content: '';
+            width: 1px;
+            height: 10px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        input, select {
+            width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--accent); background: var(--bg3); }
+        .location-row { display: flex; gap: 0.5rem; align-items: stretch; }
         .location-row input { flex: 1; }
-        .btn-secondary { background: #e2e8f0; color: #1e2a3e; border: none; padding: 0.8rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
-        .btn-location { background: #0b3b3f; color: white; }
-        button { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; }
-        .fuel-gauge { background: #1a2a32; border-radius: 2rem; padding: 1rem; margin-bottom: 0.5rem; }
-        .gauge-bar { background: #2d3e48; border-radius: 1rem; height: 0.5rem; width: 100%; margin-bottom: 1rem; }
-        .gauge-fill { background: linear-gradient(90deg, #dc2626, #eab308, #22c55e); border-radius: 1rem; height: 100%; width: 0%; transition: width 0.3s ease; }
-        .fuel-marks { display: flex; justify-content: space-between; margin-bottom: 1.5rem; gap: 0.25rem; flex-wrap: wrap; }
-        .fuel-mark { flex: 1; text-align: center; padding: 0.5rem 0.25rem; background: #e2e8f0; border-radius: 2rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; }
-        .fuel-mark.reserva { background: #fee2e2; color: #991b1b; }
-        .fuel-mark.selected { background: #0b3b3f; color: white; border-color: #f5a623; }
-        .fuel-value-display { text-align: center; font-size: 0.8rem; color: #5b6e8c; margin-top: 0.5rem; }
-        .result-card { background: #fef9e3; border-left: 6px solid #f5a623; padding: 1.25rem; border-radius: 1.5rem; margin-top: 1.5rem; }
-        .mode-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.7rem; font-weight: bold; margin-bottom: 0.75rem; }
-        .mode-0 { background: #d1fae5; color: #065f46; }
-        .mode-1 { background: #fed7aa; color: #9b4a00; }
-        .mode-2 { background: #ffe4e2; color: #9b1c1c; }
-        .mode-3 { background: #e2e8f0; color: #334155; }
-        .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .saving { font-size: 1.5rem; font-weight: 800; color: #0b3b3f; margin: 0.5rem 0; }
-        .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
-        .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-style: italic; }
-        .footer { text-align: center; font-size: 0.7rem; color: #5b6e8c; margin-top: 1rem; }
-        .loading { text-align: center; padding: 2rem; color: #0b3b3f; }
-        .comunas-list { max-height: 250px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-radius: 1rem; margin-top: 0.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .comuna-item { padding: 0.6rem 1rem; cursor: pointer; border-bottom: 1px solid #e2e8f0; }
-        .comuna-item:hover { background: #f0f4f8; }
-        .comuna-nombre { font-weight: 500; }
-        .comuna-region { font-size: 0.7rem; color: #5b6e8c; }
+
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.75rem 0.875rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-icon:hover { background: var(--bg3); border-color: var(--line); color: var(--accent); }
+        .btn-icon.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+        .btn-icon.primary:hover { background: var(--accent2); }
+
+        .location-status {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--green);
+            margin-top: 0.4rem;
+            padding-left: 0.25rem;
+            min-height: 1rem;
+        }
+        .location-status.warn { color: var(--accent); }
+        .location-status.err { color: var(--red); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        .type-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .type-pill {
+            flex: 1;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.65rem 0.75rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        .type-pill:hover { border-color: var(--accent); color: var(--text); }
+        .type-pill.selected { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+
+        /* Gauge */
+        .gauge-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            padding: 1rem 1.25rem 0.875rem;
+        }
+        .gauge-track {
+            height: 3px;
+            background: var(--line2);
+            border-radius: 2px;
+            margin-bottom: 0.875rem;
+        }
+        .gauge-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--red), var(--accent), var(--green));
+            transition: width 0.4s cubic-bezier(.4,0,.2,1);
+            width: 0%;
+        }
+        .gauge-marks {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.25rem;
+        }
+        .gauge-mark {
+            flex: 1;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            padding: 0.35rem 0.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .gauge-mark:hover { color: var(--text); }
+        .gauge-mark.selected { color: var(--accent); font-weight: 500; }
+        .gauge-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Autocomplete */
+        .autocomplete-wrap { position: relative; }
+        .communes-drop {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: var(--bg3);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        }
+        .commune-item {
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--line);
+            transition: background 0.1s;
+        }
+        .commune-item:last-child { border-bottom: none; }
+        .commune-item:hover { background: var(--surface); }
+        .commune-name { font-family: var(--mono); font-size: 0.85rem; color: var(--text); }
+        .commune-region { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
         .hidden { display: none; }
+
+        .divider {
+            height: 1px;
+            background: var(--line);
+            margin: 1.25rem 0;
+        }
+
+        .btn-main {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-main::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease;
+            z-index: 0;
+        }
+        .btn-main:hover::before { transform: scaleX(1); }
+        .btn-main:hover { color: var(--bg); }
+        .btn-main span { position: relative; z-index: 1; }
+        .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-main:disabled::before { display: none; }
+
+        /* Resultados */
+        .result-wrap { margin-top: 2rem; }
+        .result-placeholder {
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .result-card {
+            background: var(--bg2);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeUp 0.4s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .mode-tag {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.25rem 0.625rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .mode-tag.m0 { background: rgba(46,204,138,0.15); color: var(--green); border: 1px solid rgba(46,204,138,0.25); }
+        .mode-tag.m1 { background: rgba(232,160,48,0.15); color: var(--accent); border: 1px solid rgba(232,160,48,0.25); }
+        .mode-tag.m2 { background: rgba(224,80,80,0.12); color: var(--red); border: 1px solid rgba(224,80,80,0.2); }
+        .mode-tag.m3 { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--line2); }
+
+        .result-body { padding: 1.25rem 1.5rem; }
+
+        .station-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        .station-brand {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.25rem;
+        }
+        .station-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            color: var(--text);
+        }
+        .station-addr {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+        .price-display { text-align: right; flex-shrink: 0; }
+        .price-label {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .price-value {
+            font-family: var(--mono);
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: var(--accent);
+            line-height: 1.1;
+        }
+        .price-unit {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+        }
+
+        .saving-banner {
+            background: rgba(46,204,138,0.08);
+            border: 1px solid rgba(46,204,138,0.2);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .saving-amount {
+            font-family: var(--mono);
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--green);
+        }
+        .neutral-banner {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+        .warn-banner {
+            background: rgba(232,160,48,0.08);
+            border: 1px solid rgba(232,160,48,0.2);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--accent);
+        }
+
+        .data-table { margin-bottom: 1rem; }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .data-row:last-child { border-bottom: none; }
+        .data-key {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+        .data-val {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .data-val.hi { color: var(--green); }
+
+        .prices-grid {
+            background: var(--bg3);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .prices-grid-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .prices-grid-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .price-chip {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text);
+        }
+        .price-chip .chip-type { color: var(--muted); margin-right: 0.3rem; }
+
+        .alt-section {
+            border-top: 1px solid var(--line);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+        .alt-section-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+        .alt-card {
+            background: var(--bg3);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .alt-card:last-child { margin-bottom: 0; }
+        .alt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .alt-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .alt-addr {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            margin-top: 0.15rem;
+        }
+        .alt-price {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 500;
+            text-align: right;
+        }
+        .alt-price small { font-size: 0.6rem; color: var(--muted); display: block; }
+        .alt-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .alt-chip {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .alt-chip.pos { color: var(--green); }
+        .alt-chip.neg { color: var(--red); }
+
+        .status-msg {
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid var(--accent);
+            border-radius: 0 4px 4px 0;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .status-msg.green { border-left-color: var(--green); }
+        .status-msg.red { border-left-color: var(--red); }
+
+        .loading-state { padding: 3rem 1.5rem; text-align: center; }
+        .loading-ring {
+            width: 32px; height: 32px;
+            border: 2px solid var(--line2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .footer {
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: rgba(255,255,255,0.15);
+            margin-top: 3rem;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 420px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .station-name { font-size: 1.15rem; }
+            .price-value { font-size: 1.3rem; }
+            .saving-amount { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="card">
-        <div class="card-header">
-            <h1>⛽ Marcha</h1>
-            <p>decide si vale la pena cargar · no adivina, calcula</p>
+<div class="wrap">
+
+    <header class="header">
+        <div class="logo-wrap">
+            <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⛽'">
         </div>
-        <div class="card-body">
-            <form id="marchaForm">
-                <div class="form-group">
-                    <label>📍 Tu ubicación</label>
-                    <div class="location-row">
-                        <input type="text" id="locationInput" placeholder="Ej: Santiago, Llay-Llay, Concepción" autocomplete="off">
-                        <button type="button" id="searchLocationBtn" class="btn-secondary">🔍 Buscar</button>
-                        <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Usar mi ubicación</button>
-                    </div>
-                    <div id="searchResults" class="comunas-list hidden"></div>
-                    <div id="locationStatus" class="location-status"></div>
-                    <input type="hidden" id="lat" value="-33.4489">
-                    <input type="hidden" id="lng" value="-70.6693">
-                </div>
+        <div class="header-text">
+            <h1>En <span>Marcha</span></h1>
+            <p><span class="status-dot"></span>RST Chile · motor de decisión</p>
+        </div>
+    </header>
 
-                <div class="form-group">
-                    <label>🚗 Tipo de uso</label>
-                    <select id="contextType">
-                        <option value="domestic">🚘 Doméstico / particular</option>
-                        <option value="labor">📱 Laboral (conductor)</option>
-                        <option value="cargo">🚛 Transporte de carga (empresa)</option>
-                    </select>
-                </div>
+    <form id="marchaForm" autocomplete="off">
 
-                <div class="form-group">
-                    <label>⛽ Rendimiento de tu auto (km/L)</label>
-                    <input type="number" id="kmPerLiter" value="10" step="0.5">
-                    <small style="color:#6c7a91">Cuántos kilómetros recorres con 1 litro</small>
+        <div class="section">
+            <div class="field-label">Ubicación</div>
+            <div class="autocomplete-wrap">
+                <div class="location-row">
+                    <input type="text" id="locationInput" placeholder="Comuna (ej: Huechuraba, Temuco...)">
+                    <button type="button" id="searchBtn" class="btn-icon">↵ Buscar</button>
+                    <button type="button" id="gpsBtn" class="btn-icon primary">◎ GPS</button>
                 </div>
+                <div id="communesDrop" class="communes-drop hidden"></div>
+            </div>
+            <div id="locStatus" class="location-status"></div>
+            <input type="hidden" id="lat">
+            <input type="hidden" id="lng">
+            <input type="hidden" id="comuna">
+        </div>
 
-                <div class="row-2">
-                    <div class="form-group">
-                        <label>🛢️ Capacidad estanque (L)</label>
-                        <input type="number" id="tankCapacity" value="56" step="1">
-                    </div>
-                    <div class="form-group">
-                        <label>💰 Presupuesto hoy ($)</label>
-                        <input type="number" id="budget" value="25000" step="5000">
-                    </div>
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="field-label">Tipo de uso</div>
+            <div class="type-pills">
+                <div class="type-pill selected" data-val="domestic">Doméstico</div>
+                <div class="type-pill" data-val="labor">Laboral</div>
+                <div class="type-pill" data-val="cargo">Carga</div>
+            </div>
+            <input type="hidden" id="contextType" value="domestic">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em">(opcional)</span></div>
+            <select id="direction">
+                <option value="">Sin especificar / ciudad</option>
+                <option value="north_to_south">↓ Norte → Sur</option>
+                <option value="south_to_north">↑ Sur → Norte</option>
+                <option value="east_to_west">← Este → Oeste</option>
+                <option value="west_to_east">→ Oeste → Este</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="field-label">Vehículo</div>
+            <div class="grid-2">
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Rendimiento km/L</div>
+                    <input type="number" id="kmPerLiter" value="13" min="1" max="40" step="0.5">
                 </div>
-
-                <div class="form-group">
-                    <label>⛽ Nivel del estanque</label>
-                    <div class="fuel-gauge">
-                        <div class="gauge-bar">
-                            <div class="gauge-fill" id="gaugeFill"></div>
-                        </div>
-                        <div class="fuel-marks">
-                            <div class="fuel-mark reserva" data-level="5" data-pct="5">🔴 Reserva</div>
-                            <div class="fuel-mark" data-level="12.5" data-pct="12.5">Mínimo</div>
-                            <div class="fuel-mark" data-level="25" data-pct="25">1/4</div>
-                            <div class="fuel-mark" data-level="50" data-pct="50">1/2</div>
-                            <div class="fuel-mark" data-level="75" data-pct="75">3/4</div>
-                            <div class="fuel-mark" data-level="100" data-pct="100">Lleno</div>
-                        </div>
-                        <div class="fuel-value-display" id="fuelLevelDisplay">Nivel seleccionado: 1/4 (25%)</div>
-                    </div>
-                    <input type="hidden" id="fuelLevel" value="25">
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Estanque (L)</div>
+                    <input type="number" id="tankCapacity" value="56" min="10" max="1000" step="1">
                 </div>
+            </div>
+        </div>
 
-                <div class="form-group">
-                    <label>⛽ Tipo de combustible</label>
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="field-label">Carga</div>
+            <div class="grid-2">
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Combustible</div>
                     <select id="fuelType">
                         <option value="diesel">Diesel</option>
                         <option value="gas93">Gasolina 93</option>
@@ -126,595 +673,390 @@
                         <option value="gas97">Gasolina 97</option>
                     </select>
                 </div>
-
-                <button type="submit">🔍 Evaluar ahora</button>
-            </form>
-
-            <div id="resultArea">
-                <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e;">
-                    ⚡ Completa tus datos y presiona "Evaluar ahora"<br>
-                    <span style="font-size:0.8rem;">El motor analiza estaciones reales en tu zona</span>
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;">Presupuesto ($)</div>
+                    <input type="number" id="budget" value="50000" min="1">
                 </div>
             </div>
         </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="field-label">Nivel del estanque</div>
+            <div class="gauge-wrap">
+                <div class="gauge-track">
+                    <div class="gauge-fill" id="gaugeFill"></div>
+                </div>
+                <div class="gauge-marks">
+                    <div class="gauge-mark" data-pct="5">Reserva</div>
+                    <div class="gauge-mark" data-pct="12.5">Mín.</div>
+                    <div class="gauge-mark selected" data-pct="25">¼</div>
+                    <div class="gauge-mark" data-pct="50">½</div>
+                    <div class="gauge-mark" data-pct="75">¾</div>
+                    <div class="gauge-mark" data-pct="100">Lleno</div>
+                </div>
+                <div class="gauge-label" id="gaugeLabel">25%</div>
+            </div>
+            <input type="hidden" id="fuelLevel" value="25">
+        </div>
+
+        <button type="submit" class="btn-main" id="submitBtn">
+            <span>▶ Evaluar ahora</span>
+        </button>
+
+    </form>
+
+    <div class="result-wrap" id="resultWrap">
+        <div class="result-placeholder">
+            <span class="big">⊙</span>
+            Ingresa tu ubicación y presiona evaluar
+        </div>
     </div>
-    <div class="footer">Marcha · motor de decisión no teleológico · datos desde API real + crowdsourcing</div>
+
+    <div class="footer">Marcha · motor de decisión · RST Chile · datos API real</div>
 </div>
 
 <script>
-    // LISTA COMPLETA DE COMUNAS DE CHILE (extraídas del CSV oficial)
-    // Incluye todas las regiones: Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana, O'Higgins, Maule, Biobío, Araucanía, Los Lagos, Aysén, Magallanes
-    const comunas = [
-        // Tarapacá
-        { nombre: "Iquique", region: "Tarapacá", lat: -20.2439, lng: -70.1389 },
-        { nombre: "Alto Hospicio", region: "Tarapacá", lat: -20.2569, lng: -70.0219 },
-        { nombre: "Pozo Almonte", region: "Tarapacá", lat: -20.2908, lng: -69.6958 },
-        { nombre: "Camiña", region: "Tarapacá", lat: -20.4828, lng: -69.3669 },
-        { nombre: "Colchane", region: "Tarapacá", lat: -19.2839, lng: -68.6750 },
-        { nombre: "Huara", region: "Tarapacá", lat: -19.8089, lng: -69.9719 },
-        { nombre: "Pica", region: "Tarapacá", lat: -20.4828, lng: -69.3778 },
-        // Antofagasta
-        { nombre: "Antofagasta", region: "Antofagasta", lat: -23.6508, lng: -70.3950 },
-        { nombre: "Mejillones", region: "Antofagasta", lat: -23.1100, lng: -70.4558 },
-        { nombre: "Sierra Gorda", region: "Antofagasta", lat: -22.8978, lng: -69.3228 },
-        { nombre: "Taltal", region: "Antofagasta", lat: -25.4100, lng: -70.4889 },
-        { nombre: "Calama", region: "Antofagasta", lat: -22.4739, lng: -68.9239 },
-        { nombre: "Ollagüe", region: "Antofagasta", lat: -21.2328, lng: -68.2669 },
-        { nombre: "San Pedro de Atacama", region: "Antofagasta", lat: -22.9200, lng: -68.2100 },
-        { nombre: "Tocopilla", region: "Antofagasta", lat: -22.0819, lng: -70.1889 },
-        { nombre: "María Elena", region: "Antofagasta", lat: -22.3169, lng: -69.6769 },
-        // Atacama
-        { nombre: "Copiapó", region: "Atacama", lat: -27.3750, lng: -70.3289 },
-        { nombre: "Caldera", region: "Atacama", lat: -27.0658, lng: -70.8258 },
-        { nombre: "Tierra Amarilla", region: "Atacama", lat: -27.4728, lng: -70.2828 },
-        { nombre: "Chañaral", region: "Atacama", lat: -26.3458, lng: -70.6239 },
-        { nombre: "Diego de Almagro", region: "Atacama", lat: -26.3900, lng: -70.0519 },
-        { nombre: "Vallenar", region: "Atacama", lat: -28.5769, lng: -70.7700 },
-        { nombre: "Alto del Carmen", region: "Atacama", lat: -28.7489, lng: -70.4908 },
-        { nombre: "Freirina", region: "Atacama", lat: -28.5058, lng: -71.0758 },
-        { nombre: "Huasco", region: "Atacama", lat: -28.4558, lng: -71.1858 },
-        // Coquimbo
-        { nombre: "La Serena", region: "Coquimbo", lat: -29.9069, lng: -71.2469 },
-        { nombre: "Coquimbo", region: "Coquimbo", lat: -29.9708, lng: -71.3069 },
-        { nombre: "Andacollo", region: "Coquimbo", lat: -30.2300, lng: -71.0858 },
-        { nombre: "La Higuera", region: "Coquimbo", lat: -29.5000, lng: -71.2828 },
-        { nombre: "Paihuano", region: "Coquimbo", lat: -30.0378, lng: -70.5069 },
-        { nombre: "Vicuña", region: "Coquimbo", lat: -30.0189, lng: -70.7150 },
-        { nombre: "Illapel", region: "Coquimbo", lat: -31.6389, lng: -71.1789 },
-        { nombre: "Canela", region: "Coquimbo", lat: -31.3958, lng: -71.4189 },
-        { nombre: "Los Vilos", region: "Coquimbo", lat: -31.9150, lng: -71.5058 },
-        { nombre: "Salamanca", region: "Coquimbo", lat: -31.7800, lng: -70.9669 },
-        { nombre: "Ovalle", region: "Coquimbo", lat: -30.5989, lng: -71.1889 },
-        { nombre: "Combarbalá", region: "Coquimbo", lat: -31.1800, lng: -71.0039 },
-        { nombre: "Monte Patria", region: "Coquimbo", lat: -30.7750, lng: -70.9428 },
-        { nombre: "Punitaqui", region: "Coquimbo", lat: -30.8328, lng: -71.2600 },
-        { nombre: "Río Hurtado", region: "Coquimbo", lat: -30.2728, lng: -70.6669 },
-        // Valparaíso
-        { nombre: "Valparaíso", region: "Valparaíso", lat: -33.0333, lng: -71.6667 },
-        { nombre: "Casablanca", region: "Valparaíso", lat: -33.3250, lng: -71.4100 },
-        { nombre: "Concón", region: "Valparaíso", lat: -32.9600, lng: -71.4689 },
-        { nombre: "Juan Fernández", region: "Valparaíso", lat: -33.6328, lng: -78.8669 },
-        { nombre: "Puchuncaví", region: "Valparaíso", lat: -32.7478, lng: -71.3978 },
-        { nombre: "Quintero", region: "Valparaíso", lat: -32.8450, lng: -71.4669 },
-        { nombre: "Viña del Mar", region: "Valparaíso", lat: -33.0250, lng: -71.5150 },
-        { nombre: "Isla de Pascua", region: "Valparaíso", lat: -27.1286, lng: -109.3597 },
-        { nombre: "Los Andes", region: "Valparaíso", lat: -32.8369, lng: -70.5969 },
-        { nombre: "Calle Larga", region: "Valparaíso", lat: -32.8831, lng: -70.4819 },
-        { nombre: "Rinconada", region: "Valparaíso", lat: -32.8331, lng: -70.6883 },
-        { nombre: "San Esteban", region: "Valparaíso", lat: -32.8050, lng: -70.5808 },
-        { nombre: "La Ligua", region: "Valparaíso", lat: -32.3536, lng: -71.2719 },
-        { nombre: "Cabildo", region: "Valparaíso", lat: -32.4089, lng: -71.0800 },
-        { nombre: "Papudo", region: "Valparaíso", lat: -32.4700, lng: -71.3808 },
-        { nombre: "Petorca", region: "Valparaíso", lat: -32.2900, lng: -70.9500 },
-        { nombre: "Zapallar", region: "Valparaíso", lat: -32.5678, lng: -71.4378 },
-        { nombre: "Quillota", region: "Valparaíso", lat: -32.9150, lng: -71.2639 },
-        { nombre: "La Calera", region: "Valparaíso", lat: -32.7839, lng: -71.2039 },
-        { nombre: "Hijuelas", region: "Valparaíso", lat: -32.8550, lng: -71.0939 },
-        { nombre: "La Cruz", region: "Valparaíso", lat: -32.8239, lng: -71.2439 },
-        { nombre: "Nogales", region: "Valparaíso", lat: -32.7358, lng: -71.2078 },
-        { nombre: "San Antonio", region: "Valparaíso", lat: -33.5947, lng: -71.6072 },
-        { nombre: "Algarrobo", region: "Valparaíso", lat: -33.3692, lng: -71.6681 },
-        { nombre: "Cartagena", region: "Valparaíso", lat: -33.5536, lng: -71.6075 },
-        { nombre: "El Quisco", region: "Valparaíso", lat: -33.3914, lng: -71.6928 },
-        { nombre: "El Tabo", region: "Valparaíso", lat: -33.4800, lng: -71.6208 },
-        { nombre: "Santo Domingo", region: "Valparaíso", lat: -33.7078, lng: -71.6300 },
-        { nombre: "San Felipe", region: "Valparaíso", lat: -32.7500, lng: -70.7128 },
-        { nombre: "Catemu", region: "Valparaíso", lat: -32.7808, lng: -70.9689 },
-        { nombre: "Llay-Llay", region: "Valparaíso", lat: -32.8439, lng: -70.9569 },
-        { nombre: "Panquehue", region: "Valparaíso", lat: -32.7839, lng: -70.8369 },
-        { nombre: "Putaendo", region: "Valparaíso", lat: -32.6278, lng: -70.7158 },
-        { nombre: "Santa María", region: "Valparaíso", lat: -32.7503, lng: -70.6669 },
-        { nombre: "Quilpué", region: "Valparaíso", lat: -33.0475, lng: -71.4422 },
-        { nombre: "Limache", region: "Valparaíso", lat: -33.0028, lng: -71.2608 },
-        { nombre: "Olmué", region: "Valparaíso", lat: -33.0089, lng: -71.1700 },
-        { nombre: "Villa Alemana", region: "Valparaíso", lat: -33.0658, lng: -71.3289 },
-        // Metropolitana
-        { nombre: "Santiago", region: "Metropolitana", lat: -33.4489, lng: -70.6693 },
-        { nombre: "Cerrillos", region: "Metropolitana", lat: -33.5000, lng: -70.7167 },
-        { nombre: "Cerro Navia", region: "Metropolitana", lat: -33.4167, lng: -70.7333 },
-        { nombre: "Conchalí", region: "Metropolitana", lat: -33.3833, lng: -70.6833 },
-        { nombre: "El Bosque", region: "Metropolitana", lat: -33.5667, lng: -70.6667 },
-        { nombre: "Estación Central", region: "Metropolitana", lat: -33.4500, lng: -70.7000 },
-        { nombre: "Huechuraba", region: "Metropolitana", lat: -33.3667, lng: -70.6833 },
-        { nombre: "Independencia", region: "Metropolitana", lat: -33.4167, lng: -70.6667 },
-        { nombre: "La Cisterna", region: "Metropolitana", lat: -33.5333, lng: -70.6667 },
-        { nombre: "La Florida", region: "Metropolitana", lat: -33.5333, lng: -70.5833 },
-        { nombre: "La Granja", region: "Metropolitana", lat: -33.5333, lng: -70.6167 },
-        { nombre: "La Pintana", region: "Metropolitana", lat: -33.5833, lng: -70.6333 },
-        { nombre: "La Reina", region: "Metropolitana", lat: -33.4500, lng: -70.5333 },
-        { nombre: "Las Condes", region: "Metropolitana", lat: -33.4030, lng: -70.5770 },
-        { nombre: "Lo Barnechea", region: "Metropolitana", lat: -33.3500, lng: -70.5167 },
-        { nombre: "Lo Espejo", region: "Metropolitana", lat: -33.5167, lng: -70.6833 },
-        { nombre: "Lo Prado", region: "Metropolitana", lat: -33.4500, lng: -70.7333 },
-        { nombre: "Macul", region: "Metropolitana", lat: -33.4833, lng: -70.6000 },
-        { nombre: "Maipú", region: "Metropolitana", lat: -33.5167, lng: -70.7667 },
-        { nombre: "Ñuñoa", region: "Metropolitana", lat: -33.4667, lng: -70.6000 },
-        { nombre: "Pedro Aguirre Cerda", region: "Metropolitana", lat: -33.5000, lng: -70.6833 },
-        { nombre: "Peñalolén", region: "Metropolitana", lat: -33.4833, lng: -70.5333 },
-        { nombre: "Providencia", region: "Metropolitana", lat: -33.4319, lng: -70.6100 },
-        { nombre: "Pudahuel", region: "Metropolitana", lat: -33.3667, lng: -70.8000 },
-        { nombre: "Quilicura", region: "Metropolitana", lat: -33.3550, lng: -70.7350 },
-        { nombre: "Quinta Normal", region: "Metropolitana", lat: -33.4333, lng: -70.7000 },
-        { nombre: "Recoleta", region: "Metropolitana", lat: -33.4167, lng: -70.6333 },
-        { nombre: "Renca", region: "Metropolitana", lat: -33.4000, lng: -70.7333 },
-        { nombre: "San Joaquín", region: "Metropolitana", lat: -33.4833, lng: -70.6333 },
-        { nombre: "San Miguel", region: "Metropolitana", lat: -33.4833, lng: -70.6500 },
-        { nombre: "San Ramón", region: "Metropolitana", lat: -33.5333, lng: -70.6500 },
-        { nombre: "Vitacura", region: "Metropolitana", lat: -33.3830, lng: -70.5660 },
-        { nombre: "Puente Alto", region: "Metropolitana", lat: -33.6167, lng: -70.5667 },
-        { nombre: "Pirque", region: "Metropolitana", lat: -33.6667, lng: -70.5833 },
-        { nombre: "San José de Maipo", region: "Metropolitana", lat: -33.6333, lng: -70.3500 },
-        { nombre: "Colina", region: "Metropolitana", lat: -33.2010, lng: -70.6810 },
-        { nombre: "Lampa", region: "Metropolitana", lat: -33.2800, lng: -70.7100 },
-        { nombre: "Til Til", region: "Metropolitana", lat: -33.0833, lng: -70.9167 },
-        { nombre: "San Bernardo", region: "Metropolitana", lat: -33.5900, lng: -70.6900 },
-        { nombre: "Buin", region: "Metropolitana", lat: -33.7333, lng: -70.7333 },
-        { nombre: "Calera de Tango", region: "Metropolitana", lat: -33.6333, lng: -70.7667 },
-        { nombre: "Paine", region: "Metropolitana", lat: -33.8167, lng: -70.7500 },
-        { nombre: "Melipilla", region: "Metropolitana", lat: -33.6833, lng: -71.2167 },
-        { nombre: "Alhué", region: "Metropolitana", lat: -34.0333, lng: -71.1667 },
-        { nombre: "Curacaví", region: "Metropolitana", lat: -33.4000, lng: -71.1500 },
-        { nombre: "María Pinto", region: "Metropolitana", lat: -33.5333, lng: -71.1167 },
-        { nombre: "San Pedro", region: "Metropolitana", lat: -33.9000, lng: -71.4667 },
-        { nombre: "Talagante", region: "Metropolitana", lat: -33.6667, lng: -70.9333 },
-        { nombre: "El Monte", region: "Metropolitana", lat: -33.6833, lng: -70.9833 },
-        { nombre: "Isla de Maipo", region: "Metropolitana", lat: -33.7500, lng: -70.9000 },
-        { nombre: "Peñaflor", region: "Metropolitana", lat: -33.6167, lng: -70.9000 },
-        // O'Higgins
-        { nombre: "Rancagua", region: "O'Higgins", lat: -34.1619, lng: -70.7408 },
-        { nombre: "Codegua", region: "O'Higgins", lat: -34.0328, lng: -70.6669 },
-        { nombre: "Coinco", region: "O'Higgins", lat: -34.2728, lng: -70.9528 },
-        { nombre: "Coltauco", region: "O'Higgins", lat: -34.2969, lng: -71.0919 },
-        { nombre: "Doñihue", region: "O'Higgins", lat: -34.1850, lng: -70.8839 },
-        { nombre: "Graneros", region: "O'Higgins", lat: -34.0628, lng: -70.7208 },
-        { nombre: "Las Cabras", region: "O'Higgins", lat: -34.2850, lng: -71.3100 },
-        { nombre: "Machalí", region: "O'Higgins", lat: -34.1850, lng: -70.6619 },
-        { nombre: "Malloa", region: "O'Higgins", lat: -34.4450, lng: -70.9450 },
-        { nombre: "Mostazal", region: "O'Higgins", lat: -33.9769, lng: -70.7089 },
-        { nombre: "Olivar", region: "O'Higgins", lat: -34.2139, lng: -70.8189 },
-        { nombre: "Peumo", region: "O'Higgins", lat: -34.3889, lng: -71.1708 },
-        { nombre: "Pichidegua", region: "O'Higgins", lat: -34.3569, lng: -71.2869 },
-        { nombre: "Quinta de Tilcoco", region: "O'Higgins", lat: -34.3569, lng: -70.9689 },
-        { nombre: "Rengo", region: "O'Higgins", lat: -34.4019, lng: -70.8558 },
-        { nombre: "Requínoa", region: "O'Higgins", lat: -34.2828, lng: -70.8058 },
-        { nombre: "San Vicente", region: "O'Higgins", lat: -34.0828, lng: -71.7500 },
-        { nombre: "Pichilemu", region: "O'Higgins", lat: -34.4019, lng: -72.0089 },
-        { nombre: "La Estrella", region: "O'Higgins", lat: -34.2000, lng: -71.6669 },
-        { nombre: "Litueche", region: "O'Higgins", lat: -34.1189, lng: -71.7278 },
-        { nombre: "Marchihue", region: "O'Higgins", lat: -34.4000, lng: -71.6333 },
-        { nombre: "Navidad", region: "O'Higgins", lat: -33.9500, lng: -71.8328 },
-        { nombre: "Paredones", region: "O'Higgins", lat: -34.6608, lng: -71.8939 },
-        { nombre: "San Fernando", region: "O'Higgins", lat: -34.5839, lng: -70.9869 },
-        { nombre: "Chépica", region: "O'Higgins", lat: -34.7328, lng: -71.2828 },
-        { nombre: "Chimbarongo", region: "O'Higgins", lat: -34.7078, lng: -71.0419 },
-        { nombre: "Lolol", region: "O'Higgins", lat: -34.7308, lng: -71.6358 },
-        { nombre: "Nancagua", region: "O'Higgins", lat: -34.6489, lng: -71.2028 },
-        { nombre: "Palmilla", region: "O'Higgins", lat: -34.6039, lng: -71.3578 },
-        { nombre: "Peralillo", region: "O'Higgins", lat: -34.4828, lng: -71.4828 },
-        { nombre: "Placilla", region: "O'Higgins", lat: -34.6328, lng: -71.1169 },
-        { nombre: "Pumanque", region: "O'Higgins", lat: -34.6050, lng: -71.6439 },
-        { nombre: "Santa Cruz", region: "O'Higgins", lat: -34.6308, lng: -71.3589 },
-        // Maule
-        { nombre: "Talca", region: "Maule", lat: -35.4228, lng: -71.6569 },
-        { nombre: "Constitución", region: "Maule", lat: -35.3389, lng: -72.4139 },
-        { nombre: "Curepto", region: "Maule", lat: -35.0828, lng: -72.0169 },
-        { nombre: "Empedrado", region: "Maule", lat: -35.5908, lng: -72.2728 },
-        { nombre: "Maule", region: "Maule", lat: -35.5158, lng: -71.5719 },
-        { nombre: "Pelarco", region: "Maule", lat: -35.3778, lng: -71.4450 },
-        { nombre: "Pencahue", region: "Maule", lat: -35.4000, lng: -71.8167 },
-        { nombre: "Río Claro", region: "Maule", lat: -35.2169, lng: -71.2500 },
-        { nombre: "San Clemente", region: "Maule", lat: -35.5339, lng: -71.4858 },
-        { nombre: "San Rafael", region: "Maule", lat: -35.3169, lng: -71.5328 },
-        { nombre: "Cauquenes", region: "Maule", lat: -35.9639, lng: -72.3169 },
-        { nombre: "Chanco", region: "Maule", lat: -35.7289, lng: -72.5300 },
-        { nombre: "Pelluhue", region: "Maule", lat: -35.8139, lng: -72.5739 },
-        { nombre: "Curicó", region: "Maule", lat: -34.9758, lng: -71.2239 },
-        { nombre: "Hualañé", region: "Maule", lat: -34.9828, lng: -71.8169 },
-        { nombre: "Licantén", region: "Maule", lat: -34.9828, lng: -72.0000 },
-        { nombre: "Molina", region: "Maule", lat: -35.0900, lng: -71.2789 },
-        { nombre: "Rauco", region: "Maule", lat: -34.9289, lng: -71.3108 },
-        { nombre: "Romeral", region: "Maule", lat: -34.9669, lng: -71.1328 },
-        { nombre: "Sagrada Familia", region: "Maule", lat: -35.0000, lng: -71.3828 },
-        { nombre: "Teno", region: "Maule", lat: -34.8728, lng: -71.1619 },
-        { nombre: "Vichuquén", region: "Maule", lat: -34.8228, lng: -72.0350 },
-        { nombre: "Linares", region: "Maule", lat: -35.8500, lng: -71.5850 },
-        { nombre: "Colbún", region: "Maule", lat: -35.7000, lng: -71.4169 },
-        { nombre: "Longaví", region: "Maule", lat: -35.9658, lng: -71.6819 },
-        { nombre: "Parral", region: "Maule", lat: -36.1469, lng: -71.8219 },
-        { nombre: "Retiro", region: "Maule", lat: -36.0458, lng: -71.7589 },
-        { nombre: "San Javier", region: "Maule", lat: -35.6000, lng: -71.7500 },
-        { nombre: "Villa Alegre", region: "Maule", lat: -35.6650, lng: -71.7419 },
-        { nombre: "Yerbas Buenas", region: "Maule", lat: -35.7500, lng: -71.5828 },
-        // Biobío
-        { nombre: "Concepción", region: "Biobío", lat: -36.8150, lng: -73.0289 },
-        { nombre: "Coronel", region: "Biobío", lat: -36.9819, lng: -73.1569 },
-        { nombre: "Chiguayante", region: "Biobío", lat: -36.9089, lng: -73.0278 },
-        { nombre: "Florida", region: "Biobío", lat: -36.8208, lng: -72.6619 },
-        { nombre: "Hualqui", region: "Biobío", lat: -36.9669, lng: -72.9328 },
-        { nombre: "Lota", region: "Biobío", lat: -37.0889, lng: -73.1550 },
-        { nombre: "Penco", region: "Biobío", lat: -36.7419, lng: -72.9978 },
-        { nombre: "San Pedro de La Paz", region: "Biobío", lat: -36.8639, lng: -73.1078 },
-        { nombre: "Santa Juana", region: "Biobío", lat: -37.1792, lng: -72.9353 },
-        { nombre: "Talcahuano", region: "Biobío", lat: -36.7358, lng: -73.1050 },
-        { nombre: "Tomé", region: "Biobío", lat: -36.6239, lng: -72.9500 },
-        { nombre: "Hualpén", region: "Biobío", lat: -36.7889, lng: -73.1100 },
-        { nombre: "Lebu", region: "Biobío", lat: -37.6058, lng: -73.6428 },
-        { nombre: "Arauco", region: "Biobío", lat: -37.2569, lng: -73.2839 },
-        { nombre: "Cañete", region: "Biobío", lat: -35.2828, lng: -72.2328 },
-        { nombre: "Contulmo", region: "Biobío", lat: -38.0050, lng: -73.2250 },
-        { nombre: "Curanilahue", region: "Biobío", lat: -37.4719, lng: -73.3478 },
-        { nombre: "Los Álamos", region: "Biobío", lat: -37.6208, lng: -73.4558 },
-        { nombre: "Tirúa", region: "Biobío", lat: -38.3389, lng: -73.4839 },
-        { nombre: "Los Ángeles", region: "Biobío", lat: -36.9439, lng: -72.3508 },
-        { nombre: "Antuco", region: "Biobío", lat: -37.3269, lng: -71.6778 },
-        { nombre: "Cabrero", region: "Biobío", lat: -37.0389, lng: -72.3989 },
-        { nombre: "Laja", region: "Biobío", lat: -37.2669, lng: -72.7000 },
-        { nombre: "Mulchén", region: "Biobío", lat: -37.7150, lng: -72.2389 },
-        { nombre: "Nacimiento", region: "Biobío", lat: -37.5008, lng: -72.6758 },
-        { nombre: "Negrete", region: "Biobío", lat: -37.5828, lng: -72.5169 },
-        { nombre: "Quilaco", region: "Biobío", lat: -37.6800, lng: -72.0069 },
-        { nombre: "Quilleco", region: "Biobío", lat: -37.4669, lng: -71.9669 },
-        { nombre: "San Rosendo", region: "Biobío", lat: -37.2578, lng: -72.7158 },
-        { nombre: "Santa Bárbara", region: "Biobío", lat: -37.6628, lng: -72.0178 },
-        { nombre: "Tucapel", region: "Biobío", lat: -37.6328, lng: -73.3328 },
-        { nombre: "Yumbel", region: "Biobío", lat: -37.0958, lng: -72.5558 },
-        { nombre: "Alto Biobío", region: "Biobío", lat: -38.6189, lng: -71.3242 },
-        // Araucanía
-        { nombre: "Temuco", region: "Araucanía", lat: -38.7269, lng: -72.5989 },
-        { nombre: "Carahue", region: "Araucanía", lat: -38.7069, lng: -73.1600 },
-        { nombre: "Cunco", region: "Araucanía", lat: -38.9300, lng: -72.0269 },
-        { nombre: "Curarrehue", region: "Araucanía", lat: -39.3589, lng: -71.5878 },
-        { nombre: "Freire", region: "Araucanía", lat: -38.9539, lng: -72.6219 },
-        { nombre: "Galvarino", region: "Araucanía", lat: -38.4000, lng: -72.7833 },
-        { nombre: "Gorbea", region: "Araucanía", lat: -39.0950, lng: -72.6719 },
-        { nombre: "Lautaro", region: "Araucanía", lat: -38.5289, lng: -72.4269 },
-        { nombre: "Loncoche", region: "Araucanía", lat: -39.3539, lng: -72.6278 },
-        { nombre: "Melipeuco", region: "Araucanía", lat: -38.8428, lng: -71.6869 },
-        { nombre: "Nueva Imperial", region: "Araucanía", lat: -38.7450, lng: -72.9500 },
-        { nombre: "Padre Las Casas", region: "Araucanía", lat: -38.7658, lng: -72.5928 },
-        { nombre: "Perquenco", region: "Araucanía", lat: -38.4169, lng: -72.3828 },
-        { nombre: "Pitrufquén", region: "Araucanía", lat: -38.9828, lng: -72.6428 },
-        { nombre: "Pucón", region: "Araucanía", lat: -39.2819, lng: -71.9539 },
-        { nombre: "Saavedra", region: "Araucanía", lat: -38.7828, lng: -73.4000 },
-        { nombre: "Teodoro Schmidt", region: "Araucanía", lat: -38.9667, lng: -73.0500 },
-        { nombre: "Toltén", region: "Araucanía", lat: -39.2169, lng: -73.2169 },
-        { nombre: "Vilcún", region: "Araucanía", lat: -39.1167, lng: -72.3794 },
-        { nombre: "Villarrica", region: "Araucanía", lat: -39.2800, lng: -72.2178 },
-        { nombre: "Cholchol", region: "Araucanía", lat: -38.6000, lng: -72.8500 },
-        { nombre: "Angol", region: "Araucanía", lat: -37.8028, lng: -72.7019 },
-        { nombre: "Collipulli", region: "Araucanía", lat: -37.9528, lng: -72.4319 },
-        { nombre: "Curacautín", region: "Araucanía", lat: -38.4319, lng: -71.8900 },
-        { nombre: "Ercilla", region: "Araucanía", lat: -38.0500, lng: -72.3833 },
-        { nombre: "Lonquimay", region: "Araucanía", lat: -38.4328, lng: -71.2328 },
-        { nombre: "Los Sauces", region: "Araucanía", lat: -37.9669, lng: -72.8328 },
-        { nombre: "Lumaco", region: "Araucanía", lat: -38.1628, lng: -72.9039 },
-        { nombre: "Purén", region: "Araucanía", lat: -38.0219, lng: -73.0700 },
-        { nombre: "Renaico", region: "Araucanía", lat: -37.6669, lng: -72.5828 },
-        { nombre: "Traiguén", region: "Araucanía", lat: -38.2478, lng: -72.6750 },
-        { nombre: "Victoria", region: "Araucanía", lat: -38.2300, lng: -72.3428 },
-        // Los Lagos
-        { nombre: "Puerto Montt", region: "Los Lagos", lat: -41.4539, lng: -72.9928 },
-        { nombre: "Calbuco", region: "Los Lagos", lat: -41.7578, lng: -73.1508 },
-        { nombre: "Cochamó", region: "Los Lagos", lat: -41.5000, lng: -72.3169 },
-        { nombre: "Fresia", region: "Los Lagos", lat: -41.1528, lng: -73.4200 },
-        { nombre: "Frutillar", region: "Los Lagos", lat: -41.1167, lng: -73.1000 },
-        { nombre: "Los Muermos", region: "Los Lagos", lat: -41.3908, lng: -73.4650 },
-        { nombre: "Llanquihue", region: "Los Lagos", lat: -41.2658, lng: -73.0119 },
-        { nombre: "Maullín", region: "Los Lagos", lat: -41.6178, lng: -73.5978 },
-        { nombre: "Puerto Varas", region: "Los Lagos", lat: -41.3228, lng: -72.9700 },
-        { nombre: "Castro", region: "Los Lagos", lat: -42.4778, lng: -73.7789 },
-        { nombre: "Ancud", region: "Los Lagos", lat: -41.8769, lng: -73.8139 },
-        { nombre: "Chonchi", region: "Los Lagos", lat: -42.6258, lng: -73.7808 },
-        { nombre: "Curaco de Vélez", region: "Los Lagos", lat: -42.4339, lng: -73.5819 },
-        { nombre: "Dalcahue", region: "Los Lagos", lat: -42.3739, lng: -73.6508 },
-        { nombre: "Puqueldón", region: "Los Lagos", lat: -42.6039, lng: -73.6839 },
-        { nombre: "Queilén", region: "Los Lagos", lat: -42.8739, lng: -73.4700 },
-        { nombre: "Quellón", region: "Los Lagos", lat: -43.1208, lng: -73.6078 },
-        { nombre: "Quemchi", region: "Los Lagos", lat: -42.1419, lng: -73.4778 },
-        { nombre: "Quinchao", region: "Los Lagos", lat: -42.4789, lng: -73.4969 },
-        { nombre: "Osorno", region: "Los Lagos", lat: -40.5739, lng: -73.1258 },
-        { nombre: "Puerto Octay", region: "Los Lagos", lat: -40.9669, lng: -72.9000 },
-        { nombre: "Purranque", region: "Los Lagos", lat: -40.9089, lng: -73.1750 },
-        { nombre: "Puyehue", region: "Los Lagos", lat: -40.7169, lng: -72.3208 },
-        { nombre: "Río Negro", region: "Los Lagos", lat: -41.9669, lng: -72.4500 },
-        { nombre: "San Juan de la Costa", region: "Los Lagos", lat: -40.5008, lng: -73.3919 },
-        { nombre: "San Pablo", region: "Los Lagos", lat: -40.4000, lng: -73.0167 },
-        { nombre: "Chaitén", region: "Los Lagos", lat: -42.8989, lng: -72.6669 },
-        { nombre: "Futaleufú", region: "Los Lagos", lat: -43.1678, lng: -71.8478 },
-        { nombre: "Hualaihué", region: "Los Lagos", lat: -41.9919, lng: -72.6669 },
-        // Aysén
-        { nombre: "Coihaique", region: "Aysén", lat: -45.5714, lng: -72.0667 },
-        { nombre: "Lago Verde", region: "Aysén", lat: -44.2333, lng: -71.8500 },
-        { nombre: "Aysén", region: "Aysén", lat: -45.4000, lng: -72.7000 },
-        { nombre: "Cisnes", region: "Aysén", lat: -44.7500, lng: -72.7000 },
-        { nombre: "Guaitecas", region: "Aysén", lat: -43.8833, lng: -73.7500 },
-        { nombre: "Río Ibáñez", region: "Aysén", lat: -46.3000, lng: -71.9333 },
-        { nombre: "Chile Chico", region: "Aysén", lat: -46.5333, lng: -71.7333 },
-        { nombre: "Cochrane", region: "Aysén", lat: -47.2500, lng: -72.5667 },
-        { nombre: "Tortel", region: "Aysén", lat: -47.8000, lng: -73.5333 },
-        { nombre: "O'Higgins", region: "Aysén", lat: -48.4667, lng: -72.5667 },
-        // Magallanes
-        { nombre: "Punta Arenas", region: "Magallanes", lat: -53.1638, lng: -70.9171 },
-        { nombre: "Río Verde", region: "Magallanes", lat: -52.6500, lng: -71.4833 },
-        { nombre: "Laguna Blanca", region: "Magallanes", lat: -52.4167, lng: -71.1667 },
-        { nombre: "San Gregorio", region: "Magallanes", lat: -52.3167, lng: -70.2167 },
-        { nombre: "Porvenir", region: "Magallanes", lat: -53.3000, lng: -70.3667 },
-        { nombre: "Primavera", region: "Magallanes", lat: -52.7167, lng: -69.2500 },
-        { nombre: "Timaukel", region: "Magallanes", lat: -53.7500, lng: -70.2500 },
-        { nombre: "Natales", region: "Magallanes", lat: -51.7333, lng: -72.5000 },
-        { nombre: "Torres del Paine", region: "Magallanes", lat: -51.2667, lng: -72.3500 },
-        { nombre: "Cabo de Hornos", region: "Magallanes", lat: -55.0833, lng: -67.0000 },
-        { nombre: "Antártica", region: "Magallanes", lat: -62.0000, lng: -58.0000 }
-    ];
+// ──────────────────────────────────────────────
+// Utilidades
+// ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function fmt(n) { return Math.floor(n).toLocaleString('es-CL'); }
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function setLocStatus(msg, type='') {
+    const el = $('locStatus');
+    el.textContent = msg;
+    el.className = 'location-status' + (type ? ' '+type : '');
+}
+function now() {
+    return new Date().toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+}
 
-    // Elementos del DOM
-    const locationInput = document.getElementById('locationInput');
-    const searchResults = document.getElementById('searchResults');
-    const latInput = document.getElementById('lat');
-    const lngInput = document.getElementById('lng');
-    const locationStatus = document.getElementById('locationStatus');
-    const searchBtn = document.getElementById('searchLocationBtn');
-    const getLocationBtn = document.getElementById('getLocationBtn');
-    const form = document.getElementById('marchaForm');
-    const resultArea = document.getElementById('resultArea');
+// ──────────────────────────────────────────────
+// Comunas
+// ──────────────────────────────────────────────
+let comunasList = [];
+fetch('/data/comunas-completo.json')
+    .then(r => r.json())
+    .then(d => { comunasList = d.comunas || []; })
+    .catch(() => {});
 
-    // Selector de combustible
-    const fuelMarks = document.querySelectorAll('.fuel-mark');
-    const fuelLevelInput = document.getElementById('fuelLevel');
-    const gaugeFill = document.getElementById('gaugeFill');
-    const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
+function searchComunas(q) {
+    if (!q || q.length < 2) return [];
+    const qn = norm(q);
+    return comunasList
+        .filter(c => norm(c.nombre).includes(qn) || norm(c.region).includes(qn))
+        .sort((a,b) => {
+            const as = norm(a.nombre).startsWith(qn);
+            const bs = norm(b.nombre).startsWith(qn);
+            if (as && !bs) return -1;
+            if (!as && bs) return 1;
+            return norm(a.nombre).localeCompare(norm(b.nombre));
+        })
+        .slice(0, 8);
+}
 
-    function updateFuelLevel(levelPct, levelName) {
-        fuelLevelInput.value = levelPct;
-        gaugeFill.style.width = `${levelPct}%`;
-        let displayText = '';
-        if (levelPct <= 5) displayText = `Nivel: Reserva (${levelPct}%)`;
-        else if (levelPct <= 12.5) displayText = `Nivel: Mínimo (${levelPct}%)`;
-        else if (levelPct <= 25) displayText = `Nivel: 1/4 (${levelPct}%)`;
-        else if (levelPct <= 50) displayText = `Nivel: 1/2 (${levelPct}%)`;
-        else if (levelPct <= 75) displayText = `Nivel: 3/4 (${levelPct}%)`;
-        else displayText = `Nivel: Lleno (${levelPct}%)`;
-        fuelLevelDisplay.textContent = displayText;
-        fuelMarks.forEach(mark => {
-            mark.classList.remove('selected');
-            const markPct = parseInt(mark.dataset.pct);
-            if (Math.abs(markPct - levelPct) < 0.1 || (levelPct <= 5 && markPct === 5)) {
-                mark.classList.add('selected');
-            }
-        });
-    }
-
-    fuelMarks.forEach(mark => {
-        mark.addEventListener('click', () => {
-            const levelPct = parseFloat(mark.dataset.pct);
-            updateFuelLevel(levelPct, mark.textContent.trim());
-        });
+function showDrop(results) {
+    const drop = $('communesDrop');
+    if (!results.length) { drop.classList.add('hidden'); return; }
+    drop.innerHTML = results.map(c =>
+        `<div class="commune-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
+            <div class="commune-name">${c.nombre}</div>
+            <div class="commune-region">${c.region}</div>
+        </div>`
+    ).join('');
+    drop.classList.remove('hidden');
+    drop.querySelectorAll('.commune-item').forEach(el => {
+        el.addEventListener('click', () => selectComune({
+            nombre: el.dataset.nombre, region: el.dataset.region,
+            lat: el.dataset.lat, lng: el.dataset.lng
+        }));
     });
-    updateFuelLevel(25, '1/4');
+}
 
-    function normalizeText(str) {
-        return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    }
+function selectComune(c) {
+    $('lat').value = c.lat;
+    $('lng').value = c.lng;
+    $('comuna').value = c.nombre;
+    $('locationInput').value = `${c.nombre}, ${c.region}`;
+    setLocStatus(`✓ ${c.nombre}, ${c.region}`, '');
+    $('communesDrop').classList.add('hidden');
+    $('submitBtn').disabled = false;
+}
 
-    function searchComunas(query) {
-        if (!query || query.length < 2) {
-            searchResults.classList.add('hidden');
-            return [];
-        }
-        const q = normalizeText(query);
-        const matches = comunas.filter(c => normalizeText(c.nombre).includes(q) || normalizeText(c.region).includes(q));
-        matches.sort((a, b) => {
-            const aStarts = normalizeText(a.nombre).startsWith(q);
-            const bStarts = normalizeText(b.nombre).startsWith(q);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return normalizeText(a.nombre).localeCompare(normalizeText(b.nombre));
-        });
-        return matches.slice(0, 10);
-    }
+$('locationInput').addEventListener('input', e => showDrop(searchComunas(e.target.value)));
+$('searchBtn').addEventListener('click', () => {
+    const r = searchComunas($('locationInput').value);
+    showDrop(r);
+    if (!r.length && $('locationInput').value.length >= 2)
+        setLocStatus('No encontrada. Revisa el nombre.', 'warn');
+});
+document.addEventListener('click', e => {
+    if (!$('locationInput').contains(e.target) && !$('communesDrop').contains(e.target))
+        $('communesDrop').classList.add('hidden');
+});
 
-    function showSearchResults(results) {
-        if (results.length === 0) {
-            searchResults.classList.add('hidden');
-            return;
-        }
-        searchResults.innerHTML = results.map(c => `
-            <div class="comuna-item" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${c.nombre}" data-region="${c.region}">
-                <div class="comuna-nombre">${c.nombre}</div>
-                <div class="comuna-region">${c.region}</div>
-            </div>
-        `).join('');
-        searchResults.classList.remove('hidden');
-        document.querySelectorAll('.comuna-item').forEach(el => {
-            el.addEventListener('click', () => {
-                latInput.value = parseFloat(el.dataset.lat);
-                lngInput.value = parseFloat(el.dataset.lng);
-                locationInput.value = el.dataset.nombre;
-                locationStatus.innerHTML = `📍 ${el.dataset.nombre}, ${el.dataset.region}`;
-                searchResults.classList.add('hidden');
-            });
-        });
-    }
-
-    locationInput.addEventListener('input', (e) => {
-        const results = searchComunas(e.target.value);
-        showSearchResults(results);
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!locationInput.contains(e.target) && !searchResults.contains(e.target)) {
-            searchResults.classList.add('hidden');
-        }
-    });
-
-    searchBtn.addEventListener('click', () => {
-        const results = searchComunas(locationInput.value);
-        showSearchResults(results);
-        if (results.length === 0 && locationInput.value.length >= 2) {
-            locationStatus.innerHTML = '⚠️ No encontramos esa comuna. Revisa el nombre.';
-        }
-    });
-
-    getLocationBtn.addEventListener('click', () => {
-        locationStatus.innerHTML = '📍 Obteniendo tu ubicación...';
-        if (!navigator.geolocation) {
-            locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización.';
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                latInput.value = lat;
-                lngInput.value = lng;
-                let closestComuna = null;
-                let minDist = Infinity;
-                for (const c of comunas) {
-                    const dist = Math.hypot(lat - c.lat, lng - c.lng);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closestComuna = c;
-                    }
-                }
-                if (closestComuna && minDist < 0.5) {
-                    locationInput.value = closestComuna.nombre;
-                    locationStatus.innerHTML = `📍 Ubicación detectada: ${closestComuna.nombre}, ${closestComuna.region}`;
-                } else {
-                    locationInput.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                    locationStatus.innerHTML = `📍 Ubicación detectada (coordenadas)`;
-                }
-                searchResults.classList.add('hidden');
-            },
-            (error) => {
-                let msg = '❌ No se pudo obtener tu ubicación. ';
-                if (error.code === 1) msg += 'Permite el acceso.';
-                else msg += 'Intenta de nuevo.';
-                locationStatus.innerHTML = msg;
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    });
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const lat = parseFloat(latInput.value);
-        const lng = parseFloat(lngInput.value);
-        
-        if (isNaN(lat) || isNaN(lng)) {
-            resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una ubicación válida.</div>`;
-            return;
-        }
-
-        resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><span style="font-size:0.8rem;">buscando mejor decisión para ti</span></div>`;
-
-        const contextType = document.getElementById('contextType').value;
-        const kmPerLiter = parseFloat(document.getElementById('kmPerLiter').value);
-        const consumption = 100 / kmPerLiter;
-        const tankCapacity = parseFloat(document.getElementById('tankCapacity').value);
-        const fuelLevel = parseFloat(document.getElementById('fuelLevel').value);
-        const budget = parseFloat(document.getElementById('budget').value);
-        const fuelType = document.getElementById('fuelType').value;
-
-        if (isNaN(consumption) || consumption <= 0) {
-            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 10 km/L).</div>`;
-            return;
-        }
-
-        const payload = {
-            userProfile: {
-                context_type: contextType,
-                fuel_consumption: consumption,
-                tank_capacity: tankCapacity,
-                current_level_pct: fuelLevel,
-                budget_today: budget
-            },
-            context: {
-                user_lat: lat,
-                user_lon: lng,
-                fuel_type: fuelType,
-                reference_price: null,
-                is_urban_peak: false,
-                toll_estimate: 0
-            }
-        };
-
+// ──────────────────────────────────────────────
+// GPS
+// ──────────────────────────────────────────────
+$('gpsBtn').addEventListener('click', () => {
+    setLocStatus('Obteniendo ubicación...', '');
+    if (!navigator.geolocation) { setLocStatus('GPS no disponible. Busca manualmente.', 'err'); return; }
+    navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        $('lat').value = lat; $('lng').value = lng;
+        setLocStatus('Detectando comuna...', '');
         try {
-            const response = await fetch('/api/decide', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const res = await fetch('/api/detect-commune', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({lat, lng})
             });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error ${response.status}`);
-            }
-
-            const data = await response.json();
-            const result = data.result || data;
-            renderDecision(result);
-        } catch (err) {
-            console.error('Error:', err);
-            resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Error</strong><br>No se pudo conectar con el motor.</div>`;
+            const d = await res.json();
+            if (d.ok && d.commune) {
+                selectComune({ nombre: d.commune.nombre, region: d.commune.region, lat, lng });
+                setLocStatus(`✓ ${d.commune.nombre}, ${d.commune.region} (${d.distance_km?.toFixed(1)}km)`, '');
+            } else throw new Error(d.message||'No detectado');
+        } catch(e) {
+            setLocStatus(`GPS: ${e.message}. Busca manualmente.`, 'warn');
+            $('submitBtn').disabled = false;
         }
+    }, err => {
+        const msgs = {1:'Acceso denegado.',2:'No disponible.',3:'Tiempo agotado.'};
+        setLocStatus(msgs[err.code]||'Error GPS. Busca manualmente.', 'err');
+    }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
+});
+
+// ──────────────────────────────────────────────
+// Type pills
+// ──────────────────────────────────────────────
+document.querySelectorAll('.type-pill').forEach(p => {
+    p.addEventListener('click', () => {
+        document.querySelectorAll('.type-pill').forEach(x => x.classList.remove('selected'));
+        p.classList.add('selected');
+        $('contextType').value = p.dataset.val;
     });
+});
 
-    function renderDecision(data) {
-        const mode = data.mode;
-        let modeText = '', modeClass = '';
-        if (mode === 0) { modeText = '✅ RECOMENDACIÓN ACTIVA'; modeClass = 'mode-0'; }
-        else if (mode === 1) { modeText = '⚠️ DATOS INCIERTOS (LF-1)'; modeClass = 'mode-1'; }
-        else if (mode === 2) { modeText = '🔄 MEJOR NO CARGAR AHORA'; modeClass = 'mode-2'; }
-        else { modeText = '🔇 SIN DATOS SUFICIENTES'; modeClass = 'mode-3'; }
+// ──────────────────────────────────────────────
+// Gauge
+// ──────────────────────────────────────────────
+function setGauge(pct) {
+    $('fuelLevel').value = pct;
+    $('gaugeFill').style.width = pct + '%';
+    $('gaugeLabel').textContent = pct + '%';
+    document.querySelectorAll('.gauge-mark').forEach(m => {
+        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct) - pct) < 0.1);
+    });
+}
+document.querySelectorAll('.gauge-mark').forEach(m =>
+    m.addEventListener('click', () => setGauge(parseFloat(m.dataset.pct)))
+);
+setGauge(25);
 
-        let html = `<div class="result-card">`;
-        html += `<div class="mode-badge ${modeClass}">${modeText}</div>`;
-
-        if (mode === 0 && data.recommendation) {
-            const rec = data.recommendation;
-            const station = rec.station || {};
-            const netSaving = rec.net_saving || 0;
-            const price = rec.display_price || '?';
-            const liters = rec.display_liters || 0;
-            const distance = rec.display_distance_km || 0;
-            const totalCost = (price * liters).toFixed(0);
-            html += `<div class="station-name">⛽ ${station.nombre || 'Estación'}</div>`;
-            html += `<div class="saving">💰 Ahorro neto: $${netSaving.toLocaleString()}</div>`;
-            html += `<div class="detail-row"><span>Precio por litro</span><strong>$${price}</strong></div>`;
-            html += `<div class="detail-row"><span>Carga</span><strong>${liters.toFixed(1)} L</strong></div>`;
-            html += `<div class="detail-row"><span>Costo total</span><strong>$${totalCost}</strong></div>`;
-            html += `<div class="detail-row"><span>Desvío</span><strong>${distance.toFixed(1)} km</strong></div>`;
-            if (data.alternative) {
-                const alt = data.alternative;
-                const altStation = alt.station || {};
-                html += `<hr><div style="font-size:0.85rem;">🔄 Alternativa: ${altStation.nombre} · ahorro $${(alt.net_saving || 0).toLocaleString()}</div>`;
-            }
-        }
-        if (data.message) html += `<div class="message">💬 ${data.message}</div>`;
-        html += `</div>`;
-        resultArea.innerHTML = html;
+// ──────────────────────────────────────────────
+// Submit
+// ──────────────────────────────────────────────
+$('marchaForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const lat = parseFloat($('lat').value), lng = parseFloat($('lng').value);
+    const comuna = $('comuna').value;
+    if (isNaN(lat) || isNaN(lng) || !comuna) {
+        setLocStatus('Selecciona una comuna válida.', 'err'); return;
     }
+
+    $('resultWrap').innerHTML = `
+        <div class="result-card">
+            <div class="loading-state">
+                <div class="loading-ring"></div>
+                <div class="loading-text">Evaluando estaciones · calculando decisión</div>
+            </div>
+        </div>`;
+
+    $('submitBtn').disabled = true;
+
+    const kmL  = parseFloat($('kmPerLiter').value);
+    const payload = {
+        userProfile: {
+            context_type:      $('contextType').value,
+            fuel_consumption:  100 / kmL,
+            tank_capacity:     parseFloat($('tankCapacity').value),
+            current_level_pct: parseFloat($('fuelLevel').value),
+            budget_today:      parseFloat($('budget').value),
+        },
+        context: {
+            user_lat:  lat, user_lon: lng,
+            fuel_type: $('fuelType').value,
+            comuna:    comuna.replace(/Llay-Llay/i,'Llaillay').replace(/Llay Llay/i,'Llaillay'),
+            direction: $('direction').value,
+            is_urban_peak: false, toll_estimate: 0,
+        }
+    };
+
+    try {
+        const res = await fetch('/api/decide', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        render(data.result || data);
+    } catch(err) {
+        $('resultWrap').innerHTML = `
+            <div class="result-card">
+                <div class="result-body">
+                    <div class="status-msg red">Error de conexión: ${err.message}</div>
+                </div>
+            </div>`;
+    } finally {
+        $('submitBtn').disabled = false;
+    }
+});
+
+// ──────────────────────────────────────────────
+// Render (con soporte para múltiples alternativas)
+// ──────────────────────────────────────────────
+function render(data) {
+    const mode = data.mode;
+    const modeMap = {
+        0: ['Recomendación activa', 'm0'],
+        1: ['Datos inciertos',      'm1'],
+        2: ['Sin ahorro disponible','m2'],
+        3: ['Sin datos',            'm3'],
+    };
+    const [modeLabel, modeClass] = modeMap[mode] || modeMap[3];
+
+    let html = `<div class="result-card">
+        <div class="result-header">
+            <span class="mode-tag ${modeClass}">${modeLabel}</span>
+            <span class="result-ts">${now()}</span>
+        </div>
+        <div class="result-body">`;
+
+    if (mode === 0 && data.recommendation) {
+        const rec     = data.recommendation;
+        const st      = rec.station || {};
+        const price   = rec.display_price || 0;
+        const liters  = rec.display_liters || 0;
+        const dist    = rec.display_distance_km || 0;
+        const total   = rec.display_total_cost || Math.floor(price * liters);
+        const netSave = Math.floor(rec.net_saving || rec._net_saving || 0);
+        const refPr   = rec.display_reference_price || price;
+        const savPL   = refPr - price;
+
+        html += `<div class="station-head">
+            <div>
+                <div class="station-brand">${st.marca || rec.station_brand || '—'}</div>
+                <div class="station-name">${st.nombre || rec.station_name || 'Estación'}</div>
+                ${st.direccion ? `<div class="station-addr">${st.direccion}${st.comuna ? ', '+st.comuna : ''}</div>` : ''}
+            </div>
+            <div class="price-display">
+                <div class="price-label">Precio</div>
+                <div class="price-value">$${fmt(price)}</div>
+                <div class="price-unit">por litro</div>
+            </div>
+        </div>`;
+
+        if (savPL > 0) {
+            html += `<div class="saving-banner">
+                <div class="saving-amount">$${fmt(savPL)}/L</div>
+                <div class="saving-desc">bajo el promedio de la zona ($${fmt(refPr)}/L)</div>
+            </div>`;
+        } else if (savPL < 0) {
+            html += `<div class="warn-banner">$${fmt(Math.abs(savPL))}/L sobre el promedio · no es la más barata</div>`;
+        } else {
+            html += `<div class="neutral-banner">Precio igual al promedio · sin diferencial entre estaciones cercanas hoy</div>`;
+        }
+
+        html += `<div class="data-table">
+            <div class="data-row"><span class="data-key">Carga recomendada</span><span class="data-val">${liters.toFixed(1)} L</span></div>
+            <div class="data-row"><span class="data-key">Costo total</span><span class="data-val">$${fmt(total)}</span></div>
+            <div class="data-row"><span class="data-key">Ahorro estimado</span><span class="data-val ${netSave>0?'hi':''}">${netSave>0?'$'+fmt(netSave):'$0 · sin diferencial disponible'}</span></div>
+            <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${dist>0?dist.toFixed(1)+' km':'en tu ruta'}</span></div>
+        </div>`;
+
+        if (st.precios_detalle && st.precios_detalle.length > 0) {
+            const deduped = {};
+            for (const p of st.precios_detalle) {
+                const k = p.tipo.toLowerCase().replace(/[^a-z0-9]/g,'');
+                if (!deduped[k] || p.precio < deduped[k].precio) deduped[k] = p;
+            }
+            const unique = Object.values(deduped).sort((a,b)=>a.precio-b.precio);
+            html += `<div class="prices-grid">
+                <div class="prices-grid-label">Todos los precios en esta estación</div>
+                <div class="prices-grid-items">`;
+            for (const p of unique) {
+                html += `<div class="price-chip"><span class="chip-type">${p.tipo}</span>$${fmt(p.precio)}</div>`;
+            }
+            html += `</div></div>`;
+        }
+
+        // Alternativas (2da, 3ra opción, etc.)
+        const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
+        if (altList.length > 0) {
+            const labels = ['Segunda opción', 'Tercera opción'];
+            html += `<div class="alt-section">
+                <div class="alt-section-label">Otras opciones evaluadas</div>`;
+            altList.slice(0,2).forEach((alt,i) => {
+                const altSt    = alt.station || {};
+                const altPrice = alt.display_price || 0;
+                const altDist  = alt.display_distance_km || 0;
+                const altSave  = Math.floor(alt.net_saving || alt._net_saving || 0);
+                const altSavPL = refPr - altPrice;
+                html += `<div class="alt-card">
+                    <div class="alt-header">
+                        <div>
+                            <div class="alt-name">${altSt.nombre || alt.station_name || 'Estación'}</div>
+                            ${altSt.direccion ? `<div class="alt-addr">${altSt.direccion}</div>` : ''}
+                        </div>
+                        <div class="alt-price">$${fmt(altPrice)}<small>/L</small></div>
+                    </div>
+                    <div class="alt-meta">
+                        ${altDist>0?`<span class="alt-chip">◎ ${altDist.toFixed(1)} km</span>`:''}
+                        ${altSavPL>0?`<span class="alt-chip pos">↓ $${fmt(altSavPL)}/L</span>`:altSavPL<0?`<span class="alt-chip neg">↑ $${fmt(Math.abs(altSavPL))}/L</span>`:`<span class="alt-chip">= precio igual</span>`}
+                        ${altSave>0?`<span class="alt-chip pos">Ahorro $${fmt(altSave)}</span>`:''}
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+    } else if (mode === 2) {
+        if (data.recommendation) {
+            const rec = data.recommendation;
+            const st  = rec.station || {};
+            html += `<div class="data-table">
+                <div class="data-row"><span class="data-key">Estación más cercana</span><span class="data-val">${st.nombre||rec.station_name||'—'}</span></div>
+                <div class="data-row"><span class="data-key">Precio</span><span class="data-val">$${fmt(rec.display_price||0)}/L</span></div>
+                <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${(rec.display_distance_km||0).toFixed(1)} km</span></div>
+            </div>`;
+        }
+        const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
+        if (altList.length > 0) {
+            html += `<div class="alt-section"><div class="alt-section-label">Estaciones disponibles en la zona</div>`;
+            altList.slice(0,2).forEach(alt => {
+                const altSt = alt.station || {};
+                html += `<div class="alt-card">
+                    <div class="alt-header">
+                        <div><div class="alt-name">${altSt.nombre||alt.station_name||'Estación'}</div>
+                        ${altSt.direccion?`<div class="alt-addr">${altSt.direccion}</div>`:''}</div>
+                        <div class="alt-price">$${fmt(alt.display_price||0)}<small>/L</small></div>
+                    </div>
+                    ${(alt.display_distance_km||0)>0?`<div class="alt-meta"><span class="alt-chip">◎ ${(alt.display_distance_km).toFixed(1)} km</span></div>`:''}
+                </div>`;
+            });
+            html += `</div>`;
+        }
+    }
+
+    if (data.message) html += `<div class="status-msg">${data.message}</div>`;
+    if (mode===1)     html += `<div class="status-msg">Los precios no están completamente verificados. El sistema declara incertidumbre antes que entregarte datos incorrectos.</div>`;
+    if (mode===2)     html += `<div class="status-msg red">El ahorro potencial no justifica un desvío. Sigue tu ruta.</div>`;
+    if (mode===3)     html += `<div class="status-msg">Sin estaciones registradas en esta zona. Intenta con una comuna cercana.</div>`;
+
+    html += `</div></div>`;
+    $('resultWrap').innerHTML = html;
+}
 </script>
 </body>
 </html>

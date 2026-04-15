@@ -1,43 +1,123 @@
+/**
+ * Marcha — Pipeline v4.1
+ * Correciones aplicadas:
+ *   - ORS: API key en URL (corrige error 403)
+ *   - Enriquecimiento: usa station_id (no station.id) para compatibilidad con engine v0.4
+ *   - Alternativa: siempre se incluye si existe segunda estación, aunque ahorro sea bajo
+ */
+
 const engine = require('./engine');
+const fs = require('fs');
+const path = require('path');
 
-// 🔧 CONFIGURACIÓN
-const ID_START = 1400;
-const ID_END = 1900;
-const MAX_CONCURRENT = 8;
+const COMUNA_STATIONS_FILE = path.join(__dirname, '..', 'data', 'comunas-stations.json');
 const FETCH_TIMEOUT_MS = 8000;
-const CACHE_TTL_MS = 300000; // 5 minutos
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 
-// 🔒 CACHÉ GLOBAL
-let stationCache = {
-  data: [],
-  timestamp: 0
+const MIN_REALISTIC_PRICES = {
+  diesel:  1200,
+  gas93:   1200,
+  gas95:   1250,
+  gas97:   1300
 };
 
+// ⚠️ Reemplaza con tu API key activa de openrouteservice.org
+const ORS_API_KEY = '5b3ce3597851110001cf6248c9d8c8c5c8a84f2d8c8c8c8c8c8c8c8c';
+
+const stationsCache  = new Map();
+const routeCache     = new Map();
+let   comunasMapCache = null;
+
 // =============================================
-// CACHÉ UTILITIES
+// CARGA DEL MAPEO COMUNA → IDs
 // =============================================
 
-function isCacheValid() {
-  const isValid = (Date.now() - stationCache.timestamp) < CACHE_TTL_MS;
-  if (isValid) {
-    console.log(`[pipeline] 📦 Caché válido (${Math.round((CACHE_TTL_MS - (Date.now() - stationCache.timestamp)) / 1000)}s restantes)`);
+function loadComunaStationsMap() {
+  if (comunasMapCache) return comunasMapCache;
+  try {
+    if (!fs.existsSync(COMUNA_STATIONS_FILE)) {
+      console.error('[pipeline] ❌ comunas-stations.json no encontrado');
+      return {};
+    }
+    const raw = JSON.parse(fs.readFileSync(COMUNA_STATIONS_FILE, 'utf8'));
+    comunasMapCache = raw.comunas || {};
+    console.log(`[pipeline] 📍 Mapeo cargado: ${Object.keys(comunasMapCache).length} comunas`);
+    return comunasMapCache;
+  } catch (err) {
+    console.error('[pipeline] Error cargando mapeo:', err.message);
+    return {};
   }
-  return isValid;
-}
-
-function setCacheData(data) {
-  stationCache = {
-    data,
-    timestamp: Date.now()
-  };
-  console.log(`[pipeline] 💾 Caché actualizado con ${data.length} estaciones`);
 }
 
 // =============================================
-// FETCH ESTACIÓN (TIEMPO REAL)
+// DISTANCIA REAL POR CARRETERA (OpenRouteService)
+// API key en la URL — corrige error 403
 // =============================================
 
-async function fetchStation(id) {
+async function getRealDistance(lat1, lon1, lat2, lon2) {
+  const cacheKey = `${lat1.toFixed(4)},${lon1.toFixed(4)}|${lat2.toFixed(4)},${lon2.toFixed(4)}`;
+
+  const cached = routeCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+    return cached.distance;
+  }
+
+  // API key en la URL (más compatible con ORS v2)
+  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error(`[ORS] HTTP ${response.status}: ${response.statusText}`);
+      return null;
+    }
+
+    const routeData = await response.json();
+    if (routeData.features?.[0]?.properties?.summary) {
+      const distanceKm = routeData.features[0].properties.summary.distance / 1000;
+      routeCache.set(cacheKey, { distance: distanceKm, timestamp: Date.now() });
+      return distanceKm;
+    }
+    return null;
+  } catch (err) {
+    console.error('[ORS] Error:', err.message);
+    return null;
+  }
+}
+
+// =============================================
+// DISTANCIA EN LÍNEA RECTA (Haversine) — FALLBACK
+// =============================================
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) *
+            Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// =============================================
+// CONSULTA A LA API POR ID
+// =============================================
+
+async function fetchStationById(id) {
+  const cached = stationsCache.get(id);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -53,163 +133,217 @@ async function fetchStation(id) {
         }
       }
     );
-
     clearTimeout(timeout);
 
     if (!res.ok) return null;
 
     const json = await res.json();
     const d = json?.data;
-
     if (!d?.latitud || !d?.longitud) return null;
 
-    const precios = {};
+    if (d.estado_bandera !== 1) {
+      console.log(`[pipeline] 🚫 Excluyendo estación ${d.id}: inactiva`);
+      return null;
+    }
+
+    const precios = { diesel: null, gas93: null, gas95: null, gas97: null, kerosene: null };
+    const preciosDetalle = [];
 
     for (const c of d.combustibles || []) {
       if (!c.precio) continue;
-
-      if (c.nombre_corto === 'DI') precios.diesel = parseFloat(c.precio);
-      if (c.nombre_corto === '93') precios.gas93 = parseFloat(c.precio);
-      if (c.nombre_corto === '95') precios.gas95 = parseFloat(c.precio);
-      if (c.nombre_corto === '97') precios.gas97 = parseFloat(c.precio);
+      const precioNum = Math.floor(parseFloat(c.precio));
+      const tipo = c.nombre_corto;
+      if (tipo === 'DI') precios.diesel  = precioNum;
+      if (tipo === '93') precios.gas93   = precioNum;
+      if (tipo === '95') precios.gas95   = precioNum;
+      if (tipo === '97') precios.gas97   = precioNum;
+      if (tipo === 'KE') precios.kerosene = precioNum;
+      preciosDetalle.push({
+        tipo:       c.nombre_largo || c.nombre_corto,
+        precio:     precioNum,
+        unidad:     c.unidad_cobro || '$/L',
+        actualizado: c.actualizado || null
+      });
     }
 
-    if (Object.keys(precios).length === 0) return null;
-
-    return {
-      id: d.id,
-      nombre: d.razon_social?.razon_social || 'Estación',
-      marca: d.marca || 'NA',
-      region: d.region || '',
-      lat: parseFloat(d.latitud),
-      lon: parseFloat(d.longitud),
+    const station = {
+      id:              d.id,
+      nombre:          getMarcaNombre(d.marca),
+      nombre_legal:    d.razon_social?.razon_social || d.razon_social || 'Estación',
+      marca:           d.marca || 'NA',
+      region:          d.region || '',
+      comuna:          d.comuna || '',
+      direccion:       d.direccion || '',
+      lat:             parseFloat(d.latitud),
+      lon:             parseFloat(d.longitud),
       precios,
-      fetched_at: Date.now()
+      precios_detalle: preciosDetalle,
+      servicios:       d.servicios || [],
+      metodos_pago:    d.metodos_pago || [],
+      fetched_at:      Date.now()
     };
 
+    stationsCache.set(id, { data: station, timestamp: Date.now() });
+    return station;
+
   } catch (err) {
+    console.error(`[pipeline] Error fetching station ${id}:`, err.message);
     return null;
   }
 }
 
-// =============================================
-// DISTANCIA
-// =============================================
-
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  return engine.distanceMeters(lat1, lon1, lat2, lon2);
+function getMarcaNombre(marcaId) {
+  const marcas = {
+    1: 'Copec', 2: 'Shell', 3: 'Petrobras', 4: 'ENEX', 5: 'Copec',
+    10: 'Shell', 15: 'Petrobras', 23: 'Abastible', 24: 'Lipigas',
+    151: 'Esmax', 177: 'Autogasco'
+  };
+  return marcas[marcaId] || 'Estación';
 }
 
 // =============================================
-// FETCH CONCURRENTE CON PROGRESO
+// CONSULTAR MÚLTIPLES ESTACIONES
 // =============================================
 
-async function fetchStationsBatch() {
-  console.log('[pipeline] 🔄 Iniciando fetch de estaciones...');
-  
-  const ids = [];
-  for (let i = ID_START; i <= ID_END; i++) ids.push(i);
+async function fetchStationsByIds(ids) {
+  console.log(`[pipeline] 🔄 Consultando ${ids.length} estaciones...`);
+  const batchSize = 10;
+  const results   = [];
 
-  const results = [];
-  const totalBatches = Math.ceil(ids.length / MAX_CONCURRENT);
-
-  for (let i = 0; i < ids.length; i += MAX_CONCURRENT) {
-    const batchNum = Math.floor(i / MAX_CONCURRENT) + 1;
-    const chunk = ids.slice(i, i + MAX_CONCURRENT);
-
-    const batch = await Promise.all(
-      chunk.map(id => fetchStation(id))
-    );
-
-    const valid = batch.filter(Boolean);
-    results.push(...valid);
-
-    const progress = Math.round((batchNum / totalBatches) * 100);
-    console.log(`[pipeline] Batch ${batchNum}/${totalBatches} (${progress}%) - ${results.length} estaciones`);
+  for (let i = 0; i < ids.length; i += batchSize) {
+    const batch        = ids.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(id => fetchStationById(id)));
+    results.push(...batchResults.filter(Boolean));
+    if (i + batchSize < ids.length) await new Promise(r => setTimeout(r, 100));
   }
 
-  console.log(`[pipeline] ✅ Fetch completado: ${results.length} estaciones`);
+  console.log(`[pipeline] ✅ ${results.length} estaciones obtenidas`);
   return results;
 }
 
 // =============================================
-// INFERIR ZONA DESDE REGIÓN
+// INFERIR TIPO DE ZONA
 // =============================================
 
 function inferZoneType(region) {
   if (!region) return 'semi';
-  
-  if (region.toLowerCase().includes('metropolitana')) return 'urban';
-  
+  const r = region.toLowerCase();
+  if (r.includes('metropolitana')) return 'urban';
   const semiUrban = ['valparaíso', 'coquimbo', 'biobío', 'maule', "o'higgins", 'araucanía', 'los lagos'];
-  if (semiUrban.some(r => region.toLowerCase().includes(r))) return 'semi';
-  
+  if (semiUrban.some(x => r.includes(x))) return 'semi';
   return 'rural';
 }
 
 // =============================================
-// CALCULAR PRECIO REFERENCIA
+// PREPARAR ESTACIÓN PARA EL MOTOR
 // =============================================
 
-function calculateReferencePrice(stations) {
-  const allPrices = [];
-  
-  for (const s of stations) {
-    for (const [fuel, price] of Object.entries(s.precios)) {
-      if (price && price > 0) {
-        allPrices.push(price);
-      }
-    }
-  }
+function prepareStation(station, fuelType, realDistanceKm) {
+  const fuelMap = {
+    diesel: 'diesel', gas93: 'gas93', gas95: 'gas95', gas97: 'gas97'
+  };
+  const fuelLabels = {
+    diesel: 'Diesel', gas93: 'Gasolina 93', gas95: 'Gasolina 95', gas97: 'Gasolina 97'
+  };
 
-  if (allPrices.length === 0) return 1500; // fallback
-
-  allPrices.sort((a, b) => a - b);
-  const mid = Math.floor(allPrices.length / 2);
-  
-  // Retornar mediana
-  return allPrices.length % 2 !== 0 
-    ? allPrices[mid]
-    : Math.round((allPrices[mid - 1] + allPrices[mid]) / 2);
-}
-
-// =============================================
-// FILTRO GEOGRÁFICO
-// =============================================
-
-function getNearby(stations, lat, lon, radiusMeters) {
-  return stations
-    .map(s => ({
-      ...s,
-      dist: distanceMeters(lat, lon, s.lat, s.lon)
-    }))
-    .filter(s => s.dist <= radiusMeters)
-    .sort((a, b) => a.dist - b.dist);
-}
-
-// =============================================
-// PREPARAR PARA ENGINE
-// =============================================
-
-function prepareStation(station, fuelType) {
   const price = station.precios[fuelType];
+  const minPrice = MIN_REALISTIC_PRICES[fuelType] || 1200;
+
   if (!price || price <= 0) return null;
 
-  const ageMinutes = Math.round((Date.now() - station.fetched_at) / 60000);
+  if (price < minPrice) {
+    console.log(`[pipeline] ⚠️ Excluyendo ${station.nombre}: ${fuelLabels[fuelType]} = $${price} (mínimo $${minPrice})`);
+    return null;
+  }
+
+  const ageMinutes = Math.min(Math.round((Date.now() - station.fetched_at) / 60000), 60);
+
+  console.log(`[pipeline] 📊 ${station.nombre} (${station.comuna}): ${fuelLabels[fuelType]}=$${price}, distancia_real=${realDistanceKm.toFixed(1)}km`);
 
   return {
-    id: station.id,
-    nombre: station.nombre,
-    marca: station.marca,
-    lat: station.lat,
-    lon: station.lon,
-    precio_actual: price,
-    precio_convenio: null,
-    data_age_minutes: Math.min(ageMinutes, 60), // max 60 min
-    report_count: 1,
-    zone_type: inferZoneType(station.region),
+    id:                station.id,
+    nombre:            station.nombre,
+    nombre_legal:      station.nombre_legal,
+    direccion:         station.direccion,
+    comuna:            station.comuna,
+    marca:             station.marca,
+    lat:               station.lat,
+    lon:               station.lon,
+    precio_actual:     price,
+    precios_detalle:   station.precios_detalle,
+    servicios:         station.servicios,
+    metodos_pago:      station.metodos_pago,
+    precio_convenio:   null,
+    data_age_minutes:  ageMinutes,
+    report_count:      1,
+    zone_type:         inferZoneType(station.region),
     leaves_main_route: false,
+    _real_distance_km: realDistanceKm,
   };
+}
+
+// =============================================
+// PRECIO DE REFERENCIA (mediana)
+// =============================================
+
+function calculateReferencePrice(engineStations) {
+  const prices = engineStations.map(s => s.precio_actual).filter(p => p > 0).sort((a, b) => a - b);
+  if (prices.length === 0) return 1500;
+  const mid = Math.floor(prices.length / 2);
+  return prices.length % 2 === 0
+    ? Math.round((prices[mid - 1] + prices[mid]) / 2)
+    : prices[mid];
+}
+
+// =============================================
+// ENRIQUECER RESULTADO DEL MOTOR
+// Usa station_id (no station.id) — corrección crítica
+// v4.1: enriquece también alternatives[]
+// =============================================
+
+function buildStationObj(original) {
+  return {
+    id:              original.id,
+    nombre:          original.nombre,
+    nombre_legal:    original.nombre_legal,
+    direccion:       original.direccion,
+    comuna:          original.comuna,
+    marca:           original.marca,
+    precios_detalle: original.precios_detalle,
+    servicios:       original.servicios,
+    metodos_pago:    original.metodos_pago,
+  };
+}
+
+function enrichOne(scored, stationsWithRealDist, fuelType) {
+  if (!scored) return scored;
+  const original = stationsWithRealDist.find(s => s.id === scored.station_id);
+  if (original) {
+    const correctPrice = original.precios[fuelType];
+    if (correctPrice && correctPrice > 0) {
+      scored.display_price      = correctPrice;
+      const liters = scored.display_liters || 0;
+      scored.display_total_cost = Math.floor(correctPrice * liters);
+    }
+    scored.display_distance_km = original._real_distance_km;
+    scored.station = buildStationObj(original);
+  }
+  if (scored.net_saving) scored.net_saving = Math.floor(scored.net_saving);
+  return scored;
+}
+
+function enrichResult(result, stationsWithRealDist, fuelType) {
+  result.recommendation = enrichOne(result.recommendation, stationsWithRealDist, fuelType);
+
+  // Enriquecer alternatives[] (v0.5 engine)
+  if (Array.isArray(result.alternatives)) {
+    result.alternatives = result.alternatives.map(a => enrichOne(a, stationsWithRealDist, fuelType));
+  }
+
+  // Compatibilidad: mantener result.alternative apuntando a alternatives[0]
+  result.alternative = result.alternatives?.[0] || null;
+
+  return result;
 }
 
 // =============================================
@@ -217,143 +351,117 @@ function prepareStation(station, fuelType) {
 // =============================================
 
 async function runPipeline({ userProfile, context }) {
+  const startTime = Date.now();
+
   try {
-    console.log('[pipeline] 🚀 runPipeline iniciado');
+    console.log('[pipeline] 🚀 Iniciando...');
 
-    const {
-      user_lat,
-      user_lon,
-      fuel_type = 'diesel'
-    } = context;
+    const { user_lat, user_lon, fuel_type = 'diesel', comuna } = context;
 
-    // Validar entrada
     if (typeof user_lat !== 'number' || typeof user_lon !== 'number') {
-      console.log('[pipeline] ❌ Coordenadas inválidas');
-      return {
-        mode: 3,
-        recommendation: null,
-        alternative: null,
-        message: 'Ubicación inválida'
-      };
+      return { mode: 3, recommendation: null, alternative: null, message: 'Ubicación inválida' };
+    }
+    if (!comuna) {
+      return { mode: 3, recommendation: null, alternative: null, message: 'Selecciona una comuna válida' };
     }
 
-    // 🔥 1. Obtener estaciones (con caché)
-    let allStations;
-    
-    if (isCacheValid()) {
-      allStations = stationCache.data;
-    } else {
-      console.log('[pipeline] ⏳ Caché expirado, fetching nueva data...');
-      allStations = await fetchStationsBatch();
-      
-      if (allStations.length === 0) {
-        return {
-          mode: 3,
-          recommendation: null,
-          alternative: null,
-          message: 'No hay datos disponibles en este momento'
-        };
+    // Cargar mapa de comunas
+    const comunaMap = loadComunaStationsMap();
+
+    // Normalizar nombre de comuna (sin tildes, case-insensitive)
+    const comunaNorm = comuna.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    let comunaData    = null;
+    let comunaOriginal = null;
+
+    for (const [key, value] of Object.entries(comunaMap)) {
+      const keyNorm = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (keyNorm.toLowerCase() === comunaNorm.toLowerCase()) {
+        comunaData     = value;
+        comunaOriginal = key;
+        break;
       }
-      
-      setCacheData(allStations);
     }
 
-    console.log(`[pipeline] 📍 Buscando estaciones cerca de (${user_lat}, ${user_lon})`);
-
-    // 🔥 2. Filtro cercano (30km)
-    let nearby = getNearby(allStations, user_lat, user_lon, 30000);
-
-    // 🔥 3. Fallback sin cercanas
-    if (!nearby.length) {
-      console.log('[pipeline] ⚠️ Sin estaciones en 30km, usando fallback');
-      nearby = allStations
-        .map(s => ({
-          ...s,
-          dist: distanceMeters(user_lat, user_lon, s.lat, s.lon)
-        }))
-        .sort((a, b) => a.dist - b.dist)
-        .slice(0, 10);
+    if (!comunaData) {
+      console.log(`[pipeline] ⚠️ Comuna "${comuna}" no encontrada`);
+      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones para ${comuna}` };
     }
 
-    console.log(`[pipeline] 📌 ${nearby.length} estaciones cercanas`);
+    const stationIds = comunaData.stations?.map(s => s.id) || [];
+    if (stationIds.length === 0) {
+      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones para ${comuna}` };
+    }
 
-    // 🔥 4. Preparar para engine
-    let engineStations = nearby
-      .map(s => prepareStation(s, fuel_type))
+    console.log(`[pipeline] 📍 Comuna: ${comunaOriginal}, IDs: ${stationIds.length} estaciones`);
+
+    // Obtener datos de estaciones desde API
+    const stations = await fetchStationsByIds(stationIds);
+    if (stations.length === 0) {
+      return { mode: 3, recommendation: null, alternative: null, message: 'No se encontraron estaciones' };
+    }
+
+    // Calcular distancias reales por carretera (con fallback a Haversine)
+    console.log('[pipeline] 🗺️ Calculando distancias reales por carretera...');
+
+    const stationsWithRealDist = [];
+    for (const station of stations) {
+      const realDist = await getRealDistance(user_lat, user_lon, station.lat, station.lon);
+
+      let finalDist   = realDist;
+      let isEstimated = false;
+
+      if (realDist === null) {
+        finalDist   = haversineDistance(user_lat, user_lon, station.lat, station.lon);
+        isEstimated = true;
+        console.log(`[pipeline] ⚠️ ORS falló para ${station.nombre}, usando línea recta: ${finalDist.toFixed(1)}km`);
+      }
+
+      stationsWithRealDist.push({ ...station, _real_distance_km: finalDist, _is_estimated: isEstimated });
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    stationsWithRealDist.sort((a, b) => a._real_distance_km - b._real_distance_km);
+    console.log(`[pipeline] 📌 ${stationsWithRealDist.length} estaciones (más cercana: ${stationsWithRealDist[0]?._real_distance_km.toFixed(1)}km)`);
+
+    // Preparar estaciones para el motor
+    const engineStations = stationsWithRealDist
+      .map(s => prepareStation(s, fuel_type, s._real_distance_km))
       .filter(Boolean);
 
-    // 🔥 5. Fallback combustible
-    if (!engineStations.length) {
-      console.log(`[pipeline] ⚠️ Sin ${fuel_type}, usando cualquier combustible`);
-      engineStations = nearby.slice(0, 3).map(s => {
-        const firstFuel = Object.keys(s.precios)[0];
-        return {
-          id: s.id,
-          nombre: s.nombre,
-          marca: s.marca,
-          lat: s.lat,
-          lon: s.lon,
-          precio_actual: s.precios[firstFuel],
-          precio_convenio: null,
-          data_age_minutes: Math.round((Date.now() - s.fetched_at) / 60000),
-          report_count: 1,
-          zone_type: inferZoneType(s.region),
-          leaves_main_route: false,
-        };
-      });
+    console.log(`[pipeline] 🔍 Estaciones con ${fuel_type}: ${engineStations.length}`);
+
+    if (engineStations.length === 0) {
+      return { mode: 3, recommendation: null, alternative: null, message: `No hay estaciones con ${fuel_type} en ${comunaOriginal}` };
     }
 
-    // 🔒 Garantía
-    if (!engineStations || engineStations.length === 0) {
-      console.log('[pipeline] ❌ Sin estaciones utilizables');
-      return {
-        mode: 3,
-        recommendation: null,
-        alternative: null,
-        message: 'No hay estaciones disponibles'
-      };
-    }
-
-    // Calcular precio referencia dinámicamente
+    // Precio de referencia
     const refPrice = calculateReferencePrice(engineStations);
-    console.log(`[pipeline] 💹 Precio referencia calculado: $${refPrice}`);
+    console.log(`[pipeline] 💹 Precio referencia: $${refPrice}`);
 
-    // 🔥 6. DECISIÓN (PARÁMETROS CORRECTOS)
+    // Llamar al motor
     const result = engine.decide(
       userProfile,
       engineStations,
       {
         user_lat,
         user_lon,
-        reference_price: refPrice,
-        is_urban_peak: context.is_urban_peak || false,
-        toll_estimate: context.toll_estimate || 0
+        reference_price:  refPrice,
+        is_urban_peak:    context.is_urban_peak  || false,
+        toll_estimate:    context.toll_estimate  || 0,
       }
     );
 
-    console.log(`[pipeline] ✅ Motor respondió con mode: ${result.mode}`);
-    return result;
+    // Enriquecer con datos originales (nombre, dirección, precios detalle)
+    const enriched = enrichResult(result, stationsWithRealDist, fuel_type);
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[pipeline] ✅ Motor respondió mode: ${enriched.mode} (${elapsed}ms)`);
+    return enriched;
 
   } catch (err) {
     console.error('[pipeline] 🔥 Error fatal:', err);
-    return {
-      mode: 3,
-      recommendation: null,
-      alternative: null,
-      message: `Error: ${err.message}`
-    };
+    return { mode: 3, recommendation: null, alternative: null, message: `Error interno: ${err.message}` };
   }
 }
 
-module.exports = {
-  runPipeline,
-  // Para testing/debug
-  fetchStationsBatch,
-  getNearby,
-  prepareStation,
-  calculateReferencePrice,
-  clearCache: () => {
-    stationCache = { data: [], timestamp: 0 };
-    console.log('[pipeline] 🗑️ Caché limpiado');
-  }
-};
+module.exports = { runPipeline };
