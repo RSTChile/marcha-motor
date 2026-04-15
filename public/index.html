@@ -2,164 +2,776 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Marcha · Optimizador de recarga</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcha · RST Chile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; padding: 1rem; color: #1e2a3e; }
-        .container { max-width: 680px; margin: 0 auto; }
-        .card { background: white; border-radius: 2rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1.5rem; }
-        .card-header { background: #0b3b3f; color: white; padding: 1.5rem; text-align: center; }
-        .logo-container { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-        .logo { width: 50px; height: 50px; object-fit: contain; }
-        .card-header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.5px; }
-        .card-header p { opacity: 0.9; margin-top: 0.25rem; font-size: 0.85rem; }
-        .card-body { padding: 1.5rem; }
-        .form-group { margin-bottom: 1.25rem; }
-        label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; color: #2c5f6b; }
-        input, select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 1rem; font-size: 1rem; background: #fff; }
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .location-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+        :root {
+            --bg:       #07111f;
+            --bg2:      #0d1e30;
+            --bg3:      #122033;
+            --surface:  #162840;
+            --line:     rgba(255,255,255,0.07);
+            --line2:    rgba(255,255,255,0.12);
+            --text:     #e8edf2;
+            --muted:    #6b8099;
+            --accent:   #e8a030;
+            --accent2:  #f0c060;
+            --green:    #2ecc8a;
+            --red:      #e05050;
+            --blue:     #4a9eff;
+            --mono:     'DM Mono', monospace;
+            --sans:     'Syne', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Fondo con retícula tenue */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0 2rem;
+            border-bottom: 1px solid var(--line2);
+            margin-bottom: 2rem;
+        }
+        .logo-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid var(--line2);
+        }
+        .logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-wrap-fallback {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; flex-shrink: 0;
+        }
+        .header-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            line-height: 1;
+        }
+        .header-text h1 span { color: var(--accent); }
+        .header-text p {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            margin-right: 0.4rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ── SECCIONES DEL FORMULARIO ── */
+        .section {
+            margin-bottom: 0.5rem;
+        }
+        .field-label {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .field-label::before {
+            content: '';
+            width: 1px;
+            height: 10px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        /* Inputs */
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            -webkit-appearance: none;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--accent);
+            background: var(--bg3);
+        }
+        input::placeholder { color: var(--muted); font-size: 0.85rem; }
+        select option { background: var(--bg2); }
+
+        .location-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
         .location-row input { flex: 1; }
-        .btn-secondary { background: #e2e8f0; color: #1e2a3e; border: none; padding: 0.8rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
-        .btn-secondary:hover { background: #cbd5e1; }
-        .btn-location { background: #0b3b3f; color: white; }
-        .btn-location:hover { background: #0f5257; }
-        button[type="submit"] { background: #0b3b3f; color: white; border: none; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 2rem; cursor: pointer; margin-top: 0.5rem; transition: 0.2s; }
-        button[type="submit"]:hover:not(:disabled) { background: #0f5257; transform: scale(0.98); }
-        button[type="submit"]:disabled { background: #9ca3af; cursor: not-allowed; }
-        .fuel-gauge { background: #1a2a32; border-radius: 2rem; padding: 1rem; margin-bottom: 0.5rem; }
-        .gauge-bar { background: #2d3e48; border-radius: 1rem; height: 0.5rem; width: 100%; margin-bottom: 1rem; }
-        .gauge-fill { background: linear-gradient(90deg, #dc2626, #eab308, #22c55e); border-radius: 1rem; height: 100%; width: 0%; transition: width 0.3s ease; }
-        .fuel-marks { display: flex; justify-content: space-between; margin-bottom: 1.5rem; gap: 0.25rem; flex-wrap: wrap; }
-        .fuel-mark { flex: 1; text-align: center; padding: 0.5rem 0.25rem; background: #e2e8f0; border-radius: 2rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .fuel-mark.reserva { background: #fee2e2; color: #991b1b; }
-        .fuel-mark.selected { background: #0b3b3f; color: white; border-color: #f5a623; transform: scale(0.98); }
-        .fuel-value-display { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem; }
-        .result-card { background: #fef9e3; border-left: 6px solid #f5a623; padding: 1.25rem; border-radius: 1.5rem; margin-top: 1.5rem; }
-        .mode-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.7rem; font-weight: bold; margin-bottom: 0.75rem; }
-        .mode-0 { background: #d1fae5; color: #065f46; }
-        .mode-1 { background: #fed7aa; color: #9b4a00; }
-        .mode-2 { background: #ffe4e2; color: #9b1c1c; }
-        .mode-3 { background: #e2e8f0; color: #334155; }
-        .station-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
-        .station-address { font-size: 0.8rem; color: #5b6e8c; margin-bottom: 0.75rem; }
-        .saving-block { background: #d1fae5; border-radius: 1rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
-        .saving-label { font-size: 0.8rem; color: #065f46; margin-bottom: 0.1rem; }
-        .saving-amount { font-size: 2rem; font-weight: 800; color: #065f46; }
-        .saving-sub { font-size: 0.75rem; color: #047857; }
-        .same-price-block { background: #f1f5f9; border-radius: 1rem; padding: 0.6rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #5b6e8c; }
-        .detail-row { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px dashed #ddd; font-size: 0.9rem; }
-        .detail-row:last-child { border-bottom: none; }
-        .detail-row span { color: #5b6e8c; }
-        .detail-row strong { color: #1e2a3e; }
-        .alt-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem; margin-top: 1rem; }
-        .alt-title { font-size: 0.85rem; font-weight: 600; color: #2c5f6b; margin-bottom: 0.5rem; }
-        .alt-name { font-size: 1rem; font-weight: 600; color: #1e2a3e; margin-bottom: 0.25rem; }
-        .alt-address { font-size: 0.75rem; color: #5b6e8c; margin-bottom: 0.5rem; }
-        .precios-detalle { background: #f0f4f8; padding: 0.6rem 0.8rem; border-radius: 0.75rem; margin-top: 0.75rem; font-size: 0.8rem; }
-        .precios-detalle strong { display: block; margin-bottom: 0.3rem; }
-        .precio-tag { display: inline-block; margin-right: 0.75rem; margin-top: 0.15rem; }
-        .message { background: #ffffffcc; padding: 0.8rem; border-radius: 1rem; margin-top: 0.8rem; font-size: 0.85rem; font-style: italic; color: #4a5b6e; line-height: 1.5; }
-        .footer { text-align: center; font-size: 0.7rem; color: #5b6e8c; margin-top: 1rem; }
-        .loading { text-align: center; padding: 2rem; color: #0b3b3f; }
-        .comunas-list { max-height: 250px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-radius: 1rem; margin-top: 0.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 10; position: relative; }
-        .comuna-item { padding: 0.6rem 1rem; cursor: pointer; border-bottom: 1px solid #e2e8f0; }
-        .comuna-item:hover { background: #f0f4f8; }
-        .comuna-nombre { font-weight: 500; }
-        .comuna-region { font-size: 0.7rem; color: #5b6e8c; }
+
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.75rem 0.875rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-icon:hover { background: var(--bg3); border-color: var(--line); color: var(--accent); }
+        .btn-icon.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+        .btn-icon.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+        .location-status {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--green);
+            margin-top: 0.4rem;
+            padding-left: 0.25rem;
+            min-height: 1rem;
+        }
+        .location-status.warn { color: var(--accent); }
+        .location-status.err  { color: var(--red); }
+
+        /* Grid 2 columnas */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        /* Selector de tipo */
+        .type-pills {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .type-pill {
+            flex: 1;
+            min-width: 100px;
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.65rem 0.75rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            letter-spacing: 0.02em;
+        }
+        .type-pill:hover { border-color: var(--accent); color: var(--text); }
+        .type-pill.selected { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+
+        /* Gauge de combustible */
+        .gauge-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            padding: 1rem 1.25rem 0.875rem;
+        }
+        .gauge-track {
+            height: 3px;
+            background: var(--line2);
+            border-radius: 2px;
+            margin-bottom: 0.875rem;
+            position: relative;
+            overflow: visible;
+        }
+        .gauge-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--red), var(--accent), var(--green));
+            transition: width 0.4s cubic-bezier(.4,0,.2,1);
+            width: 0%;
+        }
+        .gauge-marks {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.25rem;
+        }
+        .gauge-mark {
+            flex: 1;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            padding: 0.35rem 0.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+            letter-spacing: 0.02em;
+        }
+        .gauge-mark:hover { color: var(--text); }
+        .gauge-mark.selected { color: var(--accent); font-weight: 500; }
+        .gauge-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Dropdown de comunas */
+        .autocomplete-wrap { position: relative; }
+        .communes-drop {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: var(--bg3);
+            border: 1px solid var(--line2);
+            border-radius: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        }
+        .communes-drop::-webkit-scrollbar { width: 4px; }
+        .communes-drop::-webkit-scrollbar-track { background: transparent; }
+        .communes-drop::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+        .commune-item {
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--line);
+            transition: background 0.1s;
+        }
+        .commune-item:last-child { border-bottom: none; }
+        .commune-item:hover { background: var(--surface); }
+        .commune-name { font-family: var(--mono); font-size: 0.85rem; color: var(--text); }
+        .commune-region { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
         .hidden { display: none; }
-        .location-status { font-size: 0.75rem; margin-top: 0.5rem; color: #5b6e8c; }
-        .direction-select { background: #f0f4f8; border: 1px solid #cbd5e1; }
-        hr { border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0; }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--line);
+            margin: 1.25rem 0;
+        }
+
+        /* Botón principal */
+        .btn-main {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-main::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease;
+            z-index: 0;
+        }
+        .btn-main:hover::before { transform: scaleX(1); }
+        .btn-main:hover { color: var(--bg); }
+        .btn-main span { position: relative; z-index: 1; }
+        .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-main:disabled::before { display: none; }
+
+        /* ── RESULTADO ── */
+        .result-wrap {
+            margin-top: 2rem;
+        }
+
+        /* Placeholder inicial */
+        .result-placeholder {
+            background: var(--bg2);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .result-placeholder .big { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+
+        /* Card resultado */
+        .result-card {
+            background: var(--bg2);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeUp 0.4s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .mode-tag {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.25rem 0.625rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .mode-tag.m0 { background: rgba(46,204,138,0.15); color: var(--green); border: 1px solid rgba(46,204,138,0.25); }
+        .mode-tag.m1 { background: rgba(232,160,48,0.15);  color: var(--accent); border: 1px solid rgba(232,160,48,0.25); }
+        .mode-tag.m2 { background: rgba(224,80,80,0.12);   color: var(--red);    border: 1px solid rgba(224,80,80,0.2); }
+        .mode-tag.m3 { background: rgba(255,255,255,0.05); color: var(--muted);  border: 1px solid var(--line2); }
+
+        .result-ts {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        .result-body { padding: 1.25rem 1.5rem; }
+
+        .station-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        .station-brand {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.25rem;
+        }
+        .station-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            color: var(--text);
+        }
+        .station-addr {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+        .price-display {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .price-label {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .price-value {
+            font-family: var(--mono);
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        .price-unit {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+        }
+
+        /* Bloque de ahorro */
+        .saving-banner {
+            background: rgba(46,204,138,0.08);
+            border: 1px solid rgba(46,204,138,0.2);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .saving-amount {
+            font-family: var(--mono);
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--green);
+            letter-spacing: -0.03em;
+        }
+        .saving-desc {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: rgba(46,204,138,0.7);
+        }
+
+        .neutral-banner {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+        .warn-banner {
+            background: rgba(232,160,48,0.08);
+            border: 1px solid rgba(232,160,48,0.2);
+            border-radius: 6px;
+            padding: 0.625rem 1rem;
+            margin-bottom: 1rem;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--accent);
+        }
+
+        /* Tabla de datos */
+        .data-table { margin-bottom: 1rem; }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .data-row:last-child { border-bottom: none; }
+        .data-key {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.02em;
+        }
+        .data-val {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .data-val.hi { color: var(--green); }
+        .data-val.lo { color: var(--red); }
+
+        /* Precios detalle */
+        .prices-grid {
+            background: var(--bg3);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .prices-grid-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+        .prices-grid-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .price-chip {
+            background: var(--surface);
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text);
+        }
+        .price-chip .chip-type { color: var(--muted); margin-right: 0.3rem; }
+
+        /* Bloque alternativas */
+        .alt-section {
+            border-top: 1px solid var(--line);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+        .alt-section-label {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+        .alt-card {
+            background: var(--bg3);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .alt-card:last-child { margin-bottom: 0; }
+        .alt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .alt-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+        .alt-addr {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            margin-top: 0.15rem;
+        }
+        .alt-price {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 500;
+            text-align: right;
+        }
+        .alt-price small { font-size: 0.6rem; color: var(--muted); display: block; }
+        .alt-meta {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .alt-chip {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .alt-chip.pos { color: var(--green); }
+        .alt-chip.neg { color: var(--red); }
+
+        /* Mensaje de estado */
+        .status-msg {
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid var(--accent);
+            border-radius: 0 4px 4px 0;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .status-msg.green  { border-left-color: var(--green); }
+        .status-msg.red    { border-left-color: var(--red); }
+
+        /* Loading */
+        .loading-state {
+            padding: 3rem 1.5rem;
+            text-align: center;
+        }
+        .loading-ring {
+            width: 32px; height: 32px;
+            border: 2px solid var(--line2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: rgba(255,255,255,0.15);
+            margin-top: 3rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* Scrollbar global */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+
+        /* Responsive leve */
+        @media (max-width: 420px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .station-name { font-size: 1.15rem; }
+            .price-value { font-size: 1.3rem; }
+            .saving-amount { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="card">
-        <div class="card-header">
-            <div class="logo-container">
-                <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" class="logo" onerror="this.style.display='none'">
-                <h1>⛽ En Marcha de RST Chile</h1>
-            </div>
-            <p>Decide dónde vale la pena cargar · La App no adivina: calcula la mejor alternativa para ti.</p>
+<div class="wrap">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-wrap">
+            <img src="/data/LOGO%20RST-Redondo-Blanco-Bisel.png" alt="RST Chile" onerror="this.parentElement.innerHTML='⛽'">
         </div>
-        <div class="card-body">
-            <form id="marchaForm">
+        <div class="header-text">
+            <h1>En <span>Marcha</span></h1>
+            <p><span class="status-dot"></span>Motor activo · RST Chile · 2026</p>
+        </div>
+    </header>
 
-                <div class="form-group">
-                    <label>📍 Tu ubicación</label>
-                    <div class="location-row">
-                        <input type="text" id="locationInput" placeholder="Escribe tu comuna (ej: Llay-Llay, Santiago...)" autocomplete="off">
-                        <button type="button" id="searchLocationBtn" class="btn-secondary">🔍 Buscar</button>
-                        <button type="button" id="getLocationBtn" class="btn-secondary btn-location">📍 Detectar</button>
-                    </div>
-                    <div id="searchResults" class="comunas-list hidden"></div>
-                    <div id="locationStatus" class="location-status"></div>
-                    <input type="hidden" id="lat" value="">
-                    <input type="hidden" id="lng" value="">
-                    <input type="hidden" id="comuna" value="">
+    <!-- FORMULARIO -->
+    <form id="marchaForm" autocomplete="off">
+
+        <!-- Ubicación -->
+        <div class="section">
+            <div class="field-label">Ubicación</div>
+            <div class="autocomplete-wrap">
+                <div class="location-row">
+                    <input type="text" id="locationInput" placeholder="Comuna (ej: Huechuraba, Temuco...)">
+                    <button type="button" id="searchBtn" class="btn-icon">↵ Buscar</button>
+                    <button type="button" id="gpsBtn" class="btn-icon primary">◎ GPS</button>
                 </div>
+                <div id="communesDrop" class="communes-drop hidden"></div>
+            </div>
+            <div id="locStatus" class="location-status"></div>
+            <input type="hidden" id="lat">
+            <input type="hidden" id="lng">
+            <input type="hidden" id="comuna">
+        </div>
 
-                <div class="form-group">
-                    <label>🧭 Dirección de viaje (opcional)</label>
-                    <select id="direction" class="direction-select">
-                        <option value="">📌 No especificar / Estoy en la ciudad</option>
-                        <option value="north_to_south">⬇️ Norte → Sur (bajando hacia Santiago)</option>
-                        <option value="south_to_north">⬆️ Sur → Norte (subiendo desde Santiago)</option>
-                        <option value="east_to_west">⬅️ Este → Oeste</option>
-                        <option value="west_to_east">➡️ Oeste → Este</option>
-                    </select>
-                    <small style="color:#6c7a91; font-size:0.75rem;">Si estás en ruta, indícalo para optimizar la recomendación</small>
+        <div class="divider"></div>
+
+        <!-- Tipo de uso -->
+        <div class="section">
+            <div class="field-label">Tipo de uso</div>
+            <div class="type-pills">
+                <div class="type-pill selected" data-val="domestic">Doméstico</div>
+                <div class="type-pill" data-val="labor">Laboral</div>
+                <div class="type-pill" data-val="cargo">Carga</div>
+            </div>
+            <input type="hidden" id="contextType" value="domestic">
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Dirección de viaje -->
+        <div class="section">
+            <div class="field-label">Dirección de viaje <span style="color:var(--muted);font-size:0.9em">(opcional)</span></div>
+            <select id="direction">
+                <option value="">Sin especificar / ciudad</option>
+                <option value="north_to_south">↓ Norte → Sur</option>
+                <option value="south_to_north">↑ Sur → Norte</option>
+                <option value="east_to_west">← Este → Oeste</option>
+                <option value="west_to_east">→ Oeste → Este</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Vehículo -->
+        <div class="section">
+            <div class="field-label">Vehículo</div>
+            <div class="grid-2">
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Rendimiento km/L</div>
+                    <input type="number" id="kmPerLiter" value="13" min="1" max="40" step="0.5">
                 </div>
-
-                <div class="form-group">
-                    <label>🚗 Tipo de uso</label>
-                    <select id="contextType">
-                        <option value="domestic">🚘 Doméstico / particular</option>
-                        <option value="labor">📱 Laboral (conductor)</option>
-                        <option value="cargo">🚛 Transporte de carga (empresa)</option>
-                    </select>
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Estanque (L)</div>
+                    <input type="number" id="tankCapacity" value="56" min="10" max="1000" step="1">
                 </div>
+            </div>
+        </div>
 
-                <div class="form-group">
-                    <label>⛽ Rendimiento de tu vehículo (km/L)</label>
-                    <input type="number" id="kmPerLiter" value="13" step="0.5" min="1" max="40">
-                    <small style="color:#6c7a91; font-size:0.75rem;">Cuántos kilómetros recorres con 1 litro</small>
-                </div>
+        <div class="divider"></div>
 
-                <div class="row-2">
-                    <div class="form-group">
-                        <label>🛢️ Capacidad estanque (L)</label>
-                        <input type="number" id="tankCapacity" value="56" step="1" min="10" max="1000">
-                    </div>
-                    <div class="form-group">
-                        <label>💰 Presupuesto hoy ($)</label>
-                        <input type="number" id="budget" value="50000" min="1">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>⛽ Nivel del estanque</label>
-                    <div class="fuel-gauge">
-                        <div class="gauge-bar">
-                            <div class="gauge-fill" id="gaugeFill"></div>
-                        </div>
-                        <div class="fuel-marks">
-                            <div class="fuel-mark reserva" data-pct="5">🔴 Reserva</div>
-                            <div class="fuel-mark" data-pct="12.5">Mínimo</div>
-                            <div class="fuel-mark" data-pct="25">1/4</div>
-                            <div class="fuel-mark" data-pct="50">1/2</div>
-                            <div class="fuel-mark" data-pct="75">3/4</div>
-                            <div class="fuel-mark" data-pct="100">Lleno</div>
-                        </div>
-                        <div class="fuel-value-display" id="fuelLevelDisplay">Nivel: 1/4 (25%)</div>
-                    </div>
-                    <input type="hidden" id="fuelLevel" value="25">
-                </div>
-
-                <div class="form-group">
-                    <label>⛽ Tipo de combustible</label>
+        <!-- Combustible y presupuesto -->
+        <div class="section">
+            <div class="field-label">Carga</div>
+            <div class="grid-2">
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Combustible</div>
                     <select id="fuelType">
                         <option value="diesel">Diesel</option>
                         <option value="gas93">Gasolina 93</option>
@@ -167,388 +779,399 @@
                         <option value="gas97">Gasolina 97</option>
                     </select>
                 </div>
-
-                <button type="submit" id="submitBtn">🔍 Evaluar ahora</button>
-            </form>
-
-            <div id="resultArea">
-                <div class="result-card" style="background:#f1f5f9; text-align:center; color:#4a5b6e; border-left-color:#cbd5e1;">
-                    📍 Ingresa tu comuna o presiona "Detectar"<br>
-                    <span style="font-size:0.8rem;">La app analizará estaciones reales en tu zona</span>
+                <div>
+                    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:0.35rem;letter-spacing:0.04em;">Presupuesto hoy ($)</div>
+                    <input type="number" id="budget" value="50000" min="1">
                 </div>
             </div>
         </div>
+
+        <div class="divider"></div>
+
+        <!-- Nivel estanque -->
+        <div class="section">
+            <div class="field-label">Nivel del estanque</div>
+            <div class="gauge-wrap">
+                <div class="gauge-track">
+                    <div class="gauge-fill" id="gaugeFill"></div>
+                </div>
+                <div class="gauge-marks">
+                    <div class="gauge-mark" data-pct="5">Reserva</div>
+                    <div class="gauge-mark" data-pct="12.5">Mín.</div>
+                    <div class="gauge-mark selected" data-pct="25">¼</div>
+                    <div class="gauge-mark" data-pct="50">½</div>
+                    <div class="gauge-mark" data-pct="75">¾</div>
+                    <div class="gauge-mark" data-pct="100">Lleno</div>
+                </div>
+                <div class="gauge-label" id="gaugeLabel">25%</div>
+            </div>
+            <input type="hidden" id="fuelLevel" value="25">
+        </div>
+
+        <!-- CTA -->
+        <button type="submit" class="btn-main" id="submitBtn">
+            <span>▶ Evaluar ahora</span>
+        </button>
+
+    </form>
+
+    <!-- RESULTADO -->
+    <div class="result-wrap" id="resultWrap">
+        <div class="result-placeholder">
+            <span class="big">⊙</span>
+            Ingresa tu ubicación y presiona evaluar
+        </div>
     </div>
-    <div class="footer">Marcha · motor de decisión · datos desde API real + crowdsourcing · RST Chile 2026</div>
+
+    <div class="footer">Marcha · motor de decisión · RST Chile 2026 · datos API real</div>
 </div>
 
 <script>
-// =============================================
-// CARGAR LISTA DE COMUNAS
-// =============================================
+// ──────────────────────────────────────────────
+// UTILIDADES
+// ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function fmt(n) { return Math.floor(n).toLocaleString('es-CL'); }
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function setLocStatus(msg, type='') {
+    const el = $('locStatus');
+    el.textContent = msg;
+    el.className = 'location-status' + (type ? ' '+type : '');
+}
+
+function now() {
+    return new Date().toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ──────────────────────────────────────────────
+// COMUNAS
+// ──────────────────────────────────────────────
 let comunasList = [];
+fetch('/data/comunas-completo.json')
+    .then(r => r.json())
+    .then(d => { comunasList = d.comunas || []; })
+    .catch(() => {});
 
-async function loadComunas() {
-    try {
-        const response = await fetch('/data/comunas-completo.json');
-        if (!response.ok) throw new Error('No se pudo cargar la lista de comunas');
-        const data = await response.json();
-        comunasList = data.comunas || [];
-        console.log(`✅ ${comunasList.length} comunas cargadas`);
-    } catch (err) {
-        console.error('Error cargando comunas:', err);
-        comunasList = [];
-    }
-}
-loadComunas();
-
-// =============================================
-// ELEMENTOS DEL DOM
-// =============================================
-const locationInput  = document.getElementById('locationInput');
-const searchResults  = document.getElementById('searchResults');
-const latInput       = document.getElementById('lat');
-const lngInput       = document.getElementById('lng');
-const comunaInput    = document.getElementById('comuna');
-const locationStatus = document.getElementById('locationStatus');
-const searchBtn      = document.getElementById('searchLocationBtn');
-const getLocationBtn = document.getElementById('getLocationBtn');
-const submitBtn      = document.getElementById('submitBtn');
-const form           = document.getElementById('marchaForm');
-const resultArea     = document.getElementById('resultArea');
-const fuelLevelInput = document.getElementById('fuelLevel');
-const gaugeFill      = document.getElementById('gaugeFill');
-const fuelLevelDisplay = document.getElementById('fuelLevelDisplay');
-
-// =============================================
-// SELECTOR DE NIVEL DE COMBUSTIBLE
-// =============================================
-function updateFuelLevel(levelPct) {
-    fuelLevelInput.value = levelPct;
-    gaugeFill.style.width = `${levelPct}%`;
-    let label = '';
-    if      (levelPct <= 5)    label = `Nivel: Reserva (${levelPct}%)`;
-    else if (levelPct <= 12.5) label = `Nivel: Mínimo (${levelPct}%)`;
-    else if (levelPct <= 25)   label = `Nivel: 1/4 (${levelPct}%)`;
-    else if (levelPct <= 50)   label = `Nivel: 1/2 (${levelPct}%)`;
-    else if (levelPct <= 75)   label = `Nivel: 3/4 (${levelPct}%)`;
-    else                        label = `Nivel: Lleno (${levelPct}%)`;
-    fuelLevelDisplay.textContent = label;
-    document.querySelectorAll('.fuel-mark').forEach(mark => {
-        mark.classList.toggle('selected', Math.abs(parseFloat(mark.dataset.pct) - levelPct) < 0.1);
-    });
+function searchComunas(q) {
+    if (!q || q.length < 2) return [];
+    const qn = norm(q);
+    return comunasList
+        .filter(c => norm(c.nombre).includes(qn) || norm(c.region).includes(qn))
+        .sort((a,b) => {
+            const as = norm(a.nombre).startsWith(qn);
+            const bs = norm(b.nombre).startsWith(qn);
+            if (as && !bs) return -1;
+            if (!as && bs) return 1;
+            return norm(a.nombre).localeCompare(norm(b.nombre));
+        })
+        .slice(0, 8);
 }
 
-document.querySelectorAll('.fuel-mark').forEach(mark => {
-    mark.addEventListener('click', () => updateFuelLevel(parseFloat(mark.dataset.pct)));
-});
-updateFuelLevel(25);
-
-// =============================================
-// BÚSQUEDA DE COMUNAS
-// =============================================
-function normalizeText(str) {
-    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function searchComunas(query) {
-    if (!query || query.length < 2 || comunasList.length === 0) {
-        searchResults.classList.add('hidden');
-        return [];
-    }
-    const q = normalizeText(query);
-    const matches = comunasList.filter(c =>
-        normalizeText(c.nombre).includes(q) ||
-        normalizeText(c.region).includes(q)
-    );
-    matches.sort((a, b) => {
-        const aS = normalizeText(a.nombre).startsWith(q);
-        const bS = normalizeText(b.nombre).startsWith(q);
-        if (aS && !bS) return -1;
-        if (!aS && bS) return 1;
-        return normalizeText(a.nombre).localeCompare(normalizeText(b.nombre));
-    });
-    return matches.slice(0, 10);
-}
-
-function selectComuna(c) {
-    latInput.value   = parseFloat(c.lat);
-    lngInput.value   = parseFloat(c.lng);
-    comunaInput.value = c.nombre;
-    locationInput.value = `${c.nombre}, ${c.region}`;
-    locationStatus.innerHTML = `📍 Comuna seleccionada: ${c.nombre}, ${c.region}`;
-    searchResults.classList.add('hidden');
-    submitBtn.disabled = false;
-    submitBtn.textContent = '🔍 Evaluar ahora';
-}
-
-function showSearchResults(results) {
-    if (results.length === 0) { searchResults.classList.add('hidden'); return; }
-    searchResults.innerHTML = results.map(c =>
-        `<div class="comuna-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
-            <div class="comuna-nombre">${c.nombre}</div>
-            <div class="comuna-region">${c.region}</div>
+function showDrop(results) {
+    const drop = $('communesDrop');
+    if (!results.length) { drop.classList.add('hidden'); return; }
+    drop.innerHTML = results.map(c =>
+        `<div class="commune-item" data-nombre="${c.nombre}" data-region="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}">
+            <div class="commune-name">${c.nombre}</div>
+            <div class="commune-region">${c.region}</div>
         </div>`
     ).join('');
-    searchResults.classList.remove('hidden');
-    document.querySelectorAll('.comuna-item').forEach(el => {
-        el.addEventListener('click', () => selectComuna({
-            nombre: el.dataset.nombre,
-            region: el.dataset.region,
-            lat:    el.dataset.lat,
-            lng:    el.dataset.lng,
+    drop.classList.remove('hidden');
+    drop.querySelectorAll('.commune-item').forEach(el => {
+        el.addEventListener('click', () => selectComune({
+            nombre: el.dataset.nombre, region: el.dataset.region,
+            lat: el.dataset.lat, lng: el.dataset.lng
         }));
     });
 }
 
-locationInput.addEventListener('input', e => showSearchResults(searchComunas(e.target.value)));
-searchBtn.addEventListener('click', () => {
-    const results = searchComunas(locationInput.value);
-    showSearchResults(results);
-    if (results.length === 0 && locationInput.value.length >= 2)
-        locationStatus.innerHTML = '⚠️ No encontramos esa comuna. Revisa el nombre.';
+function selectComune(c) {
+    $('lat').value = c.lat;
+    $('lng').value = c.lng;
+    $('comuna').value = c.nombre;
+    $('locationInput').value = `${c.nombre}, ${c.region}`;
+    setLocStatus(`✓ ${c.nombre}, ${c.region}`, '');
+    $('communesDrop').classList.add('hidden');
+    $('submitBtn').disabled = false;
+}
+
+$('locationInput').addEventListener('input', e => showDrop(searchComunas(e.target.value)));
+$('searchBtn').addEventListener('click', () => {
+    const r = searchComunas($('locationInput').value);
+    showDrop(r);
+    if (!r.length && $('locationInput').value.length >= 2)
+        setLocStatus('No encontrada. Revisa el nombre.', 'warn');
 });
 document.addEventListener('click', e => {
-    if (!locationInput.contains(e.target) && !searchResults.contains(e.target))
-        searchResults.classList.add('hidden');
+    if (!$('locationInput').contains(e.target) && !$('communesDrop').contains(e.target))
+        $('communesDrop').classList.add('hidden');
 });
 
-// =============================================
-// DETECCIÓN DE UBICACIÓN GPS
-// =============================================
-getLocationBtn.addEventListener('click', () => {
-    locationStatus.innerHTML = '📍 Obteniendo tu ubicación...';
-    if (!navigator.geolocation) {
-        locationStatus.innerHTML = '❌ Tu navegador no soporta geolocalización. Busca manualmente.';
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(
-        async position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            latInput.value = lat;
-            lngInput.value = lng;
-            locationStatus.innerHTML = '🔍 Detectando tu comuna...';
-            try {
-                const res = await fetch('/api/detect-commune', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lat, lng })
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                if (data.ok && data.commune) {
-                    const { nombre, region } = data.commune;
-                    const dist = data.distance_km?.toFixed(1) || '?';
-                    comunaInput.value    = nombre;
-                    locationInput.value  = `${nombre}, ${region}`;
-                    locationStatus.innerHTML = `✅ Ubicación confirmada: ${nombre}, ${region} (a ${dist}km)`;
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '🔍 Evaluar ahora';
-                } else {
-                    throw new Error(data.message || 'No se detectó comuna');
-                }
-            } catch (err) {
-                locationStatus.innerHTML = `⚠️ ${err.message}. Prueba buscando manualmente.`;
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🔍 Evaluar ahora';
-            }
-        },
-        error => {
-            const msgs = ['','Permite el acceso en configuración.','Servicio no disponible.','Tiempo agotado.'];
-            locationStatus.innerHTML = `❌ No se pudo obtener la ubicación. ${msgs[error.code] || ''} Prueba buscando manualmente.`;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+// ──────────────────────────────────────────────
+// GPS
+// ──────────────────────────────────────────────
+$('gpsBtn').addEventListener('click', () => {
+    setLocStatus('Obteniendo ubicación...', '');
+    if (!navigator.geolocation) { setLocStatus('GPS no disponible. Busca manualmente.', 'err'); return; }
+    navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        $('lat').value = lat; $('lng').value = lng;
+        setLocStatus('Detectando comuna...', '');
+        try {
+            const res = await fetch('/api/detect-commune', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({lat, lng})
+            });
+            const d = await res.json();
+            if (d.ok && d.commune) {
+                selectComune({ nombre: d.commune.nombre, region: d.commune.region, lat, lng });
+                setLocStatus(`✓ ${d.commune.nombre}, ${d.commune.region} (${d.distance_km?.toFixed(1)}km)`, '');
+            } else throw new Error(d.message||'No detectado');
+        } catch(e) {
+            setLocStatus(`GPS: ${e.message}. Busca manualmente.`, 'warn');
+            $('submitBtn').disabled = false;
+        }
+    }, err => {
+        const msgs = {1:'Acceso denegado.',2:'No disponible.',3:'Tiempo agotado.'};
+        setLocStatus(msgs[err.code]||'Error GPS. Busca manualmente.', 'err');
+    }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
 });
 
-// =============================================
-// ENVÍO DEL FORMULARIO
-// =============================================
-form.addEventListener('submit', async e => {
+// ──────────────────────────────────────────────
+// TYPE PILLS
+// ──────────────────────────────────────────────
+document.querySelectorAll('.type-pill').forEach(p => {
+    p.addEventListener('click', () => {
+        document.querySelectorAll('.type-pill').forEach(x => x.classList.remove('selected'));
+        p.classList.add('selected');
+        $('contextType').value = p.dataset.val;
+    });
+});
+
+// ──────────────────────────────────────────────
+// GAUGE
+// ──────────────────────────────────────────────
+function setGauge(pct) {
+    $('fuelLevel').value = pct;
+    $('gaugeFill').style.width = pct + '%';
+    $('gaugeLabel').textContent = pct + '%';
+    document.querySelectorAll('.gauge-mark').forEach(m => {
+        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct) - pct) < 0.1);
+    });
+}
+document.querySelectorAll('.gauge-mark').forEach(m =>
+    m.addEventListener('click', () => setGauge(parseFloat(m.dataset.pct)))
+);
+setGauge(25);
+
+// ──────────────────────────────────────────────
+// SUBMIT
+// ──────────────────────────────────────────────
+$('marchaForm').addEventListener('submit', async e => {
     e.preventDefault();
-
-    const lat    = parseFloat(latInput.value);
-    const lng    = parseFloat(lngInput.value);
-    const comuna = comunaInput.value;
-
+    const lat = parseFloat($('lat').value), lng = parseFloat($('lng').value);
+    const comuna = $('comuna').value;
     if (isNaN(lat) || isNaN(lng) || !comuna) {
-        resultArea.innerHTML = `<div class="result-card"><strong>❌ Error</strong><br>Selecciona una comuna válida o usa "Detectar".</div>`;
-        return;
+        setLocStatus('Selecciona una comuna válida.', 'err'); return;
     }
 
-    resultArea.innerHTML = `<div class="loading">🔄 Evaluando estaciones cercanas...<br><small>analizando mejor decisión para ti</small></div>`;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Evaluando...';
+    $('resultWrap').innerHTML = `
+        <div class="result-card">
+            <div class="loading-state">
+                <div class="loading-ring"></div>
+                <div class="loading-text">Evaluando estaciones · calculando decisión</div>
+            </div>
+        </div>`;
 
-    const kmPerLiter   = parseFloat(document.getElementById('kmPerLiter').value);
-    const consumption  = 100 / kmPerLiter;
-    const tankCapacity = parseFloat(document.getElementById('tankCapacity').value);
-    const fuelLevel    = parseFloat(document.getElementById('fuelLevel').value);
-    const budget       = parseFloat(document.getElementById('budget').value);
-    const fuelType     = document.getElementById('fuelType').value;
-    const direction    = document.getElementById('direction').value;
-    const contextType  = document.getElementById('contextType').value;
+    $('submitBtn').disabled = true;
 
-    if (isNaN(consumption) || consumption <= 0) {
-        resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Rendimiento inválido</strong><br>Ingresa un rendimiento válido (ej: 13 km/L).</div>`;
-        submitBtn.disabled = false;
-        submitBtn.textContent = '🔍 Evaluar ahora';
-        return;
-    }
-
+    const kmL  = parseFloat($('kmPerLiter').value);
     const payload = {
         userProfile: {
-            context_type:       contextType,
-            fuel_consumption:   consumption,
-            tank_capacity:      tankCapacity,
-            current_level_pct:  fuelLevel,
-            budget_today:       budget
+            context_type:      $('contextType').value,
+            fuel_consumption:  100 / kmL,
+            tank_capacity:     parseFloat($('tankCapacity').value),
+            current_level_pct: parseFloat($('fuelLevel').value),
+            budget_today:      parseFloat($('budget').value),
         },
         context: {
-            user_lat:        lat,
-            user_lon:        lng,
-            fuel_type:       fuelType,
-            comuna:          comuna.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay'),
-            direction:       direction,
-            is_urban_peak:   false,
-            toll_estimate:   0
+            user_lat:  lat, user_lon: lng,
+            fuel_type: $('fuelType').value,
+            comuna:    comuna.replace(/Llay-Llay/i,'Llaillay').replace(/Llay Llay/i,'Llaillay'),
+            direction: $('direction').value,
+            is_urban_peak: false, toll_estimate: 0,
         }
     };
 
     try {
-        const response = await fetch('/api/decide', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const res = await fetch('/api/decide', {
+            method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error(`Error ${response.status}`);
-        const data   = await response.json();
-        const result = data.result || data;
-        renderDecision(result);
-    } catch (err) {
-        console.error('Error:', err);
-        resultArea.innerHTML = `<div class="result-card"><strong>⚠️ Error</strong><br>No se pudo conectar con el motor. Intenta de nuevo.</div>`;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        render(data.result || data);
+    } catch(err) {
+        $('resultWrap').innerHTML = `
+            <div class="result-card">
+                <div class="result-body">
+                    <div class="status-msg red">Error de conexión: ${err.message}</div>
+                </div>
+            </div>`;
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '🔍 Evaluar ahora';
+        $('submitBtn').disabled = false;
     }
 });
 
-// =============================================
-// RENDER DE RESULTADOS
-// =============================================
-function fmt(n) { return Math.floor(n).toLocaleString('es-CL'); }
-
-function renderDecision(data) {
+// ──────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────
+function render(data) {
     const mode = data.mode;
-    const modeLabels = {
-        0: ['✅ RECOMENDACIÓN ACTIVA', 'mode-0'],
-        1: ['⚠️ DATOS INCIERTOS',       'mode-1'],
-        2: ['🔄 MEJOR NO CARGAR AHORA', 'mode-2'],
-        3: ['🔇 SIN DATOS SUFICIENTES', 'mode-3'],
+    const modeMap = {
+        0: ['Recomendación activa', 'm0'],
+        1: ['Datos inciertos',      'm1'],
+        2: ['Sin ahorro disponible','m2'],
+        3: ['Sin datos',            'm3'],
     };
-    const [modeText, modeClass] = modeLabels[mode] || modeLabels[3];
+    const [modeLabel, modeClass] = modeMap[mode] || modeMap[3];
 
-    let html = `<div class="result-card">`;
-    html += `<div class="mode-badge ${modeClass}">${modeText}</div>`;
+    let html = `<div class="result-card">
+        <div class="result-header">
+            <span class="mode-tag ${modeClass}">${modeLabel}</span>
+            <span class="result-ts">${now()}</span>
+        </div>
+        <div class="result-body">`;
 
     if (mode === 0 && data.recommendation) {
-        const rec      = data.recommendation;
-        const station  = rec.station  || {};
-        const price    = rec.display_price || 0;
-        const liters   = rec.display_liters || 0;
-        const dist     = rec.display_distance_km || 0;
-        const total    = rec.display_total_cost || Math.floor(price * liters);
-        const netSave  = Math.floor(rec.net_saving || rec._net_saving || 0);
-        const refPrice = rec.display_reference_price || price;
-        const savPerL  = refPrice - price;
+        const rec     = data.recommendation;
+        const st      = rec.station || {};
+        const price   = rec.display_price || 0;
+        const liters  = rec.display_liters || 0;
+        const dist    = rec.display_distance_km || 0;
+        const total   = rec.display_total_cost || Math.floor(price * liters);
+        const netSave = Math.floor(rec.net_saving || rec._net_saving || 0);
+        const refPr   = rec.display_reference_price || price;
+        const savPL   = refPr - price;
 
-        // Nombre y dirección
-        html += `<div class="station-name">⛽ ${station.nombre || rec.station_name || 'Estación'}</div>`;
-        if (station.direccion) {
-            html += `<div class="station-address">📍 ${station.direccion}${station.comuna ? ', ' + station.comuna : ''}</div>`;
-        }
+        html += `<div class="station-head">
+            <div>
+                <div class="station-brand">${st.marca || rec.station_brand || '—'}</div>
+                <div class="station-name">${st.nombre || rec.station_name || 'Estación'}</div>
+                ${st.direccion ? `<div class="station-addr">${st.direccion}${st.comuna ? ', '+st.comuna : ''}</div>` : ''}
+            </div>
+            <div class="price-display">
+                <div class="price-label">Precio</div>
+                <div class="price-value">$${fmt(price)}</div>
+                <div class="price-unit">por litro</div>
+            </div>
+        </div>`;
 
         // Bloque de ahorro
-        if (savPerL > 0) {
-            html += `<div class="saving-block">
-                <div class="saving-label">💰 Ahorro por litro</div>
-                <div class="saving-amount">$${fmt(savPerL)}</div>
-                <div class="saving-sub">respecto al precio promedio en la zona ($${fmt(refPrice)}/L)</div>
+        if (savPL > 0) {
+            html += `<div class="saving-banner">
+                <div class="saving-amount">$${fmt(savPL)}/L</div>
+                <div class="saving-desc">bajo el promedio de la zona ($${fmt(refPr)}/L)</div>
             </div>`;
-        } else if (savPerL < 0) {
-            html += `<div class="same-price-block">⚠️ Esta estación está $${fmt(Math.abs(savPerL))}/L sobre el precio promedio de la zona ($${fmt(refPrice)}/L)</div>`;
+        } else if (savPL < 0) {
+            html += `<div class="warn-banner">$${fmt(Math.abs(savPL))}/L sobre el promedio · no es la más barata</div>`;
         } else {
-            html += `<div class="same-price-block">ℹ️ Precio igual al promedio en la zona · No hay diferencial de precio entre estaciones cercanas</div>`;
+            html += `<div class="neutral-banner">Precio igual al promedio · no hay diferencial entre estaciones cercanas hoy</div>`;
         }
 
-        // Detalle de carga
-        html += `<div class="detail-row"><span>Precio por litro</span><strong>$${fmt(price)} /L</strong></div>`;
-        html += `<div class="detail-row"><span>Carga recomendada</span><strong>${liters.toFixed(1)} L</strong></div>`;
-        html += `<div class="detail-row"><span>Costo total</span><strong>$${fmt(total)}</strong></div>`;
-        if (netSave > 0) {
-            html += `<div class="detail-row"><span>Ahorro estimado en esta carga</span><strong>${fmt(netSave)}</strong></div>`;
-        } else {
-            html += `<div class="detail-row"><span>Ahorro estimado en esta carga</span><strong>$0 · No hay diferencial disponible hoy</strong></div>`;
-        }
-        html += `<div class="detail-row"><span>Distancia</span><strong>${dist > 0 ? dist.toFixed(1) + ' km' : 'En tu ruta'}</strong></div>`;
+        html += `<div class="data-table">
+            <div class="data-row"><span class="data-key">Carga recomendada</span><span class="data-val">${liters.toFixed(1)} L</span></div>
+            <div class="data-row"><span class="data-key">Costo total</span><span class="data-val">$${fmt(total)}</span></div>
+            <div class="data-row"><span class="data-key">Ahorro estimado</span><span class="data-val ${netSave>0?'hi':''}">${netSave>0?'$'+fmt(netSave):'$0 · sin diferencial disponible'}</span></div>
+            <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${dist>0?dist.toFixed(1)+' km':'en tu ruta'}</span></div>
+            <div class="data-row"><span class="data-key">Precio ref. zona</span><span class="data-val">$${fmt(refPr)}/L</span></div>
+        </div>`;
 
-        // Precios detalle de todos los combustibles
-        if (station.precios_detalle && station.precios_detalle.length > 0) {
-            html += `<div class="precios-detalle"><strong>⛽ Todos los precios en esta estación:</strong>`;
-            for (const p of station.precios_detalle) {
-                html += `<span class="precio-tag">${p.tipo}: <strong>$${fmt(p.precio)}</strong></span>`;
+        // Precios detalle deduplicados
+        if (st.precios_detalle && st.precios_detalle.length > 0) {
+            const deduped = {};
+            for (const p of st.precios_detalle) {
+                const k = p.tipo.toLowerCase().replace(/[^a-z0-9]/g,'');
+                if (!deduped[k] || p.precio < deduped[k].precio) deduped[k] = p;
             }
+            const unique = Object.values(deduped).sort((a,b)=>a.precio-b.precio);
+            html += `<div class="prices-grid">
+                <div class="prices-grid-label">Todos los precios en esta estación</div>
+                <div class="prices-grid-items">`;
+            for (const p of unique) {
+                html += `<div class="price-chip"><span class="chip-type">${p.tipo}</span>$${fmt(p.precio)}</div>`;
+            }
+            html += `</div></div>`;
+        }
+
+        // Alternativas
+        const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
+        if (altList.length > 0) {
+            const labels = ['Segunda opción', 'Tercera opción'];
+            html += `<div class="alt-section">
+                <div class="alt-section-label">Otras opciones evaluadas</div>`;
+            altList.slice(0,2).forEach((alt,i) => {
+                const altSt    = alt.station || {};
+                const altPrice = alt.display_price || 0;
+                const altDist  = alt.display_distance_km || 0;
+                const altSave  = Math.floor(alt.net_saving || alt._net_saving || 0);
+                const altSavPL = refPr - altPrice;
+                html += `<div class="alt-card">
+                    <div class="alt-header">
+                        <div>
+                            <div class="alt-name">${altSt.nombre || alt.station_name || 'Estación'}</div>
+                            ${altSt.direccion ? `<div class="alt-addr">${altSt.direccion}</div>` : ''}
+                        </div>
+                        <div class="alt-price">
+                            $${fmt(altPrice)}<small>/L</small>
+                        </div>
+                    </div>
+                    <div class="alt-meta">
+                        ${altDist>0?`<span class="alt-chip">◎ ${altDist.toFixed(1)} km</span>`:''}
+                        ${altSavPL>0?`<span class="alt-chip pos">↓ $${fmt(altSavPL)}/L</span>`:altSavPL<0?`<span class="alt-chip neg">↑ $${fmt(Math.abs(altSavPL))}/L</span>`:`<span class="alt-chip">= precio igual</span>`}
+                        ${altSave>0?`<span class="alt-chip pos">Ahorro $${fmt(altSave)}</span>`:''}
+                    </div>
+                </div>`;
+            });
             html += `</div>`;
         }
 
-        // Alternativa
-        if (data.alternative) {
-            const alt       = data.alternative;
-            const altSt     = alt.station || {};
-            const altPrice  = alt.display_price || 0;
-            const altDist   = alt.display_distance_km || 0;
-            const altSave   = Math.floor(alt.net_saving || alt._net_saving || 0);
-            const altSavPL  = refPrice - altPrice;
-
-            html += `<div class="alt-block">
-                <div class="alt-title">🔄 Segunda opción disponible</div>
-                <div class="alt-name">⛽ ${altSt.nombre || alt.station_name || 'Otra estación'}</div>`;
-            if (altSt.direccion) html += `<div class="alt-address">📍 ${altSt.direccion}</div>`;
-            html += `<div class="detail-row"><span>Precio</span><strong>$${fmt(altPrice)} /L</strong></div>`;
-            if (altSavPL > 0) {
-                html += `<div class="detail-row"><span>Ahorro vs promedio</span><strong>$${fmt(altSavPL)} /L</strong></div>`;
-            } else if (altSavPL < 0) {
-                html += `<div class="detail-row"><span>Diferencia vs promedio</span><strong>+$${fmt(Math.abs(altSavPL))} /L</strong></div>`;
-            } else {
-                html += `<div class="detail-row"><span>Precio</span><strong>igual al promedio</strong></div>`;
-            }
-            if (altDist > 0) html += `<div class="detail-row"><span>Distancia</span><strong>${altDist.toFixed(1)} km</strong></div>`;
-            if (altSave > 0) html += `<div class="detail-row"><span>Ahorro total</span><strong>$${fmt(altSave)}</strong></div>`;
+    } else if (mode === 2) {
+        if (data.recommendation) {
+            const rec = data.recommendation;
+            const st  = rec.station || {};
+            html += `<div class="data-table">
+                <div class="data-row"><span class="data-key">Estación más cercana</span><span class="data-val">${st.nombre||rec.station_name||'—'}</span></div>
+                <div class="data-row"><span class="data-key">Precio</span><span class="data-val">$${fmt(rec.display_price||0)}/L</span></div>
+                <div class="data-row"><span class="data-key">Distancia</span><span class="data-val">${(rec.display_distance_km||0).toFixed(1)} km</span></div>
+            </div>`;
+        }
+        const altList = data.alternatives || (data.alternative ? [data.alternative] : []);
+        if (altList.length > 0) {
+            html += `<div class="alt-section"><div class="alt-section-label">Estaciones disponibles en la zona</div>`;
+            altList.slice(0,2).forEach(alt => {
+                const altSt = alt.station || {};
+                html += `<div class="alt-card">
+                    <div class="alt-header">
+                        <div><div class="alt-name">${altSt.nombre||alt.station_name||'Estación'}</div>
+                        ${altSt.direccion?`<div class="alt-addr">${altSt.direccion}</div>`:''}</div>
+                        <div class="alt-price">$${fmt(alt.display_price||0)}<small>/L</small></div>
+                    </div>
+                    ${(alt.display_distance_km||0)>0?`<div class="alt-meta"><span class="alt-chip">◎ ${(alt.display_distance_km).toFixed(1)} km</span></div>`:''}
+                </div>`;
+            });
             html += `</div>`;
         }
-
-    } else if (mode === 0 && !data.recommendation) {
-        html += `<div class="message">⚠️ No se encontró una estación óptima con tus parámetros actuales.</div>`;
     }
 
-    // Mensajes de estado
-    if (data.message) {
-        html += `<div class="message">💬 ${data.message}</div>`;
-    }
-    if (mode === 1) {
-        html += `<div class="message">🔍 Los precios disponibles no están completamente verificados hoy. El motor prefiere declarar incertidumbre antes que darte datos incorrectos.</div>`;
-    }
-    if (mode === 2) {
-        html += `<div class="message">📉 El ahorro potencial no justifica desviarte en este momento. Sigue tu ruta normal.</div>`;
-    }
-    if (mode === 3) {
-        html += `<div class="message">🧭 No hay estaciones registradas cerca de tu ubicación actual. Intenta con una comuna cercana.</div>`;
-    }
+    if (data.message) html += `<div class="status-msg">${data.message}</div>`;
+    if (mode===1)     html += `<div class="status-msg">Los precios no están completamente verificados. El sistema declara incertidumbre antes que entregarte datos incorrectos.</div>`;
+    if (mode===2)     html += `<div class="status-msg red">El ahorro potencial no justifica un desvío. Sigue tu ruta.</div>`;
+    if (mode===3)     html += `<div class="status-msg">Sin estaciones registradas en esta zona. Intenta con una comuna cercana.</div>`;
 
-    html += `</div>`;
-    resultArea.innerHTML = html;
+    html += `</div></div>`;
+    $('resultWrap').innerHTML = html;
 }
 </script>
 </body>
