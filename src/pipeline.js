@@ -1,7 +1,8 @@
 /**
  * Marcha — Pipeline EFICIENTE v3.0
  * Devuelve datos completos de estaciones (nombre, dirección, precios)
- * CORREGIDO: asegura que el precio del combustible seleccionado sea el correcto
+ * CORREGIDO: filtra estaciones inactivas (estado_bandera !== 1)
+ * CORREGIDO: filtra precios irrealmente bajos
  */
 
 const engine = require('./engine');
@@ -11,6 +12,14 @@ const path = require('path');
 const COMUNA_STATIONS_FILE = path.join(__dirname, '..', 'data', 'comunas-stations.json');
 const FETCH_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Precios mínimos realistas por tipo de combustible (CLP por litro)
+const MIN_REALISTIC_PRICES = {
+  diesel: 1200,
+  gas93: 1200,
+  gas95: 1250,
+  gas97: 1300
+};
 
 const stationsCache = new Map();
 let comunasMapCache = null;
@@ -72,6 +81,13 @@ async function fetchStationById(id) {
     
     if (!d?.latitud || !d?.longitud) return null;
     
+    // 🔥 FILTRAR ESTACIONES INACTIVAS (igual que la página web)
+    // estado_bandera: 1 = activa, 0 = inactiva
+    if (d.estado_bandera !== 1) {
+      console.log(`[pipeline] 🚫 Excluyendo estación ${d.id} (${d.razon_social?.razon_social || 'Sin nombre'}): estado_bandera=${d.estado_bandera} (inactiva)`);
+      return null;
+    }
+    
     // Extraer precios (redondeados a entero)
     const precios = {
       diesel: null,
@@ -119,6 +135,7 @@ async function fetchStationById(id) {
       servicios: d.servicios || [],
       metodos_pago: d.metodos_pago || [],
       horario_atencion: d.horario_atencion || [],
+      estado_bandera: d.estado_bandera,
       fetched_at: Date.now()
     };
     
@@ -198,6 +215,7 @@ function prepareStation(station, fuelType) {
   // Seleccionar el precio correcto según el tipo de combustible
   let price = null;
   let selectedFuel = null;
+  let minPrice = MIN_REALISTIC_PRICES[fuelType] || 1200;
   
   if (fuelType === 'diesel') {
     price = station.precios.diesel;
@@ -211,6 +229,12 @@ function prepareStation(station, fuelType) {
   } else if (fuelType === 'gas97') {
     price = station.precios.gas97;
     selectedFuel = 'Gasolina 97';
+  }
+  
+  // Filtrar precios irrealmente bajos (datos erróneos de la API)
+  if (price && price < minPrice) {
+    console.log(`[pipeline] ⚠️ Excluyendo ${station.nombre} (${station.comuna}): ${selectedFuel} = $${price} (mínimo realista $${minPrice})`);
+    return null;
   }
   
   // Si la estación NO tiene el combustible solicitado, retornar null
@@ -320,7 +344,7 @@ async function runPipeline({ userProfile, context }) {
     
     console.log(`[pipeline] 📌 ${stationsWithDist.length} estaciones encontradas`);
     
-    // Preparar estaciones para el motor (solo las que tienen el combustible solicitado)
+    // Preparar estaciones para el motor
     let engineStations = stationsWithDist
       .map(s => prepareStation(s, fuel_type))
       .filter(Boolean);
@@ -348,7 +372,7 @@ async function runPipeline({ userProfile, context }) {
       }
     );
     
-    // CORRECCIÓN FORZADA: Reconstruir la recomendación con los datos correctos
+    // Enriquecer el resultado con datos completos
     if (result.recommendation && result.recommendation.station && result.recommendation.station.id) {
       const stationId = result.recommendation.station.id;
       const originalStation = stationsWithDist.find(s => s.id === stationId);
@@ -362,18 +386,11 @@ async function runPipeline({ userProfile, context }) {
         else if (fuel_type === 'gas97') correctPrice = originalStation.precios.gas97;
         
         if (correctPrice && correctPrice > 0) {
-          // Forzar el precio correcto en la recomendación
           result.recommendation.display_price = correctPrice;
-          result.recommendation.station.precio_actual = correctPrice;
-          
-          // Recalcular costo total
           const liters = result.recommendation.display_liters || 0;
-          result.recommendation.display_total_cost = correctPrice * liters;
-          
-          console.log(`[pipeline] 🔧 CORRECCIÓN: display_price cambiado de ${result.recommendation.display_price} a $${correctPrice} para ${originalStation.nombre}`);
+          result.recommendation.display_total_cost = Math.floor(correctPrice * liters);
         }
         
-        // Actualizar datos de la estación
         result.recommendation.station = {
           ...result.recommendation.station,
           nombre: originalStation.nombre,
