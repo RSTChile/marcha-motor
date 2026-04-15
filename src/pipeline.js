@@ -335,15 +335,89 @@ function enrichOne(scored, stationsWithRealDist, fuelType) {
 function enrichResult(result, stationsWithRealDist, fuelType) {
   result.recommendation = enrichOne(result.recommendation, stationsWithRealDist, fuelType);
 
-  // Enriquecer alternatives[] (v0.5 engine)
   if (Array.isArray(result.alternatives)) {
     result.alternatives = result.alternatives.map(a => enrichOne(a, stationsWithRealDist, fuelType));
   }
 
-  // Compatibilidad: mantener result.alternative apuntando a alternatives[0]
   result.alternative = result.alternatives?.[0] || null;
-
   return result;
+}
+
+function buildDecisionV2(stationsWithRealDist, engineStations, userProfile, context, refPrice) {
+  const litersNeeded = Math.max(0, (userProfile.tank_capacity || 0) * (1 - (userProfile.current_level_pct || 0) / 100));
+  const fuelConsumption = userProfile.fuel_consumption || 10;
+  const budgetToday = userProfile.budget_today || 0;
+  const contextType = userProfile.context_type || 'domestic';
+  const currentFuelPrice = refPrice || 1500;
+
+  const scored = engineStations.map((s, idx) => {
+    const orig = stationsWithRealDist.find(x => x.id === s.id) || s;
+    const litersAffordable = Math.min(litersNeeded, budgetToday / Math.max(1, s.precio_actual));
+    const grossSaving = Math.round((refPrice - s.precio_actual) * litersAffordable);
+    const deviationMeters = (orig._real_distance_km || s._real_distance_km || 0) * 1000;
+    const deviationCost = Math.round((deviationMeters / 1000) * (fuelConsumption / 100) * s.precio_actual);
+    const netSaving = Math.round(grossSaving - deviationCost);
+    return {
+      ...s,
+      _order_distance: orig._real_distance_km || s._real_distance_km || 0,
+      _gross_saving: grossSaving,
+      _deviation_cost: deviationCost,
+      _net_saving: netSaving,
+      _idx: idx,
+    };
+  });
+
+  const byDistance = [...scored].sort((a, b) => a._order_distance - b._order_distance || a._idx - b._idx);
+  const bySaving = [...scored].sort((a, b) => b._net_saving - a._net_saving || a._order_distance - b._order_distance || a._idx - b._idx);
+
+  const top1 = byDistance[0] || null;
+  const top2 = byDistance[1] || null;
+  const top3 = bySaving.find(s => !top1 || s.id !== top1.id) || null;
+
+  const format = (s, mode) => s ? {
+    station_id: s.id,
+    station: {
+      id: s.id,
+      nombre: s.nombre,
+      nombre_legal: s.nombre_legal,
+      direccion: s.direccion,
+      comuna: s.comuna,
+      marca: s.marca,
+      precios_detalle: s.precios_detalle,
+      servicios: s.servicios,
+      metodos_pago: s.metodos_pago,
+    },
+    display_price: s.precio_actual,
+    display_distance_km: Math.round((s._order_distance || 0) * 10) / 10,
+    display_liters: Math.round(((userProfile.tank_capacity || 0) * (1 - (userProfile.current_level_pct || 0) / 100)) * 10) / 10,
+    display_total_cost: Math.floor(s.precio_actual * ((userProfile.tank_capacity || 0) * (1 - (userProfile.current_level_pct || 0) / 100))),
+    display_reference_price: refPrice,
+    display_saving_per_liter: Math.round(refPrice - s.precio_actual),
+    gross_saving: s._gross_saving,
+    deviation_cost: s._deviation_cost,
+    net_saving: s._net_saving,
+    mode,
+  } : null;
+
+  return {
+    mode: 0,
+    recommendation: format(top1, 'distance_1'),
+    alternatives: [
+      format(top2, 'distance_2'),
+      format(top3, 'best_net_saving'),
+    ].filter(Boolean),
+    alternative: null,
+    message: null,
+    meta: {
+      reference_price: refPrice,
+      liters_needed: Math.round(litersNeeded * 10) / 10,
+      fuel_consumption: fuelConsumption,
+      budget_today: budgetToday,
+      context_type: contextType,
+      user_lat: context.user_lat,
+      user_lon: context.user_lon,
+    }
+  };
 }
 
 // =============================================
