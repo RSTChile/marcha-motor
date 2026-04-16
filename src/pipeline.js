@@ -13,7 +13,6 @@ const stationsCache = new Map();
 const routeCache = new Map();
 
 let comunaMapCache = null;
-let comunaCoordsCache = null;
 
 // =============================================
 // NORMALIZACIÓN
