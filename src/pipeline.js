@@ -9,11 +9,6 @@ const CACHE_TTL_MS = 1000 * 60 * 5;
 const FETCH_TIMEOUT_MS = 5000;
 
 const SAFE_AUTONOMY_FACTOR = 0.9;
-const ROUTE_CORRIDOR_WIDTH = 0.25;
-
-const TRIP_TARGET_NEAR = 0.15;
-const TRIP_TARGET_MID = 0.5;
-const TRIP_TARGET_LIMIT = 0.9;
 
 const COMUNA_STATIONS_FILE = path.join(__dirname, '../data/comunas-stations.json');
 const COMUNAS_COORDS_FILE = path.join(__dirname, '../data/comunas-completo.json');
@@ -67,14 +62,8 @@ function resolveComunaData(map, comuna) {
 
 function getComunaCoords(comuna) {
   const coordsMap = loadComunaCoordsMap();
-
-  for (const key of Object.keys(coordsMap)) {
-    if (normalizeText(key) === normalizeText(comuna)) {
-      return coordsMap[key];
-    }
-  }
-
-  return null;
+  const resolved = resolveComunaData(coordsMap, comuna);
+  return resolved?.value || null;
 }
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -92,6 +81,8 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 async function getRealDistance(lat1, lon1, lat2, lon2) {
+  if (!ORS_API_KEY) return null;
+
   const cacheKey = `${lat1.toFixed(4)},${lon1.toFixed(4)}|${lat2.toFixed(4)},${lon2.toFixed(4)}`;
 
   const cached = routeCache.get(cacheKey);
@@ -100,10 +91,14 @@ async function getRealDistance(lat1, lon1, lat2, lon2) {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
     const response = await fetch(
       'https://api.openrouteservice.org/v2/directions/driving-car',
       {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           Authorization: ORS_API_KEY,
           'Content-Type': 'application/json'
@@ -116,6 +111,7 @@ async function getRealDistance(lat1, lon1, lat2, lon2) {
         })
       }
     );
+    clearTimeout(timeout);
 
     if (!response.ok) return null;
 
@@ -236,6 +232,12 @@ async function runPipeline({ userProfile, context }) {
     comuna,
     destino
   } = context;
+  const userLat = Number(user_lat);
+  const userLon = Number(user_lon);
+
+  if (!Number.isFinite(userLat) || !Number.isFinite(userLon)) {
+    return { mode: 3, message: 'Ubicación de usuario inválida' };
+  }
 
   const autonomiaKm = calculateAutonomyKm(userProfile);
   const autonomiaSeguraKm = calculateSafeAutonomyKm(autonomiaKm);
@@ -264,13 +266,13 @@ async function runPipeline({ userProfile, context }) {
         const coords = coordsMap[cName];
 
         if (!isForward(
-          { lat: user_lat, lon: user_lon },
+          { lat: userLat, lon: userLon },
           destinoCoords,
           coords
         )) continue;
 
         const progress = computeProgress(
-          { lat: user_lat, lon: user_lon },
+          { lat: userLat, lon: userLon },
           coords
         );
 
@@ -299,8 +301,8 @@ async function runPipeline({ userProfile, context }) {
   const enrichedStations = [];
 
   for (const s of stations) {
-    const dist = await getRealDistance(user_lat, user_lon, s.lat, s.lon)
-      || haversineDistance(user_lat, user_lon, s.lat, s.lon);
+    const dist = await getRealDistance(userLat, userLon, s.lat, s.lon)
+      || haversineDistance(userLat, userLon, s.lat, s.lon);
 
     enrichedStations.push({ ...s, _real_distance_km: dist });
   }
