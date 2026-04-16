@@ -186,14 +186,19 @@ async function loadComunaCoords() {
         null;
 
       const lat =
-        Number(item.lat ??
-        item.latitud ??
-        item.latitude);
+        Number(
+          item.lat ??
+          item.latitud ??
+          item.latitude
+        );
 
       const lon =
-        Number(item.lon ??
-        item.longitud ??
-        item.longitude);
+        Number(
+          item.lon ??
+          item.lng ??          // 🔥 FIX CLAVE (tu JSON usa "lng")
+          item.longitud ??
+          item.longitude
+        );
 
       if (!nombre) continue;
       if (!Number.isFinite(lat)) continue;
@@ -550,6 +555,30 @@ async function runPipeline({ userProfile, context }) {
   }
 
   const result = engine.decide(userProfile, engineStations, {});
+
+  // =============================================
+// ENRIQUECER RESPUESTA (UI)
+// =============================================
+
+function attachFullData(target, fullList) {
+  if (!target) return;
+
+  const found = fullList.find(s => s.id === target.id);
+  if (!found) return;
+
+  target.nombre = found.nombre;
+  target.direccion = found.direccion;
+  target.comuna = found.comuna;
+  target.distancia_km = Math.round(found._real_distance_km * 10) / 10;
+}
+
+attachFullData(result.top, enriched);
+
+if (Array.isArray(result.alternatives)) {
+  for (const alt of result.alternatives) {
+    attachFullData(alt, enriched);
+  }
+}
 
   // =============================================
   // MENSAJE INTELIGENTE
