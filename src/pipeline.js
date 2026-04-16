@@ -26,7 +26,26 @@ function normalizeText(value) {
     .trim()
     .toLowerCase();
 }
+// =============================================
+// RESOLVER COMUNA (CLAVE)
+// =============================================
 
+function resolveComunaData(map, name) {
+  if (!map || !name) return null;
+
+  const target = normalizeText(name);
+
+  for (const key of Object.keys(map)) {
+    if (normalizeText(key) === target) {
+      return {
+        key,
+        value: map[key]
+      };
+    }
+  }
+
+  return null;
+}
 // =============================================
 // MARCAS (NOMBRE REAL)
 // =============================================
@@ -91,34 +110,33 @@ async function loadComunaCoords() {
     const json = await res.json();
     const map = {};
 
-    let list = [];
+    const items = Array.isArray(json)
+      ? json
+      : Array.isArray(json.comunas)
+      ? json.comunas
+      : Object.values(json);
 
-    if (Array.isArray(json)) {
-      list = json;
-    } else if (Array.isArray(json.comunas)) {
-      list = json.comunas;
-    } else {
-      list = Object.values(json);
-    }
-
-    for (const item of list) {
+    for (const item of items) {
 
       const nombre =
         item.nombre ||
         item.comuna ||
-        item.name;
+        item.name ||
+        null;
 
       const lat =
-        Number(item.lat ||
-        item.latitud ||
+        Number(item.lat ??
+        item.latitud ??
         item.latitude);
 
       const lon =
-        Number(item.lon ||
-        item.longitud ||
+        Number(item.lon ??
+        item.longitud ??
         item.longitude);
 
-      if (!nombre || !lat || !lon) continue;
+      if (!nombre) continue;
+      if (!Number.isFinite(lat)) continue;
+      if (!Number.isFinite(lon)) continue;
 
       map[normalizeText(nombre)] = {
         nombre,
