@@ -99,22 +99,84 @@ async function loadComunaStationsMap() {
 // CARGA DE COORDENADAS (ROBUSTA)
 // =============================================
 
+let comunaCoordsCache = null;
+
+// =============================================
+// NORMALIZACIÓN AUX
+// =============================================
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+// =============================================
+// GET COORDS
+// =============================================
+
+function getComunaCoords(name) {
+  if (!name || !comunaCoordsCache) return null;
+
+  return comunaCoordsCache[normalizeText(name)] || null;
+}
+
+// =============================================
+// RESOLVER COMUNA
+// =============================================
+
+function resolveComunaData(map, name) {
+  if (!map || !name) return null;
+
+  const target = normalizeText(name);
+
+  for (const key of Object.keys(map)) {
+    if (normalizeText(key) === target) {
+      return {
+        key,
+        value: map[key]
+      };
+    }
+  }
+
+  return null;
+}
+
+// =============================================
+// LOAD COORDS (FIX DEFINITIVO)
+// =============================================
+
 async function loadComunaCoords() {
   if (comunaCoordsCache) return comunaCoordsCache;
 
   try {
-    const res = await fetch(
-      'https://raw.githubusercontent.com/RSTChile/marcha-motor/refs/heads/main/data/comunas-completo.json'
-    );
+    const url = 'https://raw.githubusercontent.com/RSTChile/marcha-motor/refs/heads/main/data/comunas-completo.json';
+
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      console.error('[pipeline] ❌ Error HTTP coords:', res.status);
+      comunaCoordsCache = {};
+      return {};
+    }
 
     const json = await res.json();
-    const map = {};
 
-    const items = Array.isArray(json)
-      ? json
-      : Array.isArray(json.comunas)
-      ? json.comunas
-      : Object.values(json);
+    console.log('[pipeline] DEBUG coords tipo:', typeof json);
+
+    let items = [];
+
+    if (Array.isArray(json)) {
+      items = json;
+    } else if (Array.isArray(json.comunas)) {
+      items = json.comunas;
+    } else if (typeof json === 'object') {
+      items = Object.values(json);
+    }
+
+    const map = {};
 
     for (const item of items) {
 
@@ -151,10 +213,17 @@ async function loadComunaCoords() {
       `[pipeline] 🗺️ Coordenadas cargadas: ${Object.keys(map).length} comunas`
     );
 
+    // 🔥 DEBUG CLAVE
+    if (Object.keys(map).length === 0) {
+      console.log('[pipeline] ⚠️ WARNING: mapa de coords vacío');
+      console.log('[pipeline] muestra json:', JSON.stringify(json).slice(0, 300));
+    }
+
     return map;
 
   } catch (err) {
-    console.error('[pipeline] error coords:', err);
+    console.error('[pipeline] ❌ Error coords:', err.message);
+    comunaCoordsCache = {};
     return {};
   }
 }
