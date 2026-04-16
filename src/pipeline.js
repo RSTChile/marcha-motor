@@ -150,5 +150,16 @@ async function runPipeline({ userProfile, context }) {
 
   return result;
 }
+function calculateAutonomyKm(userProfile) {
+  const {
+    tank_capacity_liters = 45,   // capacidad típica
+    consumption_km_per_liter = 12 // rendimiento típico
+  } = userProfile || {};
 
+  if (!tank_capacity_liters || !consumption_km_per_liter) {
+    return 400; // fallback razonable
+  }
+
+  return tank_capacity_liters * consumption_km_per_liter;
+}
 module.exports = { runPipeline };
