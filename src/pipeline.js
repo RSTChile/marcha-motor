@@ -31,19 +31,27 @@ function normalizeText(value) {
 // MARCAS (NOMBRE REAL)
 // =============================================
 
-function getMarcaNombre(marcaId) {
+function getMarcaNombre(marca) {
+
+  if (!marca) return 'Estación';
+
+  // Si ya viene como string válido
+  if (typeof marca === 'string' && marca.length > 2) {
+    return marca.toUpperCase();
+  }
+
   const marcas = {
-    1: 'Copec',
-    2: 'Shell',
-    3: 'Petrobras',
-    151: 'Esmax'
+    1: 'COPEC',
+    2: 'SHELL',
+    3: 'PETROBRAS',
+    4: 'ENEX',
+    5: 'COPEC',
+    10: 'SHELL',
+    15: 'PETROBRAS',
+    151: 'ESMAX'
   };
 
-  if (marcas[marcaId]) return marcas[marcaId];
-
-  if (typeof marcaId === 'string') return marcaId;
-
-  return 'Estación';
+  return marcas[marca] || 'Estación';
 }
 
 // =============================================
@@ -75,52 +83,62 @@ async function loadComunaStationsMap() {
 async function loadComunaCoords() {
   if (comunaCoordsCache) return comunaCoordsCache;
 
-  const res = await fetch(
-    'https://raw.githubusercontent.com/RSTChile/marcha-motor/refs/heads/main/data/comunas-completo.json'
-  );
+  try {
+    const res = await fetch(
+      'https://raw.githubusercontent.com/RSTChile/marcha-motor/refs/heads/main/data/comunas-completo.json'
+    );
 
-  const json = await res.json();
-  const map = {};
+    const json = await res.json();
+    const map = {};
 
-  const list = Array.isArray(json)
-    ? json
-    : Array.isArray(json.comunas)
-    ? json.comunas
-    : Object.values(json);
+    let list = [];
 
-  for (const item of list) {
-    const lat = Number(item.lat || item.latitud);
-    const lon = Number(item.lon || item.longitud);
-    const nombre = item.nombre || item.comuna;
+    if (Array.isArray(json)) {
+      list = json;
+    } else if (Array.isArray(json.comunas)) {
+      list = json.comunas;
+    } else {
+      list = Object.values(json);
+    }
 
-    if (!nombre || !lat || !lon) continue;
+    for (const item of list) {
 
-    map[normalizeText(nombre)] = {
-      nombre,
-      lat,
-      lon
-    };
+      const nombre =
+        item.nombre ||
+        item.comuna ||
+        item.name;
+
+      const lat =
+        Number(item.lat ||
+        item.latitud ||
+        item.latitude);
+
+      const lon =
+        Number(item.lon ||
+        item.longitud ||
+        item.longitude);
+
+      if (!nombre || !lat || !lon) continue;
+
+      map[normalizeText(nombre)] = {
+        nombre,
+        lat,
+        lon
+      };
+    }
+
+    comunaCoordsCache = map;
+
+    console.log(
+      `[pipeline] 🗺️ Coordenadas cargadas: ${Object.keys(map).length} comunas`
+    );
+
+    return map;
+
+  } catch (err) {
+    console.error('[pipeline] error coords:', err);
+    return {};
   }
-
-  comunaCoordsCache = map;
-
-  console.log(
-    `[pipeline] 🗺️ Coordenadas cargadas: ${Object.keys(map).length} comunas`
-  );
-
-  return map;
-}
-
-function getComunaCoords(name) {
-  return comunaCoordsCache?.[normalizeText(name)] || null;
-}
-
-function resolveComunaData(map, name) {
-  const key = Object.keys(map).find(
-    k => normalizeText(k) === normalizeText(name)
-  );
-
-  return key ? { key, value: map[key] } : null;
 }
 // =============================================
 // DISTANCIA (HAVERSINE)
@@ -214,7 +232,7 @@ async function fetchStationById(id) {
 
     const station = {
       id: d.id,
-      nombre: getMarcaNombre(d.marca),
+      nombre: getMarcaNombre(d.marca || d.razon_social?.marca),
       direccion: d.direccion,
       comuna: d.comuna,
       lat: parseFloat(d.latitud),
@@ -427,14 +445,19 @@ async function runPipeline({ userProfile, context }) {
 
   enriched.sort((a, b) => a._real_distance_km - b._real_distance_km);
 
-  const engineStations = enriched.map(s => ({
-    id: s.id,
-    nombre: s.nombre,
-    direccion: s.direccion,
-    comuna: s.comuna,
-    precio_actual: s.precios[fuel_type],
-    _real_distance_km: s._real_distance_km
-  }));
+ const engineStations = enriched.map(s => ({
+  id: s.id,
+  nombre: s.nombre,
+  direccion: s.direccion,
+  comuna: s.comuna,
+
+  precios: s.precios,
+  servicios: s.servicios || [],
+  metodos_pago: s.metodos_pago || [],
+
+  precio_actual: s.precios[fuel_type],
+  _real_distance_km: s._real_distance_km
+}));
 
   if (!engineStations.length) {
     return { mode: 3, message: 'No hay estaciones disponibles' };
