@@ -1,194 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const engine = require('./engine');
-
-const ORS_API_KEY = process.env.ORS_API_KEY;
-
-const CACHE_TTL_MS = 1000 * 60 * 5;
-const FETCH_TIMEOUT_MS = 5000;
-
-const SAFE_AUTONOMY_FACTOR = 0.9;
-const ROUTE_CORRIDOR_WIDTH = 0.3;
-
-const TRIP_TARGET_NEAR = 0.15;
-const TRIP_TARGET_MID = 0.5;
-const TRIP_TARGET_LIMIT = 0.9;
-
-const COMUNA_STATIONS_FILE = path.join(__dirname, '../data/comunas-stations.json');
-const COMUNAS_COORDS_FILE = path.join(__dirname, '../data/comunas-completo.json');
-
-const routeCache = new Map();
-const stationsCache = new Map();
-
-let comunasMapCache = null;
-let comunasCoordsCache = null;
-
-// ----------------------------
-// LOADERS
-// ----------------------------
-
-function loadComunaStationsMap() {
-  if (comunasMapCache) return comunasMapCache;
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(COMUNA_STATIONS_FILE, 'utf8'));
-    comunasMapCache = raw.comunas || {};
-    return comunasMapCache;
-  } catch (err) {
-    console.error('[pipeline] Error cargando comunas:', err.message);
-    return {};
-  }
-}
-
-function loadComunaCoordsMap() {
-  if (comunasCoordsCache) return comunasCoordsCache;
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(COMUNAS_COORDS_FILE, 'utf8'));
-    comunasCoordsCache = raw.comunas || {};
-    return comunasCoordsCache;
-  } catch (err) {
-    console.error('[pipeline] Error coords:', err.message);
-    return {};
-  }
-}
-
-function normalizeText(text) {
-  return text?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
-}
-
-function resolveComunaData(map, comuna) {
-  const norm = normalizeText(comuna);
-
-  for (const key of Object.keys(map)) {
-    if (normalizeText(key) === norm) {
-      return { key, value: map[key] };
-    }
-  }
-
-  return null;
-}
-
-function getComunaCoords(comuna) {
-  const map = loadComunaCoordsMap();
-
-  for (const key of Object.keys(map)) {
-    if (normalizeText(key) === normalizeText(comuna)) {
-      return map[key];
-    }
-  }
-
-  return null;
-}
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-async function getRealDistance(lat1, lon1, lat2, lon2) {
-  const cacheKey = `${lat1.toFixed(4)},${lon1.toFixed(4)}|${lat2.toFixed(4)},${lon2.toFixed(4)}`;
-
-  const cached = routeCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.distance;
-  }
-
-  try {
-    const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car', {
-      method: 'POST',
-      headers: {
-        Authorization: ORS_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        coordinates: [[lon1, lat1], [lon2, lat2]]
-      })
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    const meters = data?.features?.[0]?.properties?.summary?.distance;
-
-    if (!meters) return null;
-
-    const km = meters / 1000;
-
-    routeCache.set(cacheKey, {
-      distance: km,
-      timestamp: Date.now()
-    });
-
-    return km;
-
-  } catch {
-    return null;
-  }
-}
-
-function calculateAutonomyKm(userProfile) {
-  const tank = Number(userProfile?.tank_capacity || 0);
-  const pct = Number(userProfile?.current_level_pct || 0);
-  const consumption = Number(userProfile?.fuel_consumption || 0);
-
-  if (!tank || !pct || !consumption) return 0;
-
-  const liters = tank * (pct / 100);
-  const kmPerLiter = 100 / consumption;
-
-  return liters * kmPerLiter;
-}
-function isForward(origin, destination, point) {
-  const dx = destination.lon - origin.lon;
-  const dy = destination.lat - origin.lat;
-
-  const px = point.lon - origin.lon;
-  const py = point.lat - origin.lat;
-
-  return (dx * px + dy * py) > 0;
-}
-
-function computeProgress(origin, point) {
-  return haversineDistance(origin.lat, origin.lon, point.lat, point.lon);
-}
-
-function getRouteComunas(origin, destino, autonomiaKm) {
-  const coordsMap = loadComunaCoordsMap();
-  const destCoords = getComunaCoords(destino);
-
-  if (!destCoords) return [];
-
-  const maxDist = autonomiaKm * SAFE_AUTONOMY_FACTOR;
-
-  const candidates = [];
-
-  for (const comunaName of Object.keys(coordsMap)) {
-    const c = coordsMap[comunaName];
-
-    if (!isForward(origin, destCoords, c)) continue;
-
-    const dist = computeProgress(origin, c);
-
-    if (dist > maxDist) continue;
-
-    candidates.push({ comuna: comunaName, dist });
-  }
-
-  candidates.sort((a, b) => a.dist - b.dist);
-
-  return candidates.slice(0, 5).map(c => c.comuna);
-}
 async function fetchStationById(id) {
   const cached = stationsCache.get(id);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -249,7 +58,13 @@ async function fetchStations(ids) {
 
 async function runPipeline({ userProfile, context }) {
 
-  const { user_lat, user_lon, comuna, destino, fuel_type = 'diesel' } = context;
+  const {
+    user_lat,
+    user_lon,
+    comuna,
+    destino,
+    fuel_type = 'diesel'
+  } = context;
 
   const autonomia = calculateAutonomyKm(userProfile);
 
@@ -282,11 +97,31 @@ async function runPipeline({ userProfile, context }) {
 
   const stations = await fetchStations(stationIds);
 
+  // ⚠️ OPTIMIZACIÓN ORS (CLAVE)
+  // Ordenamos primero por distancia aproximada (barata)
+  stations.sort((a, b) =>
+    haversineDistance(user_lat, user_lon, a.lat, a.lon) -
+    haversineDistance(user_lat, user_lon, b.lat, b.lon)
+  );
+
+  // Tomamos sólo las más cercanas
+  const topStations = stations.slice(0, 10);
+
   const enriched = [];
 
-  for (const s of stations) {
-    const dist = await getRealDistance(user_lat, user_lon, s.lat, s.lon)
-      || haversineDistance(user_lat, user_lon, s.lat, s.lon);
+  for (const s of topStations) {
+
+    let dist = null;
+
+    try {
+      dist = await getRealDistance(user_lat, user_lon, s.lat, s.lon);
+    } catch {
+      dist = null;
+    }
+
+    if (!dist) {
+      dist = haversineDistance(user_lat, user_lon, s.lat, s.lon);
+    }
 
     if (!s.precios[fuel_type]) continue;
 
