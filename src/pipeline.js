@@ -9,6 +9,11 @@ const CACHE_TTL_MS = 1000 * 60 * 5;
 const FETCH_TIMEOUT_MS = 5000;
 
 const SAFE_AUTONOMY_FACTOR = 0.9;
+const ROUTE_CORRIDOR_WIDTH = 0.3;
+
+const TRIP_TARGET_NEAR = 0.15;
+const TRIP_TARGET_MID = 0.5;
+const TRIP_TARGET_LIMIT = 0.9;
 
 const COMUNA_STATIONS_FILE = path.join(__dirname, '../data/comunas-stations.json');
 const COMUNAS_COORDS_FILE = path.join(__dirname, '../data/comunas-completo.json');
@@ -18,6 +23,11 @@ const stationsCache = new Map();
 
 let comunasMapCache = null;
 let comunasCoordsCache = null;
+
+// ----------------------------
+// LOADERS
+// ----------------------------
+
 function loadComunaStationsMap() {
   if (comunasMapCache) return comunasMapCache;
 
@@ -26,7 +36,7 @@ function loadComunaStationsMap() {
     comunasMapCache = raw.comunas || {};
     return comunasMapCache;
   } catch (err) {
-    console.error('[pipeline] Error cargando comunas-stations:', err.message);
+    console.error('[pipeline] Error cargando comunas:', err.message);
     return {};
   }
 }
@@ -39,7 +49,7 @@ function loadComunaCoordsMap() {
     comunasCoordsCache = raw.comunas || {};
     return comunasCoordsCache;
   } catch (err) {
-    console.error('[pipeline] Error cargando coordenadas:', err.message);
+    console.error('[pipeline] Error coords:', err.message);
     return {};
   }
 }
@@ -61,9 +71,15 @@ function resolveComunaData(map, comuna) {
 }
 
 function getComunaCoords(comuna) {
-  const coordsMap = loadComunaCoordsMap();
-  const resolved = resolveComunaData(coordsMap, comuna);
-  return resolved?.value || null;
+  const map = loadComunaCoordsMap();
+
+  for (const key of Object.keys(map)) {
+    if (normalizeText(key) === normalizeText(comuna)) {
+      return map[key];
+    }
+  }
+
+  return null;
 }
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -81,42 +97,28 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 async function getRealDistance(lat1, lon1, lat2, lon2) {
-  if (!ORS_API_KEY) return null;
-
   const cacheKey = `${lat1.toFixed(4)},${lon1.toFixed(4)}|${lat2.toFixed(4)},${lon2.toFixed(4)}`;
 
   const cached = routeCache.get(cacheKey);
-  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.distance;
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car', {
+      method: 'POST',
+      headers: {
+        Authorization: ORS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        coordinates: [[lon1, lat1], [lon2, lat2]]
+      })
+    });
 
-    const response = await fetch(
-      'https://api.openrouteservice.org/v2/directions/driving-car',
-      {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          Authorization: ORS_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          coordinates: [
-            [lon1, lat1],
-            [lon2, lat2]
-          ]
-        })
-      }
-    );
-    clearTimeout(timeout);
+    if (!res.ok) return null;
 
-    if (!response.ok) return null;
-
-    const data = await response.json();
-
+    const data = await res.json();
     const meters = data?.features?.[0]?.properties?.summary?.distance;
 
     if (!meters) return null;
@@ -134,33 +136,67 @@ async function getRealDistance(lat1, lon1, lat2, lon2) {
     return null;
   }
 }
+
 function calculateAutonomyKm(userProfile) {
   const tank = Number(userProfile?.tank_capacity || 0);
   const pct = Number(userProfile?.current_level_pct || 0);
   const consumption = Number(userProfile?.fuel_consumption || 0);
 
-  if (tank <= 0 || pct <= 0 || consumption <= 0) return 0;
+  if (!tank || !pct || !consumption) return 0;
 
   const liters = tank * (pct / 100);
   const kmPerLiter = 100 / consumption;
 
   return liters * kmPerLiter;
 }
+function isForward(origin, destination, point) {
+  const dx = destination.lon - origin.lon;
+  const dy = destination.lat - origin.lat;
 
-function calculateSafeAutonomyKm(km) {
-  return km * SAFE_AUTONOMY_FACTOR;
+  const px = point.lon - origin.lon;
+  const py = point.lat - origin.lat;
+
+  return (dx * px + dy * py) > 0;
+}
+
+function computeProgress(origin, point) {
+  return haversineDistance(origin.lat, origin.lon, point.lat, point.lon);
+}
+
+function getRouteComunas(origin, destino, autonomiaKm) {
+  const coordsMap = loadComunaCoordsMap();
+  const destCoords = getComunaCoords(destino);
+
+  if (!destCoords) return [];
+
+  const maxDist = autonomiaKm * SAFE_AUTONOMY_FACTOR;
+
+  const candidates = [];
+
+  for (const comunaName of Object.keys(coordsMap)) {
+    const c = coordsMap[comunaName];
+
+    if (!isForward(origin, destCoords, c)) continue;
+
+    const dist = computeProgress(origin, c);
+
+    if (dist > maxDist) continue;
+
+    candidates.push({ comuna: comunaName, dist });
+  }
+
+  candidates.sort((a, b) => a.dist - b.dist);
+
+  return candidates.slice(0, 5).map(c => c.comuna);
 }
 async function fetchStationById(id) {
   const cached = stationsCache.get(id);
-  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
   try {
-    const res = await fetch(
-      `https://api.bencinaenlinea.cl/api/estacion_ciudadano/${id}`
-    );
-
+    const res = await fetch(`https://api.bencinaenlinea.cl/api/estacion_ciudadano/${id}`);
     if (!res.ok) return null;
 
     const json = await res.json();
@@ -171,13 +207,13 @@ async function fetchStationById(id) {
     const precios = {};
 
     for (const c of d.combustibles || []) {
-      const precio = Math.floor(parseFloat(c.precio));
-      if (!precio) continue;
+      const p = Math.floor(parseFloat(c.precio));
+      if (!p) continue;
 
-      if (c.nombre_corto === 'DI') precios.diesel = precio;
-      if (c.nombre_corto === '93') precios.gas93 = precio;
-      if (c.nombre_corto === '95') precios.gas95 = precio;
-      if (c.nombre_corto === '97') precios.gas97 = precio;
+      if (c.nombre_corto === 'DI') precios.diesel = p;
+      if (c.nombre_corto === '93') precios.gas93 = p;
+      if (c.nombre_corto === '95') precios.gas95 = p;
+      if (c.nombre_corto === '97') precios.gas97 = p;
     }
 
     const station = {
@@ -200,7 +236,7 @@ async function fetchStationById(id) {
   }
 }
 
-async function fetchStationsByIds(ids) {
+async function fetchStations(ids) {
   const results = [];
 
   for (const id of ids) {
@@ -210,115 +246,72 @@ async function fetchStationsByIds(ids) {
 
   return results;
 }
-function isForward(origin, destination, point) {
-  const dx = destination.lon - origin.lon;
-  const dy = destination.lat - origin.lat;
 
-  const px = point.lon - origin.lon;
-  const py = point.lat - origin.lat;
-
-  return (dx * px + dy * py) > 0;
-}
-
-function computeProgress(origin, point) {
-  return haversineDistance(origin.lat, origin.lon, point.lat, point.lon);
-}
 async function runPipeline({ userProfile, context }) {
 
-  const {
-    user_lat,
-    user_lon,
-    fuel_type = 'diesel',
-    comuna,
-    destino
-  } = context;
-  const userLat = Number(user_lat);
-  const userLon = Number(user_lon);
+  const { user_lat, user_lon, comuna, destino, fuel_type = 'diesel' } = context;
 
-  if (!Number.isFinite(userLat) || !Number.isFinite(userLon)) {
-    return { mode: 3, message: 'Ubicación de usuario inválida' };
-  }
-
-  const autonomiaKm = calculateAutonomyKm(userProfile);
-  const autonomiaSeguraKm = calculateSafeAutonomyKm(autonomiaKm);
+  const autonomia = calculateAutonomyKm(userProfile);
 
   const comunaMap = loadComunaStationsMap();
   const resolved = resolveComunaData(comunaMap, comuna);
 
   if (!resolved) {
-    return { mode: 3, message: `No hay estaciones para ${comuna}` };
+    return { mode: 3, message: 'Comuna no encontrada' };
   }
 
-  let stationIds = resolved.value?.stations?.map(s => s.id) || [];
+  let stationIds = resolved.value.stations.map(s => s.id);
 
-  // 🔥 MODO VIAJE REAL
+  // 🔥 MODO VIAJE
   if (destino) {
+    const comunasRuta = getRouteComunas(
+      { lat: user_lat, lon: user_lon },
+      destino,
+      autonomia
+    );
 
-    const destinoCoords = getComunaCoords(destino);
+    stationIds = [];
 
-    if (destinoCoords) {
-
-      const coordsMap = loadComunaCoordsMap();
-
-      const candidates = [];
-
-      for (const cName of Object.keys(coordsMap)) {
-        const coords = coordsMap[cName];
-
-        if (!isForward(
-          { lat: userLat, lon: userLon },
-          destinoCoords,
-          coords
-        )) continue;
-
-        const progress = computeProgress(
-          { lat: userLat, lon: userLon },
-          coords
-        );
-
-        if (progress > autonomiaSeguraKm * 1.1) continue;
-
-        candidates.push({ comuna: cName, progress });
-      }
-
-      candidates.sort((a, b) => a.progress - b.progress);
-
-      const selected = candidates.slice(0, 5).map(c => c.comuna);
-
-      stationIds = [];
-
-      for (const c of selected) {
-        const r = resolveComunaData(comunaMap, c);
-        if (r) {
-          stationIds.push(...(r.value.stations.map(s => s.id)));
-        }
+    for (const c of comunasRuta) {
+      const r = resolveComunaData(comunaMap, c);
+      if (r) {
+        stationIds.push(...r.value.stations.map(s => s.id));
       }
     }
   }
 
-  const stations = await fetchStationsByIds(stationIds);
+  const stations = await fetchStations(stationIds);
 
-  const enrichedStations = [];
+  const enriched = [];
 
   for (const s of stations) {
-    const dist = await getRealDistance(userLat, userLon, s.lat, s.lon)
-      || haversineDistance(userLat, userLon, s.lat, s.lon);
+    const dist = await getRealDistance(user_lat, user_lon, s.lat, s.lon)
+      || haversineDistance(user_lat, user_lon, s.lat, s.lon);
 
-    enrichedStations.push({ ...s, _real_distance_km: dist });
+    if (!s.precios[fuel_type]) continue;
+
+    enriched.push({
+      ...s,
+      _real_distance_km: dist
+    });
   }
 
-  const engineStations = enrichedStations
-    .map(s => ({
-      id: s.id,
-      nombre: s.nombre,
-      precio_actual: s.precios[fuel_type],
-      _real_distance_km: s._real_distance_km
-    }))
-    .filter(s => s.precio_actual);
+  enriched.sort((a, b) => a._real_distance_km - b._real_distance_km);
+
+  const engineStations = enriched.map(s => ({
+    id: s.id,
+    nombre: s.nombre,
+    precio_actual: s.precios[fuel_type],
+    _real_distance_km: s._real_distance_km
+  }));
+
+  if (engineStations.length === 0) {
+    return { mode: 3, message: 'No hay estaciones disponibles' };
+  }
 
   const result = engine.decide(userProfile, engineStations, {});
 
-  result.autonomy_km = autonomiaKm;
+  result.autonomy_km = Math.round(autonomia);
 
   return result;
 }
