@@ -237,7 +237,8 @@
                 </div>
             </div>
         </div>
-                <div class="section">
+
+        <div class="section">
             <div class="sec-label">🛢️ Nivel del estanque</div>
             <div class="gauge-card">
                 <div class="gauge-track"><div class="gauge-fill" id="gFill"></div></div>
@@ -279,14 +280,55 @@
 </div>
 
 <script>
-// ── COMUNAS
-let clist = [];
-fetch('/data/comunas-completo.json').then(r=>r.json()).then(d=>{
-    clist = d.comunas||[];
-    loadDestinationOptions();
-}).catch(()=>{});
+// =============================================
+// COMUNAS
+// =============================================
 
-// ── DOM
+let clist = [];
+
+function normalizeText(s) {
+    return String(s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+
+function parseComunasPayload(raw) {
+    const items = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.comunas)
+        ? raw.comunas
+        : Object.values(raw || {});
+
+    return items
+        .map(item => {
+            const nombre = item?.nombre || item?.comuna || item?.name || null;
+            const region = item?.region || item?.Region || '';
+            const lat = Number(item?.lat ?? item?.latitud ?? item?.latitude);
+            const lng = Number(item?.lng ?? item?.lon ?? item?.longitud ?? item?.longitude);
+
+            if (!nombre || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+            return { nombre, region, lat, lng };
+        })
+        .filter(Boolean);
+}
+
+fetch('/data/comunas-completo.json')
+    .then(r => r.json())
+    .then(d => {
+        clist = parseComunasPayload(d);
+        loadDestinationOptions();
+    })
+    .catch(() => {
+        clist = [];
+    });
+
+// =============================================
+// DOM
+// =============================================
+
 const locInput   = document.getElementById('locationInput');
 const srResults  = document.getElementById('searchResults');
 const latI       = document.getElementById('lat');
@@ -300,208 +342,515 @@ const submitBtn  = document.getElementById('submitBtn');
 const resultArea = document.getElementById('resultArea');
 const destinationSelect = document.getElementById('destination');
 
-// ── DESTINO
-function loadDestinationOptions(){
-    if(!destinationSelect || !clist.length) return;
+// =============================================
+// DESTINO
+// =============================================
+
+function loadDestinationOptions() {
+    if (!destinationSelect || !clist.length) return;
+
     const currentValue = destinationSelect.value;
-    destinationSelect.innerHTML = '<option value="">📌 Sin destino / Evaluar sólo tu zona actual</option>';
+
+    destinationSelect.innerHTML =
+        '<option value="">📌 Sin destino / Evaluar sólo tu zona actual</option>';
+
     clist
         .slice()
-        .sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'))
-        .forEach(c=>{
-            const opt=document.createElement('option');
-            opt.value=c.nombre;
-            opt.textContent=`${c.nombre}, ${c.region}`;
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+        .forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.nombre;
+            opt.textContent = `${c.nombre}, ${c.region}`;
             destinationSelect.appendChild(opt);
         });
-    if(currentValue) destinationSelect.value = currentValue;
+
+    if (currentValue) destinationSelect.value = currentValue;
 }
 
-// ── GAUGE
+// =============================================
+// GAUGE
+// =============================================
+
 function setLevel(pct) {
     fuelLvlI.value = pct;
-    gFill.style.width = pct+'%';
-    const labels=[[5,'Reserva'],[12.5,'Mínimo'],[25,'1/4'],[50,'1/2'],[75,'3/4'],[101,'Lleno']];
-    gLbl.textContent = 'Nivel: '+(labels.find(([p])=>pct<=p)||[0,'Lleno'])[1]+' ('+pct+'%)';
-    document.querySelectorAll('.fuel-mark').forEach(m=>
-        m.classList.toggle('selected', Math.abs(parseFloat(m.dataset.pct)-pct)<0.1));
+    gFill.style.width = pct + '%';
+
+    const labels = [
+        [5, 'Reserva'],
+        [12.5, 'Mínimo'],
+        [25, '1/4'],
+        [50, '1/2'],
+        [75, '3/4'],
+        [101, 'Lleno']
+    ];
+
+    gLbl.textContent =
+        'Nivel: ' +
+        (labels.find(([p]) => pct <= p) || [0, 'Lleno'])[1] +
+        ' (' + pct + '%)';
+
+    document.querySelectorAll('.fuel-mark').forEach(m =>
+        m.classList.toggle(
+            'selected',
+            Math.abs(parseFloat(m.dataset.pct) - pct) < 0.1
+        )
+    );
 }
-document.querySelectorAll('.fuel-mark').forEach(m=>m.addEventListener('click',()=>setLevel(parseFloat(m.dataset.pct))));
+
+document.querySelectorAll('.fuel-mark').forEach(m =>
+    m.addEventListener('click', () => setLevel(parseFloat(m.dataset.pct)))
+);
+
 setLevel(25);
 
-// ── BUSQUEDA
-function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// =============================================
+// BÚSQUEDA DE COMUNAS
+// =============================================
 
 function buscar(q) {
-    if(!q||q.length<2||!clist.length){ srResults.classList.add('hidden'); return; }
-    const nq=norm(q);
-    const m=clist.filter(c=>norm(c.nombre).includes(nq)||norm(c.region).includes(nq))
-        .sort((a,b)=>{ const as=norm(a.nombre).startsWith(nq),bs=norm(b.nombre).startsWith(nq); return as===bs?0:as?-1:1; })
-        .slice(0,10);
-    if(!m.length){ srResults.classList.add('hidden'); return; }
-    srResults.innerHTML=m.map(c=>`<div class="com-item" data-n="${c.nombre}" data-r="${c.region}" data-lat="${c.lat}" data-lng="${c.lng}"><div class="com-nombre">${c.nombre}</div><div class="com-region">${c.region}</div></div>`).join('');
+    if (!q || q.length < 2 || !clist.length) {
+        srResults.classList.add('hidden');
+        return;
+    }
+
+    const nq = normalizeText(q);
+
+    const matches = clist
+        .filter(c =>
+            normalizeText(c.nombre).includes(nq) ||
+            normalizeText(c.region).includes(nq)
+        )
+        .sort((a, b) => {
+            const as = normalizeText(a.nombre).startsWith(nq);
+            const bs = normalizeText(b.nombre).startsWith(nq);
+            return as === bs ? 0 : as ? -1 : 1;
+        })
+        .slice(0, 10);
+
+    if (!matches.length) {
+        srResults.classList.add('hidden');
+        return;
+    }
+
+    srResults.innerHTML = matches.map(c => `
+        <div class="com-item"
+             data-n="${c.nombre}"
+             data-r="${c.region}"
+             data-lat="${c.lat}"
+             data-lng="${c.lng}">
+            <div class="com-nombre">${c.nombre}</div>
+            <div class="com-region">${c.region}</div>
+        </div>
+    `).join('');
+
     srResults.classList.remove('hidden');
-    srResults.querySelectorAll('.com-item').forEach(el=>el.addEventListener('click',()=>elegir(el.dataset)));
+
+    srResults.querySelectorAll('.com-item').forEach(el =>
+        el.addEventListener('click', () => elegir(el.dataset))
+    );
 }
 
-function elegir(d){
-    latI.value=d.lat; lngI.value=d.lng; comI.value=d.n;
-    locInput.value=d.n+', '+d.r;
-    locSt.textContent='✓ '+d.n+', '+d.r; locSt.className='loc-status ok';
+function elegir(d) {
+    latI.value = d.lat;
+    lngI.value = d.lng;
+    comI.value = d.n;
+
+    locInput.value = d.n + ', ' + d.r;
+    locSt.textContent = '✓ ' + d.n + ', ' + d.r;
+    locSt.className = 'loc-status ok';
     srResults.classList.add('hidden');
 }
 
-locInput.addEventListener('input',e=>buscar(e.target.value));
-document.getElementById('searchBtn').addEventListener('click',()=>buscar(locInput.value));
-document.addEventListener('click',e=>{ if(!locInput.contains(e.target)&&!srResults.contains(e.target)) srResults.classList.add('hidden'); });
-    // ── GPS
-document.getElementById('gpsBtn').addEventListener('click',()=>{
-    locSt.textContent='Obteniendo ubicación...'; locSt.className='loc-status';
-    if(!navigator.geolocation){ locSt.textContent='❌ Sin soporte GPS'; locSt.className='loc-status err'; return; }
-    navigator.geolocation.getCurrentPosition(async pos=>{
-        const {latitude:lat,longitude:lng}=pos.coords;
-        latI.value=lat; lngI.value=lng;
-        locSt.textContent='Detectando comuna...';
+locInput.addEventListener('input', e => buscar(e.target.value));
+document.getElementById('searchBtn').addEventListener('click', () => buscar(locInput.value));
+
+document.addEventListener('click', e => {
+    if (!locInput.contains(e.target) && !srResults.contains(e.target)) {
+        srResults.classList.add('hidden');
+    }
+});
+
+// =============================================
+// GPS
+// =============================================
+
+document.getElementById('gpsBtn').addEventListener('click', () => {
+    locSt.textContent = 'Obteniendo ubicación...';
+    locSt.className = 'loc-status';
+
+    if (!navigator.geolocation) {
+        locSt.textContent = '❌ Sin soporte GPS';
+        locSt.className = 'loc-status err';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        latI.value = lat;
+        lngI.value = lng;
+        locSt.textContent = 'Detectando comuna...';
+
         try {
-            const r=await fetch('/api/detect-commune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng})});
-            const d=await r.json();
-            if(d.ok&&d.commune){
-                elegir({n:d.commune.nombre,r:d.commune.region,lat,lng});
-                locSt.textContent='✓ '+d.commune.nombre+', '+d.commune.region+' (a '+(d.distance_km||0).toFixed(1)+'km)';
-                locSt.className='loc-status ok';
-            } else throw new Error(d.message||'Sin datos');
-        } catch(e){ locSt.textContent='⚠ '+e.message+' — Busca manualmente'; locSt.className='loc-status err'; }
-    }, err=>{
-        const m=['','Permite el acceso.','Servicio no disponible.','Tiempo agotado.'];
-        locSt.textContent='❌ '+(m[err.code]||'Error')+' Busca manualmente.'; locSt.className='loc-status err';
-    },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
-});
-
-// ── SUBMIT
-document.getElementById('marchaForm').addEventListener('submit',async e=>{
-    e.preventDefault();
-    const lat=parseFloat(latI.value), lng=parseFloat(lngI.value), com=comI.value;
-    if(isNaN(lat)||isNaN(lng)||!com){ resultArea.innerHTML='<div class="idle" style="color:#fca5a5;">❌ Selecciona una comuna válida o usa Detectar</div>'; return; }
-    resultArea.innerHTML='<div class="loading"><div style="margin-bottom:1rem;font-size:0.9rem;">Analizando estaciones en tu zona</div><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>';
-    submitBtn.disabled=true; submitBtn.textContent='Evaluando...';
-    const kmL=parseFloat(document.getElementById('kmPerLiter').value);
-    const payload={
-        userProfile:{
-            context_type:document.getElementById('contextType').value,
-            fuel_consumption:100/kmL,
-            tank_capacity:parseFloat(document.getElementById('tankCapacity').value),
-            current_level_pct:parseFloat(document.getElementById('fuelLevel').value),
-            budget_today:parseFloat(document.getElementById('budget').value),
-        },
-        context:{
-            user_lat:lat,user_lon:lng,
-            fuel_type:document.getElementById('fuelType').value,
-            comuna:com.replace(/Llay-Llay/i,'Llaillay').replace(/Llay Llay/i,'Llaillay'),
-            destino:document.getElementById('destination').value || null,
-            direction:document.getElementById('direction').value,
-            is_urban_peak:false,toll_estimate:0,
-        }
-    };
-    try {
-        const r=await fetch('/api/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        if(!r.ok) throw new Error('Error '+r.status);
-        const d=await r.json();
-        render(d.result||d);
-    } catch(err){ resultArea.innerHTML='<div class="idle" style="color:#fca5a5;">⚠ No se pudo conectar. Intenta de nuevo.</div>'; }
-    finally { submitBtn.disabled=false; submitBtn.textContent='Evaluar ahora →'; }
-});
-
-// ── RENDER
-function fmt(n){ return Math.floor(n).toLocaleString('es-CL'); }
-
-function render(data){
-    const mode=data.mode;
-    const bCfg={
-        0:['rb-ok','bdot pulse','Recomendación activa'],
-        1:['rb-warn','bdot','Datos inciertos'],
-        2:['rb-stop','bdot','Mejor no cargar ahora'],
-        3:['rb-off','bdot','Sin datos suficientes'],
-    };
-    const [bc,dc,bt]=bCfg[mode]||bCfg[3];
-    let h=`<div class="res-card"><div class="res-head"><div class="res-badge ${bc}"><div class="${dc}"></div>${bt}</div>`;
-
-    if(data.recommendation){
-        const rec=data.recommendation, st=rec.station||{};
-        const price=rec.display_price||0, liters=rec.display_liters||0;
-        const dist=rec.display_distance_km||0, total=rec.display_total_cost||Math.floor(price*liters);
-        const netSave=Math.floor(rec.net_saving||rec._net_saving||0);
-        const refPrice=rec.display_reference_price||price, savPL=refPrice-price;
-
-        h+=`<div class="st-name">⛽ ${st.nombre||rec.station_name||'Estación'}</div>`;
-        if(st.direccion) h+=`<div class="st-addr">📍 ${st.direccion}${st.comuna?', '+st.comuna:''}</div>`;
-        h+=`</div>`;
-
-        h+=`<div class="sav-row">
-            <div>
-                <div class="sav-lbl">Ahorro estimado en esta carga</div>
-                <div class="sav-num${savPL>0?' pos':''}">$${fmt(netSave>0?netSave:0)}</div>
-                <div class="sav-note">${savPL>0?'$'+fmt(savPL)+'/L menos que el promedio ($'+fmt(refPrice)+'/L)':savPL<0?'$'+fmt(Math.abs(savPL))+'/L sobre el promedio':'sin diferencial en la zona hoy'}</div>
-            </div>
-            <div><div class="pr-num">$${fmt(price)}</div><div class="pr-unit">por litro</div></div>
-        </div>`;
-
-        h+=`<div class="drows">
-            <div class="dr"><span class="dr-l">Carga recomendada</span><span class="dr-v">${liters.toFixed(1)} L</span></div>
-            <div class="dr"><span class="dr-l">Costo total</span><span class="dr-v">$${fmt(total)}</span></div>
-            <div class="dr"><span class="dr-l">Distancia</span><span class="dr-v">${dist>0?dist.toFixed(1)+' km':'En tu ruta'}</span></div>
-        </div>`;
-
-        if(st.precios_detalle&&st.precios_detalle.length){
-            const dd={};
-            for(const p of st.precios_detalle){ const k=p.tipo.toLowerCase().replace(/[^a-z0-9]/g,''); if(!dd[k]||p.precio<dd[k].precio) dd[k]=p; }
-            const up=Object.values(dd).sort((a,b)=>a.precio-b.precio);
-            h+=`<div class="px-box"><div class="px-title">Todos los precios en esta estación</div><div class="px-chips">`;
-            for(const p of up) h+=`<div class="px-chip">${p.tipo} <span>$${fmt(p.precio)}</span></div>`;
-            h+=`</div></div>`;
-        }
-
-        const alts=data.alternatives||(data.alternative?[data.alternative]:[]);
-        if(alts.length){
-            h+=`<div class="alts">`;
-            alts.slice(0,2).forEach((alt,i)=>{
-                const as=alt.station||{}, ap=alt.display_price||0, ad=alt.display_distance_km||0;
-                const aspl=refPrice-ap;
-                h+=`<div class="alt-card">
-                    <div>
-                        <div class="alt-ord">${i===0?'Segunda':'Tercera'} opción</div>
-                        <div class="alt-name">⛽ ${as.nombre||alt.station_name||'Estación'}</div>
-                        ${as.direccion?`<div class="alt-addr">📍 ${as.direccion}</div>`:''}
-                    </div>
-                    <div class="alt-meta">
-                        <div class="alt-pr">$${fmt(ap)} /L</div>
-                        <div class="alt-dist">${ad>0?ad.toFixed(1)+' km':'cerca'}${aspl>0?' · -$'+fmt(aspl)+'/L':aspl<0?' · +$'+fmt(Math.abs(aspl))+'/L':''}</div>
-                    </div>
-                </div>`;
+            const r = await fetch('/api/detect-commune', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat, lng })
             });
-            h+=`</div>`;
+
+            const d = await r.json();
+
+            if (d.ok && d.commune) {
+                elegir({
+                    n: d.commune.nombre,
+                    r: d.commune.region,
+                    lat,
+                    lng
+                });
+
+                locSt.textContent =
+                    '✓ ' + d.commune.nombre + ', ' + d.commune.region +
+                    ' (a ' + (d.distance_km || 0).toFixed(1) + 'km)';
+
+                locSt.className = 'loc-status ok';
+            } else {
+                throw new Error(d.message || 'Sin datos');
+            }
+        } catch (e) {
+            locSt.textContent = '⚠ ' + e.message + ' — Busca manualmente';
+            locSt.className = 'loc-status err';
+        }
+    }, err => {
+        const m = ['', 'Permite el acceso.', 'Servicio no disponible.', 'Tiempo agotado.'];
+        locSt.textContent = '❌ ' + (m[err.code] || 'Error') + ' Busca manualmente.';
+        locSt.className = 'loc-status err';
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    });
+});
+
+// =============================================
+// SUBMIT
+// =============================================
+
+document.getElementById('marchaForm').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const lat = parseFloat(latI.value);
+    const lng = parseFloat(lngI.value);
+    const com = comI.value;
+
+    if (isNaN(lat) || isNaN(lng) || !com) {
+        resultArea.innerHTML =
+            '<div class="idle" style="color:#fca5a5;">❌ Selecciona una comuna válida o usa Detectar</div>';
+        return;
+    }
+
+    resultArea.innerHTML =
+        '<div class="loading">' +
+        '<div style="margin-bottom:1rem;font-size:0.9rem;">Analizando estaciones en tu zona</div>' +
+        '<div class="ld"></div><div class="ld"></div><div class="ld"></div>' +
+        '</div>';
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Evaluando...';
+
+    const kmL = parseFloat(document.getElementById('kmPerLiter').value);
+
+    const payload = {
+        userProfile: {
+            context_type: document.getElementById('contextType').value,
+            fuel_consumption: kmL,
+            tank_capacity: parseFloat(document.getElementById('tankCapacity').value),
+            current_level_pct: parseFloat(document.getElementById('fuelLevel').value),
+            budget_today: parseFloat(document.getElementById('budget').value),
+        },
+        context: {
+            user_lat: lat,
+            user_lon: lng,
+            fuel_type: document.getElementById('fuelType').value,
+            comuna: com.replace(/Llay-Llay/i, 'Llaillay').replace(/Llay Llay/i, 'Llaillay'),
+            destino: document.getElementById('destination').value || null,
+            direction: document.getElementById('direction').value,
+            is_urban_peak: false,
+            toll_estimate: 0,
+        }
+    };
+
+    try {
+        const r = await fetch('/api/decide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!r.ok) throw new Error('Error ' + r.status);
+
+        const d = await r.json();
+        render(d.result || d);
+    } catch (err) {
+        resultArea.innerHTML =
+            '<div class="idle" style="color:#fca5a5;">⚠ No se pudo conectar. Intenta de nuevo.</div>';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Evaluar ahora →';
+    }
+});
+// =============================================
+// RENDER
+// =============================================
+
+function fmt(n) {
+    return Math.floor(Number(n || 0)).toLocaleString('es-CL');
+}
+
+function firstNumber(...values) {
+    for (const v of values) {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function stationView(item) {
+    const st = item?.station || {};
+
+    const nombre =
+        st.nombre ||
+        item?.nombre ||
+        item?.station_name ||
+        'Estación';
+
+    const direccion =
+        st.direccion ||
+        item?.direccion ||
+        '';
+
+    const comuna =
+        st.comuna ||
+        item?.comuna ||
+        '';
+
+    const preciosDetalle =
+        st.precios_detalle ||
+        item?.precios_detalle ||
+        [];
+
+    const servicios =
+        st.servicios ||
+        item?.servicios ||
+        [];
+
+    const metodosPago =
+        st.metodos_pago ||
+        item?.metodos_pago ||
+        [];
+
+    const distancia =
+        firstNumber(
+            item?.display_distance_km,
+            item?.distancia_km,
+            item?._real_distance_km
+        );
+
+    const precio =
+        firstNumber(
+            item?.display_price,
+            item?.precio_actual
+        );
+
+    return {
+        nombre,
+        direccion,
+        comuna,
+        preciosDetalle,
+        servicios,
+        metodosPago,
+        distancia,
+        precio
+    };
+}
+
+function render(data) {
+    const mode = data?.mode;
+
+    const bCfg = {
+        0: ['rb-ok', 'bdot pulse', 'Recomendación activa'],
+        1: ['rb-warn', 'bdot', 'Datos inciertos'],
+        2: ['rb-stop', 'bdot', 'Mejor no cargar ahora'],
+        3: ['rb-off', 'bdot', 'Sin datos suficientes'],
+    };
+
+    const [bc, dc, bt] = bCfg[mode] || bCfg[3];
+
+    let h = `
+        <div class="res-card">
+            <div class="res-head">
+                <div class="res-badge ${bc}">
+                    <div class="${dc}"></div>${bt}
+                </div>
+    `;
+
+    if (data.recommendation) {
+        const rec = data.recommendation;
+        const sv = stationView(rec);
+
+        const price = firstNumber(rec.display_price, rec.precio_actual, sv.precio);
+        const liters = Number(rec.display_liters || 0);
+        const total = firstNumber(rec.display_total_cost, price * liters);
+        const dist = sv.distancia;
+        const netSave = Math.floor(rec.net_saving || rec._net_saving || 0);
+        const refPrice = firstNumber(rec.display_reference_price, price);
+        const savPL = refPrice - price;
+
+        h += `<div class="st-name">⛽ ${sv.nombre}</div>`;
+
+        if (sv.direccion || sv.comuna) {
+            h += `<div class="st-addr">📍 ${sv.direccion || 'Dirección no disponible'}${sv.comuna ? `, ${sv.comuna}` : ''}</div>`;
+        }
+
+        h += `
+            </div>
+
+            <div class="sav-row">
+                <div>
+                    <div class="sav-lbl">Ahorro estimado en esta carga</div>
+                    <div class="sav-num${savPL > 0 ? ' pos' : ''}">$${fmt(netSave > 0 ? netSave : 0)}</div>
+                    <div class="sav-note">
+                        ${
+                            savPL > 0
+                                ? '$' + fmt(savPL) + '/L menos que el promedio ($' + fmt(refPrice) + '/L)'
+                                : savPL < 0
+                                ? '$' + fmt(Math.abs(savPL)) + '/L sobre el promedio'
+                                : 'sin diferencial en la zona hoy'
+                        }
+                    </div>
+                </div>
+                <div>
+                    <div class="pr-num">$${fmt(price)}</div>
+                    <div class="pr-unit">por litro</div>
+                </div>
+            </div>
+
+            <div class="drows">
+                <div class="dr">
+                    <span class="dr-l">Carga recomendada</span>
+                    <span class="dr-v">${liters.toFixed(1)} L</span>
+                </div>
+                <div class="dr">
+                    <span class="dr-l">Costo total</span>
+                    <span class="dr-v">$${fmt(total)}</span>
+                </div>
+                <div class="dr">
+                    <span class="dr-l">Distancia</span>
+                    <span class="dr-v">${dist > 0 ? dist.toFixed(1) + ' km' : 'En tu ruta'}</span>
+                </div>
+            </div>
+        `;
+
+        if (sv.preciosDetalle && sv.preciosDetalle.length) {
+            const dd = {};
+            for (const p of sv.preciosDetalle) {
+                const k = String(p.tipo || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (!dd[k] || p.precio < dd[k].precio) dd[k] = p;
+            }
+
+            const up = Object.values(dd).sort((a, b) => a.precio - b.precio);
+
+            h += `<div class="px-box"><div class="px-title">Todos los precios en esta estación</div><div class="px-chips">`;
+            for (const p of up) {
+                h += `<div class="px-chip">${p.tipo} <span>$${fmt(p.precio)}</span></div>`;
+            }
+            h += `</div></div>`;
+        }
+
+        const alts = data.alternatives || (data.alternative ? [data.alternative] : []);
+
+        if (alts.length) {
+            h += `<div class="alts">`;
+
+            alts.slice(0, 2).forEach((alt, i) => {
+                const av = stationView(alt);
+                const ap = firstNumber(alt.display_price, alt.precio_actual, av.precio);
+                const ad = av.distancia;
+                const aspl = refPrice - ap;
+
+                h += `
+                    <div class="alt-card">
+                        <div>
+                            <div class="alt-ord">${i === 0 ? 'Segunda' : 'Tercera'} opción</div>
+                            <div class="alt-name">⛽ ${av.nombre}</div>
+                            ${av.direccion ? `<div class="alt-addr">📍 ${av.direccion}${av.comuna ? `, ${av.comuna}` : ''}</div>` : ''}
+                        </div>
+                        <div class="alt-meta">
+                            <div class="alt-pr">$${fmt(ap)} /L</div>
+                            <div class="alt-dist">
+                                ${ad > 0 ? ad.toFixed(1) + ' km' : 'cerca'}
+                                ${
+                                    aspl > 0
+                                        ? ' · -$' + fmt(aspl) + '/L'
+                                        : aspl < 0
+                                        ? ' · +$' + fmt(Math.abs(aspl)) + '/L'
+                                        : ''
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            h += `</div>`;
         }
     } else {
-        h+=`</div>`;
+        h += `</div>`;
     }
 
-    if(data.message) h+=`<div class="msg msg-i">💬 ${data.message}</div>`;
-    if(mode===1) h+=`<div class="msg msg-w">🔍 Precios no verificados hoy. El motor declara incertidumbre antes de darte datos incorrectos.</div>`;
-    if(mode===2){
-        h+=`<div class="msg msg-s">📉 El ahorro no justifica desviarte ahora. Sigue tu ruta.</div>`;
-        const al2=data.alternatives||(data.alternative?[data.alternative]:[]);
-        if(al2.length){
-            h+=`<div class="alts" style="padding-top:0;">`;
-            al2.slice(0,2).forEach((alt,i)=>{
-                const as=alt.station||{}, ap=alt.display_price||0, ad=alt.display_distance_km||0;
-                h+=`<div class="alt-card"><div><div class="alt-ord">${i===0?'Segunda':'Tercera'} opción</div><div class="alt-name">⛽ ${as.nombre||alt.station_name||'Estación'}</div></div><div class="alt-meta"><div class="alt-pr">$${fmt(ap)} /L</div><div class="alt-dist">${ad>0?ad.toFixed(1)+' km':'cerca'}</div></div></div>`;
+    if (data.message) {
+        h += `<div class="msg msg-i">💬 ${data.message}</div>`;
+    }
+
+    if (mode === 1) {
+        h += `<div class="msg msg-w">🔍 Precios no verificados hoy. El motor declara incertidumbre antes de darte datos incorrectos.</div>`;
+    }
+
+    if (mode === 2) {
+        h += `<div class="msg msg-s">📉 El ahorro no justifica desviarte ahora. Sigue tu ruta.</div>`;
+
+        const al2 = data.alternatives || (data.alternative ? [data.alternative] : []);
+        if (al2.length) {
+            h += `<div class="alts" style="padding-top:0;">`;
+
+            al2.slice(0, 2).forEach((alt, i) => {
+                const av = stationView(alt);
+                const ap = firstNumber(alt.display_price, alt.precio_actual, av.precio);
+                const ad = av.distancia;
+
+                h += `
+                    <div class="alt-card">
+                        <div>
+                            <div class="alt-ord">${i === 0 ? 'Segunda' : 'Tercera'} opción</div>
+                            <div class="alt-name">⛽ ${av.nombre}</div>
+                            ${av.direccion ? `<div class="alt-addr">📍 ${av.direccion}${av.comuna ? `, ${av.comuna}` : ''}</div>` : ''}
+                        </div>
+                        <div class="alt-meta">
+                            <div class="alt-pr">$${fmt(ap)} /L</div>
+                            <div class="alt-dist">${ad > 0 ? ad.toFixed(1) + ' km' : 'cerca'}</div>
+                        </div>
+                    </div>
+                `;
             });
-            h+=`</div>`;
+
+            h += `</div>`;
         }
     }
-    if(mode===3) h+=`<div class="msg msg-q">🧭 No hay estaciones en esta zona. Intenta con una comuna cercana.</div>`;
 
-    h+=`</div>`;
-    resultArea.innerHTML=h;
+    if (mode === 3) {
+        h += `<div class="msg msg-q">🧭 No hay estaciones en esta zona. Intenta con una comuna cercana.</div>`;
+    }
+
+    h += `</div>`;
+    resultArea.innerHTML = h;
 }
 </script>
 </body>
