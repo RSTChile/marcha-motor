@@ -385,7 +385,7 @@ function getRouteCandidateComunas(originComunaName, destinationName, originCoord
 
   if (!destinationCoords) return [];
 
-  const safeRange = autonomyKm > 0 ? autonomiaKm * 1.25 : Infinity;
+  const safeRange = autonomyKm > 0 ? autonomyKm * 1.25 : Infinity;
   const candidates = [];
 
   for (const comunaName of Object.keys(comunaMap)) {
@@ -397,7 +397,7 @@ function getRouteCandidateComunas(originComunaName, destinationName, originCoord
     if (!forward) continue;
 
     const lateral = distancePointToLine(originCoords, destinationCoords, point);
-    if (lateral > 0.35) continue;
+    if (lateral > 1.2) continue;
 
     const distFromOrigin = haversineDistance(originCoords.lat, originCoords.lon, coords.lat, coords.lon);
     if (Number.isFinite(safeRange) && distFromOrigin > safeRange) continue;
