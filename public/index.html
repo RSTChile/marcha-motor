@@ -204,6 +204,14 @@
         </div>
 
         <div class="section">
+            <div class="sec-label">📍 Destino (opcional)</div>
+            <select id="destination">
+                <option value="">📌 Sin destino / Evaluar sólo tu zona actual</option>
+            </select>
+            <small>Si indicas una comuna de destino, la recomendación puede priorizar estaciones en trayectoria</small>
+        </div>
+
+        <div class="section">
             <div class="sec-label">🚗 Tipo de uso</div>
             <select id="contextType">
                 <option value="domestic">🚘 Doméstico / particular</option>
@@ -229,8 +237,7 @@
                 </div>
             </div>
         </div>
-
-        <div class="section">
+                <div class="section">
             <div class="sec-label">🛢️ Nivel del estanque</div>
             <div class="gauge-card">
                 <div class="gauge-track"><div class="gauge-fill" id="gFill"></div></div>
@@ -274,20 +281,41 @@
 <script>
 // ── COMUNAS
 let clist = [];
-fetch('/data/comunas-completo.json').then(r=>r.json()).then(d=>{ clist = d.comunas||[]; }).catch(()=>{});
+fetch('/data/comunas-completo.json').then(r=>r.json()).then(d=>{
+    clist = d.comunas||[];
+    loadDestinationOptions();
+}).catch(()=>{});
 
 // ── DOM
-const locInput  = document.getElementById('locationInput');
-const srResults = document.getElementById('searchResults');
-const latI      = document.getElementById('lat');
-const lngI      = document.getElementById('lng');
-const comI      = document.getElementById('comuna');
-const locSt     = document.getElementById('locStatus');
-const gFill     = document.getElementById('gFill');
-const fuelLvlI  = document.getElementById('fuelLevel');
-const gLbl      = document.getElementById('gLbl');
-const submitBtn = document.getElementById('submitBtn');
-const resultArea= document.getElementById('resultArea');
+const locInput   = document.getElementById('locationInput');
+const srResults  = document.getElementById('searchResults');
+const latI       = document.getElementById('lat');
+const lngI       = document.getElementById('lng');
+const comI       = document.getElementById('comuna');
+const locSt      = document.getElementById('locStatus');
+const gFill      = document.getElementById('gFill');
+const fuelLvlI   = document.getElementById('fuelLevel');
+const gLbl       = document.getElementById('gLbl');
+const submitBtn  = document.getElementById('submitBtn');
+const resultArea = document.getElementById('resultArea');
+const destinationSelect = document.getElementById('destination');
+
+// ── DESTINO
+function loadDestinationOptions(){
+    if(!destinationSelect || !clist.length) return;
+    const currentValue = destinationSelect.value;
+    destinationSelect.innerHTML = '<option value="">📌 Sin destino / Evaluar sólo tu zona actual</option>';
+    clist
+        .slice()
+        .sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'))
+        .forEach(c=>{
+            const opt=document.createElement('option');
+            opt.value=c.nombre;
+            opt.textContent=`${c.nombre}, ${c.region}`;
+            destinationSelect.appendChild(opt);
+        });
+    if(currentValue) destinationSelect.value = currentValue;
+}
 
 // ── GAUGE
 function setLevel(pct) {
@@ -326,8 +354,7 @@ function elegir(d){
 locInput.addEventListener('input',e=>buscar(e.target.value));
 document.getElementById('searchBtn').addEventListener('click',()=>buscar(locInput.value));
 document.addEventListener('click',e=>{ if(!locInput.contains(e.target)&&!srResults.contains(e.target)) srResults.classList.add('hidden'); });
-
-// ── GPS
+    // ── GPS
 document.getElementById('gpsBtn').addEventListener('click',()=>{
     locSt.textContent='Obteniendo ubicación...'; locSt.className='loc-status';
     if(!navigator.geolocation){ locSt.textContent='❌ Sin soporte GPS'; locSt.className='loc-status err'; return; }
@@ -370,6 +397,7 @@ document.getElementById('marchaForm').addEventListener('submit',async e=>{
             user_lat:lat,user_lon:lng,
             fuel_type:document.getElementById('fuelType').value,
             comuna:com.replace(/Llay-Llay/i,'Llaillay').replace(/Llay Llay/i,'Llaillay'),
+            destino:document.getElementById('destination').value || null,
             direction:document.getElementById('direction').value,
             is_urban_peak:false,toll_estimate:0,
         }
