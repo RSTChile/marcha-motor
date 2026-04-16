@@ -1,186 +1,167 @@
-const engine = require('./engine');
-const estacionesData = require('../data/comunas-stations.json');
-
-// ===============================
-// UTILIDADES BASE (YA EXISTENTES)
-// ===============================
-
-function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) ** 2;
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+function loadComunaStationsMap() {
+  if (comunasMapCache) return comunasMapCache;
+  try {
+    const raw = JSON.parse(fs.readFileSync(COMUNA_STATIONS_FILE, 'utf8'));
+    comunasMapCache = raw.comunas || {};
+    return comunasMapCache;
+  } catch (err) {
+    return {};
+  }
 }
 
-// ===============================
-// 🔴 NUEVO: VECTOR DIRECCIONAL
-// ===============================
-
-function getVector(origen, destino) {
-    return {
-        x: destino.lng - origen.lng,
-        y: destino.lat - origen.lat
-    };
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function loadComunaStationsMap() {
+  if (comunasMapCache) return comunasMapCache;
+  try {
+    const raw = JSON.parse(fs.readFileSync(COMUNA_STATIONS_FILE, 'utf8'));
+    comunasMapCache = raw.comunas || {};
+    return comunasMapCache;
+  } catch (err) {
+    return {};
+  }
 }
 
-function dot(a, b) {
-    return a.x * b.x + a.y * b.y;
-}
-
-// ===============================
-// 🔴 NUEVO: FILTRO DE TRAYECTORIA
-// ===============================
-
-function estaEnTrayectoria(origen, destino, punto) {
-    const vRuta = getVector(origen, destino);
-    const vEst = getVector(origen, punto);
-
-    const prod = dot(vRuta, vEst);
-
-    // si es negativo → está hacia atrás
-    return prod > 0;
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 // ===============================
 // 🔴 NUEVO: AUTONOMÍA
 // ===============================
 
 function calcularAutonomia(userProfile) {
-    const kmPorLitro = 100 / userProfile.fuel_consumption;
-    const litrosDisponibles =
-        userProfile.tank_capacity * (userProfile.current_level_pct / 100);
-
-    return kmPorLitro * litrosDisponibles;
+  const kmPorLitro = 100 / userProfile.fuel_consumption;
+  const litros = userProfile.tank_capacity * (userProfile.current_level_pct / 100);
+  return kmPorLitro * litros;
 }
 
 // ===============================
-// 🔴 NUEVO: EXPANSIÓN DE BÚSQUEDA
+// 🔴 NUEVO: VECTOR DIRECCIÓN
 // ===============================
 
-function obtenerTodasLasEstaciones() {
-    const all = [];
+function getVector(a, b) {
+  return {
+    x: b.lon - a.lon,
+    y: b.lat - a.lat
+  };
+}
 
-    for (const region of estacionesData.regiones) {
-        for (const comuna of region.comunas) {
-            for (const est of comuna.estaciones) {
-                all.push(est);
-            }
-        }
+function dot(a, b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+function enRuta(origen, destino, punto) {
+  const v1 = getVector(origen, destino);
+  const v2 = getVector(origen, punto);
+  return dot(v1, v2) > 0;
+}
+
+function buscarCentroComuna(nombre, comunaMap) {
+  for (const [key, value] of Object.entries(comunaMap)) {
+    if (key.toLowerCase() === nombre.toLowerCase()) {
+      return {
+        lat: value.lat || 0,
+        lon: value.lon || 0
+      };
     }
-
-    return all;
+  }
+  return null;
 }
-// ===============================
-// PIPELINE PRINCIPAL
-// ===============================
+async function runPipeline({ userProfile, context }) {
 
-async function runPipeline(userProfile, context) {
+  const { user_lat, user_lon, fuel_type = 'diesel', comuna, destino } = context;
 
-    console.log('[pipeline] 🚀 Iniciando...');
+  const comunaMap = loadComunaStationsMap();
 
-    const { user_lat, user_lon, comuna, destino } = context;
+  if (!comunaMap[comuna]) {
+    return { mode: 3, message: `No hay estaciones para ${comuna}` };
+  }
 
-    const autonomia = calcularAutonomia(userProfile);
+  const stationIds = comunaMap[comuna].stations.map(s => s.id);
 
-    console.log(`[pipeline] 🔋 Autonomía estimada: ${autonomia.toFixed(1)} km`);
+  const stations = await fetchStationsByIds(stationIds);
 
-    let estaciones = obtenerTodasLasEstaciones();
+  const stationsWithRealDist = [];
 
-    console.log(`[pipeline] 📊 Total estaciones disponibles: ${estaciones.length}`);
+  for (const station of stations) {
+    const realDist = await getRealDistance(user_lat, user_lon, station.lat, station.lon);
+    const finalDist = realDist || haversineDistance(user_lat, user_lon, station.lat, station.lon);
 
-    // ===============================
-    // 🔴 FILTRO POR AUTONOMÍA
-    // ===============================
-
-    estaciones = estaciones.filter(est => {
-        if (!est.lat || !est.lng) return false;
-
-        const dist = haversine(user_lat, user_lon, est.lat, est.lng);
-        est._dist = dist;
-
-        return dist <= autonomia;
+    stationsWithRealDist.push({
+      ...station,
+      _real_distance_km: finalDist
     });
+  }
 
-    console.log(`[pipeline] ⛽ Estaciones dentro de autonomía: ${estaciones.length}`);
+  // ===============================
+  // 🔴 NUEVO: AUTONOMÍA
+  // ===============================
 
-    // ===============================
-    // 🔴 FILTRO POR TRAYECTORIA
-    // ===============================
+  const autonomia = calcularAutonomia(userProfile);
 
-    let estacionesFiltradas = estaciones;
+  let filtradas = stationsWithRealDist.filter(s => s._real_distance_km <= autonomia);
 
-    if (destino) {
-        console.log(`[pipeline] 🧭 Aplicando filtro de trayectoria hacia ${destino}`);
+  // ===============================
+  // 🔴 NUEVO: TRAYECTORIA
+  // ===============================
 
-        const destinoObj = buscarComuna(destino);
+  if (destino) {
+    const destinoCentro = buscarCentroComuna(destino, comunaMap);
 
-        if (destinoObj) {
-            estacionesFiltradas = estaciones.filter(est => {
-                return estaEnTrayectoria(
-                    { lat: user_lat, lng: user_lon },
-                    { lat: destinoObj.lat, lng: destinoObj.lng },
-                    { lat: est.lat, lng: est.lng }
-                );
-            });
+    if (destinoCentro) {
+      const origen = { lat: user_lat, lon: user_lon };
 
-            console.log(`[pipeline] ➡️ Estaciones en trayectoria: ${estacionesFiltradas.length}`);
-        } else {
-            console.log(`[pipeline] ⚠️ Destino no encontrado`);
-        }
+      const enTrayecto = filtradas.filter(s =>
+        enRuta(origen, destinoCentro, { lat: s.lat, lon: s.lon })
+      );
+
+      if (enTrayecto.length > 0) {
+        filtradas = enTrayecto;
+      }
     }
+  }
+      filtradas.sort((a, b) => a._real_distance_km - b._real_distance_km);
 
-    // fallback si queda vacío
-    if (!estacionesFiltradas.length) {
-        console.log('[pipeline] ⚠️ Sin estaciones en trayectoria, usando todas');
-        estacionesFiltradas = estaciones;
-    }
+  const engineStations = filtradas
+    .map(s => prepareStation(s, fuel_type, s._real_distance_km))
+    .filter(Boolean);
 
-    // ===============================
-    // 🔴 ORDENAR POR DISTANCIA
-    // ===============================
+  if (engineStations.length === 0) {
+    return { mode: 3, message: 'No hay estaciones disponibles' };
+  }
 
-    estacionesFiltradas.sort((a, b) => a._dist - b._dist);
+  const refPrice = calculateReferencePrice(engineStations);
 
-    // ===============================
-    // 🔴 PASAR AL MOTOR EXISTENTE
-    // ===============================
+  const result = engine.decide(userProfile, engineStations, {
+    user_lat,
+    user_lon,
+    reference_price: refPrice
+  });
 
-    const result = await engine.decide(userProfile, context, estacionesFiltradas);
+  result.message =
+    `Autonomía estimada: ${Math.floor(autonomia)} km.` +
+    (destino
+      ? ` Evaluando estaciones en ruta hacia ${destino}.`
+      : '');
 
-    // ===============================
-    // 🔴 MENSAJE EXTENDIDO
-    // ===============================
-
-    result.message = `Con tu combustible actual tienes aproximadamente ${Math.floor(autonomia)} km de autonomía.` +
-        (destino
-            ? ` Se evaluaron estaciones en trayectoria hacia ${destino}.`
-            : ` Se evaluaron estaciones en tu zona.`);
-
-    return result;
-}
-// ===============================
-// 🔴 BUSCAR COMUNA
-// ===============================
-
-function buscarComuna(nombre) {
-    for (const region of estacionesData.regiones) {
-        for (const comuna of region.comunas) {
-            if (comuna.nombre.toLowerCase() === nombre.toLowerCase()) {
-                return comuna;
-            }
-        }
-    }
-    return null;
+  return result;
 }
 
-// ===============================
-// EXPORT
-// ===============================
-
-module.exports = {
-    runPipeline
-};
+module.exports = { runPipeline };
