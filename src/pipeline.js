@@ -149,17 +149,22 @@ async function getRealDistance(lat1, lon1, lat2, lon2) {
     return cached.distance;
   }
 
-  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`;
+const url = `https://api.openrouteservice.org/v2/directions/driving-car`;
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal
-    });
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Authorization': ORS_API_KEY,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    coordinates: [
+      [lon1, lat1],
+      [lon2, lat2]
+    ]
+  }),
+  signal: controller.signal
+});
 
     clearTimeout(timeout);
 
